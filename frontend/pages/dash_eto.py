@@ -97,49 +97,7 @@ eto_layout = html.Div(
                         )
                     ]
                 ),
-                # Card de Seleção de Fonte de Dados
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                dbc.Card(
-                                    [
-                                        dbc.CardHeader(
-                                            [
-                                                html.H6(
-                                                    "🌐 Climate Data Source",
-                                                    className="mb-0",
-                                                )
-                                            ]
-                                        ),
-                                        dbc.CardBody(
-                                            [
-                                                html.Div(
-                                                    id="source-selection-info",
-                                                    className="mb-3",
-                                                ),
-                                                dbc.Select(
-                                                    id="climate-source-dropdown",
-                                                    placeholder="Select the data source...",
-                                                    disabled=True,
-                                                    className="mb-2",
-                                                ),
-                                                html.Small(
-                                                    id="source-description",
-                                                    className="text-muted",
-                                                ),
-                                            ]
-                                        ),
-                                    ],
-                                    className="mb-4",
-                                    style={"borderLeft": "4px solid #1976d2"},
-                                ),
-                            ],
-                            width=12,
-                        )
-                    ]
-                ),
-                # Card principal de configuração e cálculo
+                # Card de Seleção de Data Type (DEVE VIR PRIMEIRO)
                 dbc.Row(
                     [
                         dbc.Col(
@@ -172,15 +130,91 @@ eto_layout = html.Div(
                                                             "value": "historical",
                                                         },
                                                         {
-                                                            "label": "🌤️ Current Data (last 7 days)",
-                                                            "value": "current",
+                                                            "label": "📊 Recent Data (last 7-30 days)",
+                                                            "value": "recent",
+                                                        },
+                                                        {
+                                                            "label": "🔮 Forecast (next 5 days)",
+                                                            "value": "forecast",
                                                         },
                                                     ],
-                                                    value="historical",
+                                                    value=None,  # No default selection
                                                     className="mb-4",
                                                     inline=False,
                                                 ),
-                                                html.Hr(className="my-4"),
+                                            ]
+                                        ),
+                                    ],
+                                    className="mb-4",
+                                    style={"borderLeft": "4px solid #6a1b9a"},
+                                ),
+                            ],
+                            width=12,
+                        )
+                    ]
+                ),
+                # Card de Seleção de Fonte de Dados (AGORA VEM DEPOIS)
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                dbc.Card(
+                                    [
+                                        dbc.CardHeader(
+                                            [
+                                                html.H6(
+                                                    "🌐 Climate Data Source",
+                                                    className="mb-0",
+                                                )
+                                            ]
+                                        ),
+                                        dbc.CardBody(
+                                            [
+                                                html.Div(
+                                                    id="source-selection-info",
+                                                    className="mb-3",
+                                                ),
+                                                dbc.Select(
+                                                    id="climate-source-dropdown",
+                                                    placeholder="Select the data source...",
+                                                    disabled=True,
+                                                    className="mb-2",
+                                                    style={
+                                                        "borderBottom": "1px solid #dee2e6"
+                                                    },
+                                                ),
+                                                html.Small(
+                                                    id="source-description",
+                                                    className="text-muted",
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                    className="mb-4",
+                                    style={"borderLeft": "4px solid #1976d2"},
+                                ),
+                            ],
+                            width=12,
+                        )
+                    ]
+                ),
+                # Card de formulário condicional e botão calcular
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                dbc.Card(
+                                    [
+                                        dbc.CardHeader(
+                                            [
+                                                html.H6(
+                                                    "📋 Additional Parameters",
+                                                    className="mb-0",
+                                                )
+                                            ]
+                                        ),
+                                        dbc.CardBody(
+                                            [
                                                 # Formulário condicional (muda conforme seleção)
                                                 html.Div(
                                                     id="conditional-form"
@@ -214,6 +248,26 @@ eto_layout = html.Div(
                                                 html.Div(
                                                     id="operation-mode-indicator",
                                                     className="mt-2",
+                                                ),
+                                                # Progress bar container
+                                                html.Div(
+                                                    id="eto-progress-container",
+                                                    className="mt-3",
+                                                ),
+                                                # Store for task ID
+                                                dcc.Store(
+                                                    id="current-task-id"
+                                                ),
+                                                # Store for operation mode (to know if it's HISTORICAL_EMAIL)
+                                                dcc.Store(
+                                                    id="current-operation-mode"
+                                                ),
+                                                # Interval for progress updates
+                                                dcc.Interval(
+                                                    id="progress-interval",
+                                                    interval=2000,  # 2 seconds
+                                                    n_intervals=0,
+                                                    disabled=True,
                                                 ),
                                             ]
                                         ),
@@ -316,8 +370,23 @@ eto_layout = html.Div(
                         )
                     ]
                 ),
-                # Store para coordenadas parseadas da URL
+                # Stores para coordenadas
                 dcc.Store(id="parsed-coordinates", data=None),
+                dcc.Store(id="selected-location-data", data=None),
+                dcc.Store(id="map-click-data", data=None),
+                # Hidden elements for cross-page callback compatibility
+                # Note: world-map is NOT included here to avoid duplicate map rendering
+                # The world-map component only exists on the Home page
+                html.Div(
+                    [
+                        html.Div(id="marker-layer"),
+                        html.Div(id="selected-coords-display"),
+                        html.Button(
+                            id="add-favorite-btn", style={"display": "none"}
+                        ),
+                    ],
+                    style={"display": "none"},
+                ),
             ],
             fluid=False,
             className="py-4",

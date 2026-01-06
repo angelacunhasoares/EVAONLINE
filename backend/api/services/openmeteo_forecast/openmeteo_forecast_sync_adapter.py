@@ -67,7 +67,7 @@ class OpenMeteoForecastSyncAdapter:
         cache_type = "Redis" if cache else "Local"
         logger.info(
             f"OpenMeteoForecastSyncAdapter initialized ({cache_type} cache, "
-            f"-29d to +5d = 35d total)"
+            f"-29d to +5d = 35d total | EVAonline standard: today+5 days)"
         )
 
     def get_daily_data_sync(

@@ -7,15 +7,17 @@ Integra:
 - WebSocket: Broadcasting de progresso
 """
 
-from celery import shared_task
 from celery.utils.log import get_task_logger
 from datetime import datetime
 from typing import Any
 
 logger = get_task_logger(__name__)
 
+# Importar celery_app para garantir conexão correta
+from backend.infrastructure.celery.celery_config import celery_app
 
-@shared_task(
+
+@celery_app.task(
     bind=True,
     name="backend.infrastructure.celery.tasks.calculate_eto_task",
     max_retries=3,
@@ -23,6 +25,8 @@ logger = get_task_logger(__name__)
     retry_backoff=True,
     retry_backoff_max=600,  # Max 10 minutos entre retries
     retry_jitter=True,
+    ignore_result=False,  # Garantir que resultado seja salvo no Redis
+    track_started=True,  # Track status STARTED
 )
 def calculate_eto_task(
     self,
@@ -33,6 +37,10 @@ def calculate_eto_task(
     sources: list[str] | None = None,
     elevation: float | None = None,
     mode: str | None = None,
+    email: str | None = None,
+    visitor_id: str | None = None,
+    session_id: str | None = None,
+    file_format: str = "excel",
 ) -> dict[str, Any]:
     """
     Calcula ETo para localização com progresso em tempo real.
@@ -62,7 +70,6 @@ def calculate_eto_task(
     """
     import asyncio
     from backend.core.eto_calculation.eto_services import EToProcessingService
-    from backend.database.connection import get_db
     from backend.api.services.climate_validation import (
         ClimateValidationService,
     )
@@ -77,15 +84,37 @@ def calculate_eto_task(
     start_time = datetime.now()
 
     try:
+        # ========== STEP 0: EMAIL INICIAL (modo historical_email) ==========
+        if mode and "email" in mode.lower() and email:
+            from backend.core.utils.email_utils import (
+                send_html_email,
+                validate_email,
+            )
+            from backend.core.utils.email_templates import (
+                create_processing_started_email,
+            )
+
+            if validate_email(email):
+                # Criar email HTML profissional (estilo INMET/BDMEP)
+                subject, html_body = create_processing_started_email(
+                    task_id=task_id,
+                    latitude=lat,
+                    longitude=lon,
+                    start_date=start_date,
+                    end_date=end_date,
+                    started_at=start_time,
+                    file_format=file_format,
+                )
+
+                send_html_email(
+                    to=email,
+                    subject=subject,
+                    html_body=html_body,
+                )
+                logger.info(f"📧 Email inicial HTML enviado para {email}")
+
         # ========== STEP 1: VALIDAÇÃO (5%) ==========
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 5,
-                "step": "validation",
-                "message": "Validando parâmetros...",
-            },
-        )
+        logger.info(f"⏳ [5%] Validando parâmetros...")
 
         # Validar coordenadas
         if not ClimateValidationService.validate_coordinates(lat, lon)[0]:
@@ -115,14 +144,7 @@ def calculate_eto_task(
         )
 
         # ========== STEP 2: SELEÇÃO DE FONTES (10%) ==========
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 10,
-                "step": "source_selection",
-                "message": "Selecionando melhores fontes climáticas...",
-            },
-        )
+        logger.info("[10%] Selecionando melhores fontes climáticas...")
 
         manager = ClimateSourceManager()
         source_info = manager.get_sources_for_data_download(
@@ -142,37 +164,20 @@ def calculate_eto_task(
         )
 
         # ========== STEP 3: PROCESSAMENTO ETo (20-90%) ==========
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 20,
-                "step": "eto_processing",
-                "message": (
-                    f"Processando dados de {len(selected_sources)} fontes..."
-                ),
-                "sources": selected_sources,
-                "region": region,
-            },
+        logger.info(
+            f"[20%] Processando dados de {len(selected_sources)} fontes "
+            f"({region})..."
         )
 
         # Inicializar serviço de processamento
-        db = next(get_db())
-        service = EToProcessingService(db_session=db)
+        service = EToProcessingService()
 
         # ========== STEP 4: CÁLCULO ETo (60-90%) ==========
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 60,
-                "step": "eto_calculation",
-                "message": "Calculando ETo (FAO-56 Penman-Monteith)...",
-            },
-        )
+        logger.info("[60%] Calculando ETo (FAO-56 Penman-Monteith)...")
 
-        # O process_location_with_sources já faz download +
-        # processamento completo
+        # O process_location já faz download + processamento completo
         result = asyncio.run(
-            service.process_location_with_sources(
+            service.process_location(
                 latitude=lat,
                 longitude=lon,
                 start_date=start_date,
@@ -182,38 +187,197 @@ def calculate_eto_task(
             )
         )
 
-        # ========== STEP 5: FINALIZAÇÃO (90-100%) ==========
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 90,
-                "step": "finalization",
-                "message": "Preparando resultado final...",
-            },
-        )
+        # ========== STEP 5: SALVAR NO BANCO (80-90%) ==========
+        logger.info("[80%] Salvando dados no banco...")
+
+        # Salvar dados climáticos com ETo no banco
+        from backend.database.data_storage import save_climate_data
+        from backend.database.connection import get_db
+
+        try:
+            db = next(get_db())
+            # Preparar dados para salvar
+            climate_records = []
+            if "et0_series" in result:
+                for record in result["et0_series"]:
+                    climate_records.append(
+                        {
+                            "latitude": lat,
+                            "longitude": lon,
+                            "elevation": result.get("elevation", {}).get(
+                                "value", elevation
+                            ),
+                            "date": record.get("date"),
+                            "raw_data": record,
+                            "eto_mm_day": record.get("et0_mm_day"),
+                            "eto_method": "penman_monteith_fao56",
+                        }
+                    )
+
+            if climate_records:
+                saved_count = save_climate_data(
+                    data=climate_records,
+                    source_api=(
+                        selected_sources[0] if selected_sources else "fusion"
+                    ),
+                )
+                logger.info(f"💾 Salvos {saved_count} registros no banco")
+        except Exception as save_error:
+            logger.warning(f"⚠️ Erro ao salvar no banco: {save_error}")
+        finally:
+            db.close()
+
+        # ========== STEP 6: ENVIO DE EMAIL (modo historical_email) ==========
+        email_sent = False
+        if mode and "email" in mode.lower() and email:
+            logger.info("[90%] Gerando arquivo e enviando por email...")
+
+            try:
+                import pandas as pd
+                from pathlib import Path
+                from backend.core.utils.email_utils import (
+                    send_html_email_with_attachment,
+                    validate_email,
+                )
+                from backend.core.utils.email_templates import (
+                    create_data_ready_email,
+                )
+
+                # Validar email fornecido
+                if not validate_email(email):
+                    logger.warning(f"⚠️ Email inválido: {email}")
+                else:
+                    # Usar visitor_id ou session_id existente, ou gerar novo
+                    if visitor_id:
+                        user_identifier = visitor_id.replace("visitor_", "")[
+                            :8
+                        ]
+                    elif session_id:
+                        user_identifier = session_id.replace("sess_", "")[:8]
+                    else:
+                        # Fallback: gerar ID baseado no email
+                        import hashlib
+
+                        user_identifier = hashlib.md5(
+                            email.encode()
+                        ).hexdigest()[:8]
+
+                    logger.info(
+                        f"📋 ID usuário: {user_identifier} "
+                        f"(visitor: {bool(visitor_id)}, "
+                        f"session: {bool(session_id)})"
+                    )
+
+                    # Determinar extensão do arquivo
+                    file_ext = "xlsx" if file_format == "excel" else "csv"
+
+                    # Gerar arquivo no formato escolhido
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    lat_str = f"{abs(lat):.4f}{'N' if lat >= 0 else 'S'}"
+                    lon_str = f"{abs(lon):.4f}{'E' if lon >= 0 else 'W'}"
+                    filename = (
+                        f"EVAonline_ETo_{user_identifier}_{lat_str}_"
+                        f"{lon_str}_{start_date}_{end_date}_{timestamp}.{file_ext}"
+                    )
+
+                    # Criar diretório temporário se não existir
+                    temp_dir = Path("temp")
+                    temp_dir.mkdir(exist_ok=True)
+                    file_path = temp_dir / filename
+
+                    # Converter et0_series para DataFrame
+                    et0_series = result.get("et0_series", [])
+                    df_result = pd.DataFrame(et0_series)
+
+                    # Salvar no formato escolhido
+                    if not df_result.empty:
+                        if file_format == "excel":
+                            df_result.to_excel(file_path, index=False)
+                        else:
+                            df_result.to_csv(file_path, index=False)
+                        logger.info(
+                            f"📊 Arquivo {file_format.upper()} gerado: "
+                            f"{file_path}"
+                        )
+
+                        # Calcular tempo de processamento
+                        processing_time = (
+                            datetime.now() - start_time
+                        ).total_seconds()
+
+                        # Calcular estatísticas resumidas
+                        eto_values = [
+                            r.get("et0_mm_day", 0)
+                            for r in et0_series
+                            if r.get("et0_mm_day") is not None
+                        ]
+                        summary_stats = None
+                        if eto_values:
+                            summary_stats = {
+                                "eto_mean": sum(eto_values) / len(eto_values),
+                                "eto_max": max(eto_values),
+                                "eto_min": min(eto_values),
+                                "eto_total": sum(eto_values),
+                            }
+
+                        # Criar email HTML profissional
+                        subject, html_body = create_data_ready_email(
+                            task_id=task_id,
+                            latitude=lat,
+                            longitude=lon,
+                            start_date=start_date,
+                            end_date=end_date,
+                            days_processed=len(et0_series),
+                            processing_time_seconds=processing_time,
+                            sources_used=selected_sources,
+                            file_format=file_format,
+                            elevation=result.get("elevation", {}).get("value"),
+                            summary_stats=summary_stats,
+                        )
+
+                        # Enviar email HTML com anexo
+                        email_sent = send_html_email_with_attachment(
+                            to=email,
+                            subject=subject,
+                            html_body=html_body,
+                            attachment_path=str(file_path),
+                        )
+
+                        if email_sent:
+                            logger.info(
+                                f"✅ Email HTML com anexo enviado para {email}"
+                            )
+                        else:
+                            logger.warning(
+                                f"⚠️ Falha ao enviar email para {email}"
+                            )
+
+                        # Limpar arquivo temporário após envio bem-sucedido
+                        # (mantém por segurança caso precise reenviar)
+                    else:
+                        logger.warning("⚠️ Nenhum dado para enviar")
+
+            except Exception as email_error:
+                logger.error(
+                    f"❌ Erro ao gerar arquivo/enviar email: {email_error}",
+                    exc_info=True,
+                )
+
+        # ========== STEP 7: FINALIZAÇÃO (95-100%) ==========
+        logger.info("[95%] Preparando resultado final...")
 
         processing_time = (datetime.now() - start_time).total_seconds()
 
         final_result = {
-            **result["data"],  # Usar apenas os dados do resultado
+            **result,  # Usar todo o resultado do service
             "task_id": task_id,
             "processing_time_seconds": round(processing_time, 2),
-            "sources_used": selected_sources,
-            "location_info": source_info["location_info"],
             "mode": mode,
+            "email_sent": email_sent,  # Indicar se email foi enviado
         }
 
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "progress": 100,
-                "step": "completed",
-                "message": "✅ Cálculo ETo concluído!",
-            },
-        )
-
         logger.info(
-            f"✅ Task {task_id} completed in {processing_time:.2f}s "
+            f"✅ [100%] Task {task_id} completed in {processing_time:.2f}s "
             f"for ({lat}, {lon})"
         )
 
@@ -222,16 +386,32 @@ def calculate_eto_task(
     except Exception as e:
         logger.error(f"❌ Task {task_id} failed: {e}", exc_info=True)
 
-        # Atualizar estado de erro
-        self.update_state(
-            state="FAILURE",
-            meta={
-                "progress": 0,
-                "step": "error",
-                "message": f"Erro: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-        )
+        # Enviar email de erro se possível
+        if mode and "email" in mode.lower() and email:
+            try:
+                from backend.core.utils.email_utils import (
+                    send_html_email,
+                    validate_email,
+                )
+                from backend.core.utils.email_templates import (
+                    create_processing_error_email,
+                )
+
+                if validate_email(email):
+                    subject, html_body = create_processing_error_email(
+                        task_id=task_id,
+                        latitude=lat,
+                        longitude=lon,
+                        start_date=start_date,
+                        end_date=end_date,
+                        error_message=str(e),
+                    )
+                    send_html_email(
+                        to=email, subject=subject, html_body=html_body
+                    )
+                    logger.info(f"📧 Email de erro enviado para {email}")
+            except Exception as email_err:
+                logger.error(f"Falha ao enviar email de erro: {email_err}")
 
         # Retry automático (max 3 tentativas)
         raise self.retry(exc=e, countdown=60 * (self.request.retries + 1))

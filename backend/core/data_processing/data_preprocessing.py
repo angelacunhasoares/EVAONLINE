@@ -9,101 +9,16 @@ import redis
 from celery import shared_task
 from loguru import logger
 
+from backend.core.data_processing.climate_limits import get_validation_limits
+
 # Redis configuration
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 CACHE_EXPIRY_HOURS = 24  # 24 hours
 
 
-def _get_validation_limits(
-    region: str = "global",
-) -> dict:
-    """
-    Retorna limites de validação para diferentes regiões.
-
-    Args:
-        region: "brazil" (Xavier et al. 2016, 2022) ou
-            "global" (limites mundiais)
-
-    Returns:
-        Dict[str, Tuple[float, float, str]]: {coluna: (min, max, inclusive)}
-    """
-    # ─────────────────────────────────────────────────────────────
-    # Limites GLOBAIS (mundo inteiro)
-    # ─────────────────────────────────────────────────────────────
-    global_limits = {
-        # NASA POWER
-        "T2M_MAX": (-90, 60, "neither"),
-        "T2M_MIN": (-90, 60, "neither"),
-        "T2M": (-90, 60, "neither"),
-        "RH2M": (0, 100, "both"),
-        "WS2M": (0, 113, "left"),
-        "PRECTOTCORR": (0, 2000, "neither"),
-        "ALLSKY_SFC_SW_DWN": (0, 45, "left"),
-        # Open-Meteo Archive/Forecast
-        "temperature_2m_max": (-90, 60, "neither"),
-        "temperature_2m_min": (-90, 60, "neither"),
-        "temperature_2m_mean": (-90, 60, "neither"),
-        "relative_humidity_2m_max": (0, 100, "both"),
-        "relative_humidity_2m_mean": (0, 100, "both"),
-        "relative_humidity_2m_min": (0, 100, "both"),
-        "wind_speed_10m_max": (0, 113, "left"),
-        "wind_speed_10m_mean": (0, 113, "left"),
-        "shortwave_radiation_sum": (0, 45, "left"),
-        "daylight_duration": (0, 24, "both"),
-        "sunshine_duration": (0, 24, "both"),
-        "precipitation_sum": (0, 2000, "neither"),
-        "et0_fao_evapotranspiration": (0, 20, "left"),
-        # MET Norway
-        "pressure_mean_sea_level": (800, 1150, "both"),
-        "temp_celsius": (-90, 60, "neither"),
-        "humidity_percent": (0, 100, "both"),
-        # NWS
-        "wind_speed_ms": (0, 113, "left"),
-        "precipitation_mm": (0, 2000, "neither"),
-    }
-
-    # ─────────────────────────────────────────────────────────────
-    # Limites BRASIL (Xavier et al. 2016, 2022)
-    # "New improved Brazilian daily weather gridded data (1961–2020)"
-    # ─────────────────────────────────────────────────────────────
-    brazil_limits = {
-        # NASA POWER
-        "T2M_MAX": (-30, 50, "neither"),
-        "T2M_MIN": (-30, 50, "neither"),
-        "T2M": (-30, 50, "neither"),
-        "RH2M": (0, 100, "both"),
-        "WS2M": (0, 100, "left"),
-        "PRECTOTCORR": (0, 450, "neither"),
-        "ALLSKY_SFC_SW_DWN": (0, 40, "left"),
-        # Open-Meteo Archive/Forecast
-        "temperature_2m_max": (-30, 50, "neither"),
-        "temperature_2m_min": (-30, 50, "neither"),
-        "temperature_2m_mean": (-30, 50, "neither"),
-        "relative_humidity_2m_max": (0, 100, "both"),
-        "relative_humidity_2m_mean": (0, 100, "both"),
-        "relative_humidity_2m_min": (0, 100, "both"),
-        "wind_speed_10m_max": (0, 100, "left"),
-        "wind_speed_10m_mean": (0, 100, "left"),
-        "shortwave_radiation_sum": (0, 40, "left"),
-        "daylight_duration": (0, 24, "both"),
-        "sunshine_duration": (0, 24, "both"),
-        "precipitation_sum": (0, 450, "neither"),
-        "et0_fao_evapotranspiration": (0, 15, "left"),
-        # MET Norway
-        "pressure_mean_sea_level": (900, 1100, "both"),
-        "temp_celsius": (-30, 50, "neither"),
-        "humidity_percent": (0, 100, "both"),
-        # NWS
-        "wind_speed_ms": (0, 100, "left"),
-        "precipitation_mm": (0, 450, "neither"),
-    }
-
-    if region.lower() == "brazil":
-        logger.info("Usando limites de validação do Brasil (Xavier et al.)")
-        return brazil_limits
-    else:
-        logger.info("Usando limites de validação globais")
-        return global_limits
+# Função _get_validation_limits REMOVIDA
+# Agora usando get_validation_limits() de climate_limits.py
+# para centralizar limites físicos climáticos e seguir princípio DRY
 
 
 @shared_task
@@ -139,6 +54,16 @@ def data_initial_validate(
     """
     logger.info("Validating weather data")
     warnings = []
+
+    # Preserve Open-Meteo ETo for comparison (before any processing)
+    if "et0_fao_evapotranspiration" in weather_df.columns:
+        weather_df["eto_openmeteo"] = weather_df[
+            "et0_fao_evapotranspiration"
+        ].copy()
+        logger.debug(
+            "Preserved et0_fao_evapotranspiration as eto_openmeteo "
+            "for validation"
+        )
 
     # Validate latitude
     if not (-90 <= latitude <= 90):
@@ -218,7 +143,7 @@ def data_initial_validate(
     # Suporta TODAS as variáveis retornadas pelas 7 fontes de dados para ETo:
     # NASA POWER, Open-Meteo Archive/Forecast,
     # MET Norway Locationforecast/FROST, NWS Forecast/Stations
-    limits = _get_validation_limits(region)
+    limits = get_validation_limits(region)
 
     # Validate numeric columns
     for col, (min_val, max_val, inclusive) in limits.items():
@@ -354,6 +279,7 @@ def detect_outliers_iqr(
         "pressure_mean_sea_level",
         # ETo variables (validated 0-15 mm/day)
         "et0_fao_evapotranspiration",
+        "eto_openmeteo",  # Preserved for validation
     }
 
     # Get numeric columns excluding already validated ones

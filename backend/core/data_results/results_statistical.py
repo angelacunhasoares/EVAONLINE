@@ -7,7 +7,10 @@ from loguru import logger
 from scipy import stats
 from statsmodels.tsa.stattools import adfuller
 
-from backend.core.data_results.results_tables import display_results_table
+from backend.core.data_results.results_tables import (
+    display_results_table,
+    format_number,
+)
 from shared_utils.get_translations import get_translations
 
 
@@ -16,7 +19,8 @@ def display_daily_data(df: pd.DataFrame, lang: str = "pt") -> html.Div:
     Exibe os dados climáticos diários em uma tabela formatada.
 
     Parâmetros:
-    - df: DataFrame com os dados (espera colunas 'date', 'T2M_MAX', 'T2M_MIN', 'RH2M', 'WS2M', 'ALLSKY_SFC_SW_DWN', 'PRECTOTCORR', 'ETo').
+    - df: DataFrame com os dados (espera colunas 'date', 'T2M_MAX', 'T2M_MIN',
+    - 'RH2M', 'WS2M', 'ALLSKY_SFC_SW_DWN', 'PRECTOTCORR', 'ETo').
     - lang: Idioma para traduções ('pt' ou 'en').
 
     Retorna:
@@ -42,10 +46,30 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
     """
     try:
         if df is None or df.empty:
-            logger.warning("DataFrame vazio ou None fornecido para display_descriptive_stats")
+            logger.warning(
+                "DataFrame vazio ou None fornecido para "
+                "display_descriptive_stats"
+            )
             return html.Div(get_translations(lang)["no_data"])
 
         t = get_translations(lang)
+
+        # Mapeamento de nomes de colunas para nomes formatados
+        column_display_names = {
+            "T2M_MAX": t.get("temp_max", "Temperatura Máxima (°C)"),
+            "T2M_MIN": t.get("temp_min", "Temperatura Mínima (°C)"),
+            "T2M": t.get("temp_mean", "Temperatura Média (°C)"),
+            "RH2M": t.get("humidity", "Umidade Relativa (%)"),
+            "WS2M": t.get("wind_speed", "Velocidade do Vento (m/s)"),
+            "ALLSKY_SFC_SW_DWN": t.get(
+                "radiation", "Radiação Solar (MJ/m²/dia)"
+            ),
+            "PRECTOTCORR": t.get("precipitation", "Precipitação Total (mm)"),
+            "ETo": t.get("eto", "ETo (mm/dia)"),
+            "eto_evaonline": "ETo EVAonline (mm/dia)",
+            "eto_openmeteo": "ETo Open-Meteo (mm/dia)",
+        }
+
         expected_columns = [
             "T2M_MAX",
             "T2M_MIN",
@@ -54,6 +78,7 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             "ALLSKY_SFC_SW_DWN",
             "PRECTOTCORR",
             "ETo",
+            "eto_evaonline",
         ]
         numeric_cols = [col for col in expected_columns if col in df.columns]
         if not numeric_cols:
@@ -68,29 +93,68 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             t["std_dev"]: df[numeric_cols].std().round(2),
             t["percentile_25"]: df[numeric_cols].quantile(0.25).round(2),
             t["percentile_75"]: df[numeric_cols].quantile(0.75).round(2),
-            t["coef_variation"]: ((df[numeric_cols].std() / df[numeric_cols].mean()) * 100).round(
-                2
-            ),
-            t["skewness"]: df[numeric_cols].apply(lambda x: stats.skew(x.dropna())).round(2),
-            t["kurtosis"]: df[numeric_cols].apply(lambda x: stats.kurtosis(x.dropna())).round(2),
+            t["coef_variation"]: (
+                (df[numeric_cols].std() / df[numeric_cols].mean()) * 100
+            ).round(2),
+            t["skewness"]: df[numeric_cols]
+            .apply(lambda x: stats.skew(x.dropna()))
+            .round(2),
+            t["kurtosis"]: df[numeric_cols]
+            .apply(lambda x: stats.kurtosis(x.dropna()))
+            .round(2),
         }
         stats_df = pd.DataFrame(stats_data).T
         stats_df.insert(0, t["statistic"], stats_df.index)
 
-        # Renomear colunas com traduções
-        translated_columns = {col: t.get(col.lower(), col) for col in stats_df.columns[1:]}
-        stats_df = stats_df.rename(columns=translated_columns)
+        # Renomear colunas com nomes formatados
+        stats_df = stats_df.rename(columns=column_display_names)
 
-        table = dbc.Table.from_dataframe(
-            stats_df,
+        # Formatar valores numéricos com ponto decimal
+        for col in stats_df.columns:
+            if col != t["statistic"]:
+                stats_df[col] = stats_df[col].apply(
+                    lambda x: format_number(x, 2)
+                )
+
+        # Criar tabela com estilo profissional
+        table = dbc.Table(
+            [
+                html.Thead(
+                    html.Tr(
+                        [
+                            html.Th(
+                                col,
+                                className="text-center bg-success text-white",
+                            )
+                            for col in stats_df.columns
+                        ]
+                    )
+                )
+            ]
+            + [
+                html.Tbody(
+                    [
+                        html.Tr(
+                            [
+                                html.Td(
+                                    stats_df.iloc[i][col],
+                                    className="text-center",
+                                )
+                                for col in stats_df.columns
+                            ]
+                        )
+                        for i in range(len(stats_df))
+                    ]
+                )
+            ],
             striped=True,
             bordered=True,
             hover=True,
             responsive=True,
-            className="table table-sm",
+            className="table table-sm shadow-sm",
         )
         logger.info("Tabela de estatísticas descritivas gerada com sucesso")
-        return html.Div([html.H5(t["descriptive_stats"]), table])
+        return html.Div([table], className="mb-4")  # Espaçamento inferior
 
     except Exception as e:
         logger.error(f"Erro ao gerar estatísticas descritivas: {str(e)}")
@@ -110,10 +174,31 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
     """
     try:
         if df is None or df.empty:
-            logger.warning("DataFrame vazio ou None fornecido para display_normality_test")
+            logger.warning(
+                "DataFrame vazio ou None fornecido para display_normality_test"
+            )
             return html.Div(get_translations(lang)["no_data"])
 
         t = get_translations(lang)
+
+        # Mapeamento de nomes de colunas para nomes formatados
+        column_display_names = {
+            "T2M_MAX": t.get("temp_max", "Temperatura Máxima (°C)"),
+            "T2M_MIN": t.get("temp_min", "Temperatura Mínima (°C)"),
+            "T2M": t.get("temp_mean", "Temperatura Média (°C)"),
+            "RH2M": t.get("humidity", "Umidade Relativa (%)"),
+            "WS2M": t.get("wind_speed", "Velocidade do Vento (m/s)"),
+            "ALLSKY_SFC_SW_DWN": t.get(
+                "radiation", "Radiação Solar (MJ/m²/dia)"
+            ),
+            "PRECTOTCORR": t.get("precipitation", "Precipitação Total (mm)"),
+            "ETo": t.get("eto", "ETo (mm/dia)"),
+            "eto_evaonline": "ETo EVAonline (mm/dia)",
+            "eto_openmeteo": "ETo Open-Meteo (mm/dia)",
+        }
+
+        # Support both old 'ETo' and new 'eto_evaonline' column names
+        eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
         expected_columns = [
             "T2M_MAX",
             "T2M_MIN",
@@ -121,7 +206,7 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             "WS2M",
             "ALLSKY_SFC_SW_DWN",
             "PRECTOTCORR",
-            "ETo",
+            eto_col,
         ]
         numeric_cols = [col for col in expected_columns if col in df.columns]
         if not numeric_cols:
@@ -131,23 +216,59 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         normality_tests = {}
         for col in numeric_cols:
             stat, p_value = stats.shapiro(df[col].dropna())
-            normality_tests[t.get(col.lower(), col)] = {
-                t["statistic"]: stat.round(2),
-                t["p_value"]: p_value.round(4),
+            # Usar nome formatado da coluna
+            display_name = column_display_names.get(col, col)
+            normality_tests[display_name] = {
+                t["statistic"]: format_number(stat, 2),
+                t["p_value"]: format_number(p_value, 4),
             }
         normality_df = pd.DataFrame(normality_tests).T
         normality_df.insert(0, t["variable"], normality_df.index)
 
-        table = dbc.Table.from_dataframe(
-            normality_df,
+        # Criar tabela com estilo profissional
+        table = dbc.Table(
+            [
+                html.Thead(
+                    html.Tr(
+                        [
+                            html.Th(
+                                col, className="text-center bg-info text-white"
+                            )
+                            for col in normality_df.columns
+                        ]
+                    )
+                )
+            ]
+            + [
+                html.Tbody(
+                    [
+                        html.Tr(
+                            [
+                                html.Td(
+                                    normality_df.iloc[i][col],
+                                    className="text-center",
+                                )
+                                for col in normality_df.columns
+                            ]
+                        )
+                        for i in range(len(normality_df))
+                    ]
+                )
+            ],
             striped=True,
             bordered=True,
             hover=True,
             responsive=True,
-            className="table table-sm",
+            className="table table-sm shadow-sm",
         )
         logger.info("Tabela de teste de normalidade gerada com sucesso")
-        return html.Div([html.H5(t["normality_test"]), table, html.P(t["normality_note"])])
+        return html.Div(
+            [
+                table,
+                html.P(t["normality_note"], className="text-muted small mt-2"),
+            ],
+            className="mb-4",
+        )
 
     except Exception as e:
         logger.error(f"Erro ao gerar teste de normalidade: {str(e)}")
@@ -167,10 +288,15 @@ def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
     """
     try:
         if df is None or df.empty:
-            logger.warning("DataFrame vazio ou None fornecido para display_correlation_matrix")
+            logger.warning(
+                "DataFrame vazio ou None fornecido para "
+                "display_correlation_matrix"
+            )
             return html.Div(get_translations(lang)["no_data"])
 
         t = get_translations(lang)
+        # Support both old 'ETo' and new 'eto_evaonline' column names
+        eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
         expected_columns = [
             "T2M_MAX",
             "T2M_MIN",
@@ -178,7 +304,7 @@ def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             "WS2M",
             "ALLSKY_SFC_SW_DWN",
             "PRECTOTCORR",
-            "ETo",
+            eto_col,
         ]
         numeric_cols = [col for col in expected_columns if col in df.columns]
         if not numeric_cols:
@@ -187,11 +313,26 @@ def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
 
         corr_df = df[numeric_cols].corr().round(2)
         corr_df = corr_df.rename(
-            columns=lambda x: t.get(x.lower(), x), index=lambda x: t.get(x.lower(), x)
+            columns=lambda x: t.get(x.lower(), x),
+            index=lambda x: t.get(x.lower(), x),
         )
 
-        table = dbc.Table.from_dataframe(
-            corr_df,
+        # Criar tabela manualmente
+        table = dbc.Table(
+            [html.Thead(html.Tr([html.Th(col) for col in corr_df.columns]))]
+            + [
+                html.Tbody(
+                    [
+                        html.Tr(
+                            [
+                                html.Td(corr_df.iloc[i][col])
+                                for col in corr_df.columns
+                            ]
+                        )
+                        for i in range(len(corr_df))
+                    ]
+                )
+            ],
             striped=True,
             bordered=True,
             hover=True,
@@ -199,7 +340,7 @@ def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             className="table table-sm",
         )
         logger.info("Matriz de correlação gerada com sucesso")
-        return html.Div([html.H5(t["correlation_matrix"]), table])
+        return html.Div([table])  # Title added by layout
 
     except Exception as e:
         logger.error(f"Erro ao gerar matriz de correlação: {str(e)}")
@@ -208,134 +349,310 @@ def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
 
 def display_eto_summary(df: pd.DataFrame, lang: str = "pt") -> html.Div:
     """
-    Exibe soma total de ETo, déficit hídrico diário, estatísticas e gráficos.
+    Exibe tabela de balanço hídrico diário (apenas a tabela).
 
     Parâmetros:
     - df: DataFrame com os dados (espera colunas 'date', 'PRECTOTCORR', 'ETo').
     - lang: Idioma para traduções ('pt' ou 'en').
 
     Retorna:
-    - html.Div com tabelas, estatísticas e gráficos.
+    - html.Div com a tabela de balanço hídrico.
     """
     try:
         if df is None or df.empty:
-            logger.warning("DataFrame vazio ou None fornecido para display_eto_summary")
+            logger.warning(
+                "DataFrame vazio ou None fornecido para display_eto_summary"
+            )
             return html.Div(get_translations(lang)["no_data"])
 
         t = get_translations(lang)
-        expected_columns = ["date", "PRECTOTCORR", "ETo"]
-        missing_columns = [col for col in expected_columns if col not in df.columns]
+
+        # Support both old 'ETo' and new 'eto_evaonline' column names
+        eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
+        expected_columns = ["date", "PRECTOTCORR", eto_col]
+        missing_columns = [
+            col for col in expected_columns if col not in df.columns
+        ]
         if missing_columns:
             logger.error(f"Colunas ausentes no DataFrame: {missing_columns}")
-            raise ValueError(f"Colunas ausentes no DataFrame: {missing_columns}")
+            return html.Div(t["no_data"])
 
-        df_display = df[["date", "PRECTOTCORR", "ETo"]].copy()
-        df_display["date"] = pd.to_datetime(df_display["date"]).dt.strftime("%d/%m/%Y")
-        df_display = df_display.round(2)
-        df_display[t["water_deficit"]] = (df_display["PRECTOTCORR"] - df_display["ETo"]).round(2)
+        df_display = df[["date", "PRECTOTCORR", eto_col]].copy()
+        df_display["date"] = pd.to_datetime(df_display["date"]).dt.strftime(
+            "%d/%m/%Y"
+        )
 
-        et0_sum = df_display["ETo"].sum().round(2)
-        deficit_mean = df_display[t["water_deficit"]].mean().round(2)
-        deficit_total = df_display[t["water_deficit"]].sum().round(2)
-        days_with_deficit = len(df_display[df_display[t["water_deficit"]] < 0])
-        days_with_excess = len(df_display[df_display[t["water_deficit"]] > 0])
+        # Calcular déficit hídrico
+        deficit_col = t["water_deficit"]
+        df_display[deficit_col] = (
+            df_display["PRECTOTCORR"] - df_display[eto_col]
+        )
 
-        table = dbc.Table.from_dataframe(
-            df_display.rename(
-                columns={"date": t["date"], "PRECTOTCORR": t["precipitation"], "ETo": t["eto"]}
-            ),
+        # Formatar valores numéricos com ponto decimal
+        for col in [c for c in df_display.columns if c != "date"]:
+            df_display[col] = df_display[col].apply(
+                lambda x: format_number(x, 2)
+            )
+
+        # Renomear colunas para exibição
+        eto_display_name = "ETo EVAonline (mm/dia)"
+        df_renamed = df_display.rename(
+            columns={
+                "date": t["date"],
+                "PRECTOTCORR": t["precipitation"],
+                eto_col: eto_display_name,
+            }
+        )
+
+        # Criar tabela com cores condicionais para déficit
+        # Cabeçalho
+        header = html.Thead(
+            html.Tr(
+                [
+                    html.Th(col, className="text-center bg-warning text-dark")
+                    for col in df_renamed.columns
+                ]
+            )
+        )
+
+        # Corpo com cores condicionais na coluna de déficit
+        rows = []
+        for i in range(len(df_renamed)):
+            cells = []
+            for col in df_renamed.columns:
+                value = df_renamed.iloc[i][col]
+                # Aplicar cor condicional apenas na coluna de déficit
+                if col == deficit_col:
+                    # Converter para float para comparação
+                    try:
+                        num_value = float(value)
+                    except (ValueError, TypeError):
+                        num_value = 0
+
+                    if num_value < 0:
+                        # Déficit (falta de água) - vermelho
+                        cell = html.Td(
+                            value,
+                            className="text-center",
+                            style={
+                                "backgroundColor": "#ffcccc",
+                                "color": "#c00000",
+                                "fontWeight": "bold",
+                            },
+                        )
+                    elif num_value > 0:
+                        # Excesso (água disponível) - verde
+                        cell = html.Td(
+                            value,
+                            className="text-center",
+                            style={
+                                "backgroundColor": "#ccffcc",
+                                "color": "#008000",
+                                "fontWeight": "bold",
+                            },
+                        )
+                    else:
+                        cell = html.Td(value, className="text-center")
+                else:
+                    cell = html.Td(value, className="text-center")
+                cells.append(cell)
+            rows.append(html.Tr(cells))
+
+        body = html.Tbody(rows)
+
+        table = dbc.Table(
+            [header, body],
             striped=True,
             bordered=True,
             hover=True,
             responsive=True,
-            className="table table-sm",
+            className="table table-sm shadow-sm",
         )
 
-        # Gráficos de déficit e balanço hídrico
-        df_display["Deficiência"] = df_display[t["water_deficit"]].apply(
+        logger.info("Tabela de balanço hídrico gerada com sucesso")
+        return html.Div([table], className="mb-4")
+
+    except Exception as e:
+        logger.error(f"Erro ao gerar resumo de ETo: {str(e)}")
+        t = get_translations(lang)
+        return html.Div(f"{t['error']}: {str(e)}")
+
+
+def create_deficit_chart_section(
+    df: pd.DataFrame, lang: str = "pt"
+) -> html.Div:
+    """
+    Cria seção com gráfico de déficit hídrico e estatísticas.
+
+    Parâmetros:
+    - df: DataFrame com os dados.
+    - lang: Idioma para traduções.
+
+    Retorna:
+    - html.Div com gráfico e estatísticas de déficit.
+    """
+    try:
+        if df is None or df.empty:
+            return html.Div("Nenhum dado disponível")
+
+        t = get_translations(lang)
+
+        # Support both old 'ETo' and new 'eto_evaonline' column names
+        eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
+
+        df_display = df[["date", "PRECTOTCORR", eto_col]].copy()
+        df_display["date"] = pd.to_datetime(df_display["date"]).dt.strftime(
+            "%d/%m/%Y"
+        )
+
+        # Calcular déficit hídrico
+        deficit_col = t["water_deficit"]
+        df_display[deficit_col] = (
+            df_display["PRECTOTCORR"] - df_display[eto_col]
+        ).round(2)
+
+        # Estatísticas
+        deficit_mean = round(df_display[deficit_col].mean(), 2)
+        deficit_total = round(df_display[deficit_col].sum(), 2)
+        days_with_deficit = len(df_display[df_display[deficit_col] < 0])
+        days_with_excess = len(df_display[df_display[deficit_col] > 0])
+
+        # Preparar dados para gráfico
+        df_display["Deficiência"] = df_display[deficit_col].apply(
             lambda x: min(0, x) if x < 0 else 0
         )
-        df_display["Excedente"] = df_display[t["water_deficit"]].apply(
-            lambda x: max(0, x) if x > 0 else 0
-        )
-        df_display[t["cumulative_balance"]] = df_display[t["water_deficit"]].cumsum()
-        df_display["Deficiência Acumulada"] = df_display[t["cumulative_balance"]].apply(
-            lambda x: min(0, x) if x < 0 else 0
-        )
-        df_display["Excedente Acumulado"] = df_display[t["cumulative_balance"]].apply(
+        df_display["Excedente"] = df_display[deficit_col].apply(
             lambda x: max(0, x) if x > 0 else 0
         )
 
+        # Criar gráfico de déficit
         fig_deficit = px.area(
             df_display,
             x="date",
             y=["Deficiência", "Excedente"],
-            title=t["water_deficit"],
-            labels={"value": t["water_deficit"], "variable": t["component"]},
-            color_discrete_map={"Deficiência": "red", "Excedente": "#005B99"},
-        )
-        fig_deficit.update_traces(
-            hovertemplate=f"{t['date']}: %{{x}}<br>{t['value']}: %{{y}} mm/dia<br>{t['component']}: %{{customdata}}"
+            title="Déficit Hídrico Diário",
+            labels={"value": "mm/dia", "variable": "Componente"},
+            color_discrete_map={
+                "Deficiência": "#dc3545",
+                "Excedente": "#28a745",
+            },
         )
         fig_deficit.update_layout(
-            yaxis_title=t["water_deficit"],
-            legend_title=t["legend"],
+            yaxis_title="Déficit Hídrico (mm/dia)",
+            xaxis_title="Data",
+            legend_title="Legenda",
             template="plotly_white",
-            margin=dict(b=100),
+            margin={"b": 80, "t": 50},
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5,
+            ),
         )
 
-        fig_balance = px.area(
-            df_display,
-            x="date",
-            y=["Deficiência Acumulada", "Excedente Acumulado"],
-            title=t["cumulative_balance"],
-            labels={"value": t["cumulative_balance"], "variable": t["component"]},
-            color_discrete_map={"Deficiência Acumulada": "red", "Excedente Acumulado": "#005B99"},
-        )
-        fig_balance.update_traces(
-            hovertemplate=f"{t['date']}: %{{x}}<br>{t['value']}: %{{y}} mm/dia<br>{t['component']}: %{{customdata}}"
-        )
-        fig_balance.update_layout(
-            yaxis_title=t["cumulative_balance"],
-            legend_title=t["legend"],
-            template="plotly_white",
-            margin=dict(b=100),
-        )
-
-        logger.info("Resumo de ETo e gráficos gerados com sucesso")
         return html.Div(
             [
-                html.H5(t["eto_summary"]),
-                html.P(f"{t['total_eto']}: {et0_sum} mm/dia"),
-                html.H6(t["water_deficit"]),
-                table,
-                html.P(f"{t['mean_deficit']}: {deficit_mean} mm/dia"),
-                html.P(f"{t['total_deficit']}: {deficit_total} mm/dia"),
-                html.P(f"{t['deficit_negative']}: {days_with_deficit} {t['days']}"),
-                html.P(f"{t['deficit_positive']}: {days_with_excess} {t['days']}"),
-                dcc.Checklist(
-                    id="deficit-chart-checklist",
-                    options=[{"label": t["show_deficit_chart"], "value": "show_deficit"}],
-                    value=[],
-                    style={"margin": "10px"},
+                # Estatísticas em cards
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dbc.Card(
+                                dbc.CardBody(
+                                    [
+                                        html.H6(
+                                            "Déficit Médio",
+                                            className="text-muted mb-1",
+                                        ),
+                                        html.H4(
+                                            f"{deficit_mean} mm/dia",
+                                            className="text-danger mb-0",
+                                        ),
+                                    ]
+                                ),
+                                className="text-center shadow-sm",
+                            ),
+                            md=3,
+                            className="mb-3",
+                        ),
+                        dbc.Col(
+                            dbc.Card(
+                                dbc.CardBody(
+                                    [
+                                        html.H6(
+                                            "Déficit Total",
+                                            className="text-muted mb-1",
+                                        ),
+                                        html.H4(
+                                            f"{deficit_total} mm",
+                                            className="text-danger mb-0",
+                                        ),
+                                    ]
+                                ),
+                                className="text-center shadow-sm",
+                            ),
+                            md=3,
+                            className="mb-3",
+                        ),
+                        dbc.Col(
+                            dbc.Card(
+                                dbc.CardBody(
+                                    [
+                                        html.H6(
+                                            "Dias com Déficit",
+                                            className="text-muted mb-1",
+                                        ),
+                                        html.H4(
+                                            f"{days_with_deficit} dias",
+                                            className="text-warning mb-0",
+                                        ),
+                                    ]
+                                ),
+                                className="text-center shadow-sm",
+                            ),
+                            md=3,
+                            className="mb-3",
+                        ),
+                        dbc.Col(
+                            dbc.Card(
+                                dbc.CardBody(
+                                    [
+                                        html.H6(
+                                            "Dias com Excesso",
+                                            className="text-muted mb-1",
+                                        ),
+                                        html.H4(
+                                            f"{days_with_excess} dias",
+                                            className="text-success mb-0",
+                                        ),
+                                    ]
+                                ),
+                                className="text-center shadow-sm",
+                            ),
+                            md=3,
+                            className="mb-3",
+                        ),
+                    ],
+                    className="mb-3",
                 ),
-                html.Div(id="deficit-chart-output"),
-                dcc.Checklist(
-                    id="balance-chart-checklist",
-                    options=[{"label": t["show_balance_chart"], "value": "show_balance"}],
-                    value=[],
-                    style={"margin": "10px"},
+                # Gráfico
+                dcc.Graph(
+                    figure=fig_deficit,
+                    config={"displayModeBar": False},
+                    style={"height": "400px"},
                 ),
-                html.Div(id="balance-chart-output"),
-                dcc.Graph(id="deficit-chart", figure=fig_deficit, style={"display": "none"}),
-                dcc.Graph(id="balance-chart", figure=fig_balance, style={"display": "none"}),
-                html.P(t["deficit_note"]),
+                # Nota explicativa
+                html.P(
+                    t["deficit_note"],
+                    className="text-muted small fst-italic mt-2",
+                ),
             ]
         )
 
     except Exception as e:
-        logger.error(f"Erro ao gerar resumo de ETo: {str(e)}")
-        return html.Div(f"{t['error']}: {str(e)}")
+        logger.error(f"Erro ao criar seção de déficit: {str(e)}")
+        return html.Div(f"Erro: {str(e)}")
 
 
 def display_trend_analysis(df: pd.DataFrame, lang: str = "pt") -> html.Div:
@@ -351,7 +668,9 @@ def display_trend_analysis(df: pd.DataFrame, lang: str = "pt") -> html.Div:
     """
     try:
         if df is None or df.empty:
-            logger.warning("DataFrame vazio ou None fornecido para display_trend_analysis")
+            logger.warning(
+                "DataFrame vazio ou None fornecido para display_trend_analysis"
+            )
             return html.Div(get_translations(lang)["no_data"])
 
         t = get_translations(lang)
@@ -359,13 +678,17 @@ def display_trend_analysis(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             logger.error("Colunas 'date' ou 'ETo' ausentes no DataFrame")
             raise ValueError("Colunas 'date' ou 'ETo' ausentes no DataFrame")
 
-        dates_numeric = pd.to_numeric(pd.to_datetime(df["date"]).map(lambda x: x.toordinal()))
+        dates_numeric = pd.to_numeric(
+            pd.to_datetime(df["date"]).map(lambda x: x.toordinal())
+        )
         slope, intercept = np.polyfit(dates_numeric, df["ETo"], 1)
         logger.info("Análise de tendência gerada com sucesso")
         return html.Div(
             [
                 html.H5(t["trend_analysis"]),
-                html.P(f"{t['eto_trend']}: {slope.round(4)} mm/dia {t['per_day']}"),
+                html.P(
+                    f"{t['eto_trend']}: {slope.round(4)} mm/dia {t['per_day']}"
+                ),
             ]
         )
 
@@ -387,7 +710,10 @@ def display_seasonality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
     """
     try:
         if df is None or df.empty:
-            logger.warning("DataFrame vazio ou None fornecido para display_seasonality_test")
+            logger.warning(
+                "DataFrame vazio ou None fornecido para "
+                "display_seasonality_test"
+            )
             return html.Div(get_translations(lang)["no_data"])
 
         t = get_translations(lang)
@@ -397,9 +723,15 @@ def display_seasonality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
 
         result = adfuller(df["ETo"].dropna())
         p_value = float(result[1])
-        logger.info(f"Teste de estacionalidade (ADF) gerado com sucesso: p-valor = {p_value:.4f}")
+        logger.info(
+            f"Teste de estacionalidade (ADF) gerado com sucesso: "
+            f"p-valor = {p_value:.4f}"
+        )
         return html.Div(
-            [html.H5(t["seasonality_test"]), html.P(f"{t['adf_test']}: p-valor = {p_value:.4f}")]
+            [
+                html.H5(t["seasonality_test"]),
+                html.P(f"{t['adf_test']}: p-valor = {p_value:.4f}"),
+            ]
         )
 
     except Exception as e:
@@ -407,7 +739,9 @@ def display_seasonality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         return html.Div(f"{t['error']}: {str(e)}")
 
 
-def display_cumulative_distribution(df: pd.DataFrame, lang: str = "pt") -> html.Div:
+def display_cumulative_distribution(
+    df: pd.DataFrame, lang: str = "pt"
+) -> html.Div:
     """
     Exibe a distribuição acumulada de ETo e precipitação.
 
@@ -420,25 +754,58 @@ def display_cumulative_distribution(df: pd.DataFrame, lang: str = "pt") -> html.
     """
     try:
         if df is None or df.empty:
-            logger.warning("DataFrame vazio ou None fornecido para display_cumulative_distribution")
+            logger.warning(
+                "DataFrame vazio ou None fornecido para "
+                "display_cumulative_distribution"
+            )
             return html.Div(get_translations(lang)["no_data"])
 
         t = get_translations(lang)
-        expected_columns = ["date", "PRECTOTCORR", "ETo"]
-        missing_columns = [col for col in expected_columns if col not in df.columns]
+
+        # Support both old 'ETo' and new 'eto_evaonline' column names
+        eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
+        expected_columns = ["date", "PRECTOTCORR", eto_col]
+        missing_columns = [
+            col for col in expected_columns if col not in df.columns
+        ]
         if missing_columns:
             logger.error(f"Colunas ausentes no DataFrame: {missing_columns}")
-            raise ValueError(f"Colunas ausentes no DataFrame: {missing_columns}")
+            return html.Div(t["no_data"])
 
-        df_display = df[["date", "PRECTOTCORR", "ETo"]].copy()
-        df_display["date"] = pd.to_datetime(df_display["date"]).dt.strftime("%d/%m/%Y")
-        df_display[t["cumulative_eto"]] = df_display["ETo"].cumsum().round(2)
-        df_display[t["cumulative_precipitation"]] = df_display["PRECTOTCORR"].cumsum().round(2)
+        df_display = df[["date", "PRECTOTCORR", eto_col]].copy()
+        df_display["date"] = pd.to_datetime(df_display["date"]).dt.strftime(
+            "%d/%m/%Y"
+        )
+        df_display[t["cumulative_eto"]] = df_display[eto_col].cumsum().round(2)
+        df_display[t["cumulative_precipitation"]] = (
+            df_display["PRECTOTCORR"].cumsum().round(2)
+        )
 
-        table = dbc.Table.from_dataframe(
-            df_display.rename(
-                columns={"date": t["date"], "PRECTOTCORR": t["precipitation"], "ETo": t["eto"]}
-            ),
+        # Renomear colunas para exibição
+        df_renamed = df_display.rename(
+            columns={
+                "date": t["date"],
+                "PRECTOTCORR": t["precipitation"],
+                eto_col: t["eto"],
+            }
+        )
+
+        # Criar tabela manualmente
+        table = dbc.Table(
+            [html.Thead(html.Tr([html.Th(col) for col in df_renamed.columns]))]
+            + [
+                html.Tbody(
+                    [
+                        html.Tr(
+                            [
+                                html.Td(df_renamed.iloc[i][col])
+                                for col in df_renamed.columns
+                            ]
+                        )
+                        for i in range(len(df_renamed))
+                    ]
+                )
+            ],
             striped=True,
             bordered=True,
             hover=True,

@@ -52,6 +52,12 @@ class EToCalculationRequest(BaseModel):
     elevation: Optional[float] = None
     estado: Optional[str] = None
     cidade: Optional[str] = None
+    email: Optional[str] = (
+        None  # Email para notificações (modo historical_email)
+    )
+    visitor_id: Optional[str] = None  # ID único do visitante
+    session_id: Optional[str] = None  # ID da sessão
+    file_format: Optional[str] = "excel"  # excel ou csv
 
 
 class LocationInfoRequest(BaseModel):
@@ -79,7 +85,8 @@ class FavoriteRequest(BaseModel):
 
 @eto_router.post("/calculate")
 async def calculate_eto(
-    request: EToCalculationRequest, db: Session = Depends(get_db)
+    request: EToCalculationRequest,
+    db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
 ) -> Dict[str, Any]:
     """
     🚀 Cálculo ETo assíncrono com progresso em tempo real.
@@ -147,7 +154,7 @@ async def calculate_eto(
         manager = ClimateSourceManager()
 
         if request.sources == "auto" or not request.sources:
-            # Auto-seleção: obter fontes compatíveis e escolher a melhor
+            # Auto-seleção: obter TODAS as fontes compatíveis para fusão
             compatible_sources = manager.get_available_sources_by_mode(
                 lat=request.lat,
                 lon=request.lng,
@@ -163,33 +170,35 @@ async def calculate_eto(
                     ),
                 )
 
-            # Selecionar primeira fonte (maior prioridade)
-            selected_source = compatible_sources[0]
+            # Usar TODAS as fontes disponíveis para fusão Kalman
+            selected_sources = compatible_sources
             logger.info(
-                f"Auto-seleção: {operation_mode.value} em "
-                f"({request.lat}, {request.lng}) → {selected_source} "
+                f"Auto-seleção (fusão): {operation_mode.value} em "
+                f"({request.lat}, {request.lng}) → {selected_sources} "
                 f"(opções: {compatible_sources})"
             )
         else:
             # Fonte especificada: verificar se é compatível
-            selected_source = request.sources
+            specified_source = request.sources
             compatible_sources = manager.get_available_sources_by_mode(
                 lat=request.lat,
                 lon=request.lng,
                 mode=operation_mode,
             )
 
-            if selected_source not in compatible_sources:
+            if specified_source not in compatible_sources:
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        f"Fonte '{selected_source}' incompatível com modo "
+                        f"Fonte '{specified_source}' incompatível com modo "
                         f"{operation_mode.value}. Fontes válidas: "
                         f"{compatible_sources}"
                     ),
                 )
 
-            logger.info(f"Fonte especificada: {selected_source}")
+            # Usar apenas a fonte especificada (sem fusão)
+            selected_sources = [specified_source]
+            logger.info(f"Fonte especificada: {specified_source}")
 
         # 4. Obter elevação (se não fornecida)
         elevation = request.elevation
@@ -201,20 +210,24 @@ async def calculate_eto(
 
         # 5. Iniciar cálculo ETo assíncrono (Celery task)
         # Em vez de processar sincronamente, delegar para worker
-        task = calculate_eto_task.delay(
+        task = calculate_eto_task.delay(  # type: ignore[attr-defined]
             lat=request.lat,
             lon=request.lng,
             start_date=request.start_date,
             end_date=request.end_date,
-            sources=[selected_source],  # Lista de fontes
+            sources=selected_sources,  # Lista de fontes (uma ou várias)
             elevation=elevation,
             mode=operation_mode.value,  # String do modo
+            email=request.email,  # Email para notificações
+            visitor_id=request.visitor_id,  # ID único do visitante
+            session_id=request.session_id,  # ID da sessão
+            file_format=request.file_format,  # Formato: excel ou csv
         )
 
         task_id = task.id
         logger.info(
             f"✅ Task ETo iniciada: {task_id} para "
-            f"({request.lat}, {request.lng}) - Fonte: {selected_source}"
+            f"({request.lat}, {request.lng}) - Fontes: {selected_sources}"
         )
 
         # 6. Retornar task_id para monitoramento via WebSocket
@@ -226,7 +239,7 @@ async def calculate_eto(
                 "para acompanhar progresso."
             ),
             "websocket_url": f"/ws/task_status/{task_id}",
-            "source": selected_source,
+            "sources": selected_sources,
             "operation_mode": operation_mode.value,
             "location": {
                 "lat": request.lat,
@@ -280,7 +293,8 @@ async def get_location_info(request: LocationInfoRequest) -> Dict[str, Any]:
 
 @eto_router.post("/favorites/add")
 async def add_favorite(
-    request: FavoriteRequest, db: Session = Depends(get_db)
+    request: FavoriteRequest,
+    db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
 ) -> Dict[str, Any]:
     """
     ✅ Adicionar favorito.
@@ -330,7 +344,8 @@ async def add_favorite(
 
 @eto_router.get("/favorites/list")
 async def list_favorites(
-    user_id: str = "default", db: Session = Depends(get_db)
+    user_id: str = "default",
+    db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
 ) -> Dict[str, Any]:
     """
     ✅ Listar favoritos do usuário.
@@ -368,7 +383,9 @@ async def list_favorites(
 
 @eto_router.delete("/favorites/remove/{favorite_id}")
 async def remove_favorite(
-    favorite_id: int, user_id: str = "default", db: Session = Depends(get_db)
+    favorite_id: int,
+    user_id: str = "default",
+    db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
 ) -> Dict[str, Any]:
     """
     ✅ Remover favorito.

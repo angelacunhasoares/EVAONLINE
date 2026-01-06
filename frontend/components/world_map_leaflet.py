@@ -24,10 +24,8 @@ def create_world_map():
     Returns:
         dl.Map: Componente do mapa Leaflet com suporte a eventos de clique
     """
-    print("=" * 80)
-    print("🔵 CREATE_WORLD_MAP() EXECUTANDO AGORA!")
-    print("=" * 80)
-    logger.info("🔄 Criando mapa mundial com camadas brasileiras...")
+    logger.info("CREATE_WORLD_MAP() executando...")
+    logger.info("Criando mapa mundial com camadas brasileiras...")
 
     # Configuração inicial do mapa
     initial_center = [0, 0]  # Centro do mundo (lat, lon)
@@ -46,26 +44,35 @@ def create_world_map():
     # Layer Group para marcadores (será atualizado via callback)
     marker_layer = dl.LayerGroup(id="marker-layer", children=[])
 
-    # ✅ NOVO: LocateControl para geolocalização automática do usuário
+    # ✅ LocateControl para geolocalizacao automatica do usuario
+    # Configuracoes otimizadas para performance
     locate_control = dl.LocateControl(
         locateOptions={
-            "enableHighAccuracy": True,
-            "maxZoom": 16,
-            "timeout": 10000,
+            "enableHighAccuracy": False,  # Mais rapido (usa IP/WiFi em vez de GPS)
+            "maxZoom": 14,  # Zoom menor para carregar mais rapido
+            "timeout": 5000,  # Timeout reduzido de 10s para 5s
+            "maximumAge": 60000,  # Cache de 1 minuto
+            "watch": False,  # Nao monitora continuamente
         },
         position="topleft",
         strings={
-            "title": "📍 Minha Localização",
+            "title": "My Location",
+            "metersUnit": "m",
+            "feetUnit": "ft",
+            "popup": "You are within {distance} {unit} from this point",
+            "outsideMapBoundsMsg": "Location outside map bounds",
         },
         flyTo=True,
+        keepCurrentZoomLevel=False,
+        showPopup=True,
+        showCompass=True,
     )
 
     # =========== CAMADAS CONTEXTUAIS (Opcionais via LayersControl) ===========
-    # ✅ SOLUÇÃO: Criar FeatureGroups VAZIOS - Callbacks preencherão dinamicamente
-    print("\n🔄 Criando FeatureGroups vazios para controle dinâmico...")
-    logger.info("🔄 Criando FeatureGroups vazios para controle por callbacks")
+    # Criar FeatureGroups VAZIOS - Callbacks preencherão dinamicamente
+    logger.info("Creating empty FeatureGroups for dynamic control")
 
-    # ✅ FeatureGroups vazios - serão preenchidos pelos callbacks
+    # FeatureGroups vazios - serão preenchidos pelos callbacks
     brasil_feature = dl.FeatureGroup(children=[], id="brasil-feature-group")
     matopiba_feature = dl.FeatureGroup(
         children=[], id="matopiba-feature-group"
@@ -78,8 +85,7 @@ def create_world_map():
         id="piracicaba-feature-group",
     )
 
-    # ✅ SOLUÇÃO: Adicionar FeatureGroups diretamente ao mapa (SEM LayersControl)
-    # O LayersControl tem bug com GeoJSON bool(), então usamos controle custom
+    # Adicionar FeatureGroups diretamente ao mapa
     map_children = [tile_layer, marker_layer, locate_control]
 
     # Adicionar FeatureGroups vazios ao mapa
@@ -88,16 +94,9 @@ def create_world_map():
     map_children.append(cities_feature)
     map_children.append(piracicaba_feature)
 
-    print("✅ Brasil FeatureGroup (vazio) adicionado ao mapa")
-    print("✅ MATOPIBA FeatureGroup (vazio) adicionado ao mapa")
-    print("✅ Cities FeatureGroup (vazio) adicionado ao mapa")
-    print("✅ Piracicaba FeatureGroup (com marcador) adicionado ao mapa")
+    logger.info(f"Total: {len(map_children)} map elements created")
 
-    print(f"\n✅ Total: {len(map_children)} elementos no mapa")
-    logger.info(f"✅ {len(map_children)} FeatureGroups vazios criados")
-
-    # ✅ IMPORTANTE: Usar dl.Map (não MapContainer) para capturar eventos
-    # dl.Map tem suporte a clickData, dl.MapContainer NÃO tem
+    # dl.Map com suporte a clickData
     map_component = dl.Map(
         id="world-map",
         center=initial_center,

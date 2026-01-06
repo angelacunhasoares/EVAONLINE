@@ -52,6 +52,10 @@ engine = create_engine(
     pool_pre_ping=True,  # Verifica a conexão antes de usá-la
     echo=False,  # Define como True para ver logs SQL em desenvolvimento
     echo_pool=False,  # Não logar operações de pool por segurança
+    connect_args={
+        "connect_timeout": 5,  # Timeout de conexão: 5 segundos
+        "options": "-c statement_timeout=10000",  # Query timeout: 10s
+    },
 )
 
 # Criar fábrica de sessões

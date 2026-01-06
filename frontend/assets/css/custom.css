@@ -200,3 +200,176 @@ footer.bg-white {
         padding-right: 20px !important;
     }
 }
+
+/* ===== Dropdown Improvements ===== */
+
+/* Dash dropdown - force larger font */
+.Select-menu-outer,
+.Select-option,
+.Select-value-label,
+.Select-control,
+.Select-input input,
+.Select-placeholder,
+.Select-value-label {
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+}
+
+/* Dropdown container */
+.dash-dropdown,
+.Select,
+.Select-control {
+    min-height: 42px !important;
+}
+
+/* Dropdown menu items - larger and more visible */
+.Select-menu-outer {
+    font-size: 1rem !important;
+}
+
+.Select-option {
+    padding: 12px 16px !important;
+    font-size: 1rem !important;
+}
+
+/* Selected value */
+.Select-value {
+    line-height: 40px !important;
+}
+
+.Select-value-label {
+    font-size: 1rem !important;
+}
+
+/* Input text */
+.Select-input>input {
+    font-size: 1rem !important;
+}
+
+/* Placeholder */
+.Select-placeholder {
+    font-size: 1rem !important;
+    line-height: 40px !important;
+}
+
+/* ===== Progress Bar Improvements ===== */
+
+/* Larger progress bar */
+.progress,
+.progress-bar {
+    height: 24px !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+}
+
+/* Progress bar container */
+.progress {
+    border-radius: 8px !important;
+    overflow: hidden !important;
+}
+
+/* Animated progress bar */
+.progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite !important;
+}
+
+/* Progress bar text */
+.progress-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* ===== Sidebar Professional Styles ===== */
+
+/* Radio items com estilo de card */
+.custom-radio-group .form-check {
+    margin-bottom: 0;
+}
+
+.custom-radio-group .form-check-label {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid #e9ecef !important;
+    background-color: #fafafa;
+}
+
+.custom-radio-group .form-check-label:hover {
+    background-color: #f0f4ff !important;
+    border-color: #667eea !important;
+    transform: translateX(3px);
+}
+
+.custom-radio-group .form-check-input:checked+.form-check-label {
+    background-color: #f0f4ff !important;
+    border-color: #667eea !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+/* Animacao do botao Calculate */
+.btn-success:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4) !important;
+}
+
+.btn-success:not(:disabled):active {
+    transform: translateY(0);
+}
+
+/* Select dropdown estilizado */
+.form-select {
+    border-radius: 8px !important;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* Input fields estilizados */
+.form-control {
+    border-radius: 8px !important;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* DatePicker estilizado */
+.DateInput_input {
+    border-radius: 8px !important;
+    font-size: 0.95rem !important;
+}
+
+/* Cards com sombra suave */
+.shadow-soft {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Gradiente para headers */
+.gradient-purple {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.gradient-green {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+
+/* Badge estilizado */
+.badge-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+/* Smooth transitions globais */
+* {
+    transition-property: background-color, border-color, box-shadow, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+}

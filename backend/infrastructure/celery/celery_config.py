@@ -4,10 +4,18 @@ Centraliza todas as configurações do Celery para a aplicação.
 """
 
 import json
+import sys
 from datetime import datetime
+from pathlib import Path
+
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from celery import Celery
 from celery.schedules import crontab
+from dotenv import load_dotenv
 from kombu import Queue
 from redis import Redis
 
@@ -23,9 +31,28 @@ from config.settings.app_config import (
     get_legacy_settings,
 )
 
+# Carregar .env explicitamente para garantir que variáveis estejam disponíveis
+import os
+
+env_path = Path(__file__).resolve().parents[3] / ".env"
+if env_path.exists():
+    load_dotenv(env_path, override=True)  # override=True força recarregar
+    print(f"✅ .env carregado: {env_path}")
+
+    # DEBUG: Printar variáveis críticas do Redis
+    pwd_set = bool(os.getenv("REDIS_PASSWORD"))
+    broker_set = bool(os.getenv("CELERY_BROKER_URL"))
+    print(f"🔍 REDIS_PASSWORD definido: {pwd_set}")
+    print(f"🔍 CELERY_BROKER_URL definido: {broker_set}")
+
 # Carregar configurações (compatibilidade/URLs do Celery)
-broker_url = get_celery_broker_url()
-result_backend = get_celery_result_backend()
+# Priorizar CELERY_BROKER_URL do .env diretamente
+broker_url = os.getenv("CELERY_BROKER_URL") or get_celery_broker_url()
+result_backend = (
+    os.getenv("CELERY_RESULT_BACKEND") or get_celery_result_backend()
+)
+print(f"🔍 DEBUG Celery - broker_url: {broker_url[:50]}...")
+print(f"🔍 DEBUG Celery - result_backend: {result_backend[:50]}...")
 legacy_settings = get_legacy_settings()
 
 # Inicializar Celery
@@ -94,6 +121,11 @@ celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
+    # Resultados - CRÍTICO para frontend ler via Redis
+    result_extended=True,  # Salva metadados extras (status, result, etc)
+    result_expires=3600,  # Expira em 1 hora
+    task_track_started=True,  # Track quando task inicia
+    task_ignore_result=False,  # NÃO ignorar resultados
     # Timezone
     timezone="America/Sao_Paulo",
     enable_utc=True,

@@ -4,15 +4,12 @@ DATA PROCESSING MODULE - EVAonline
 ===========================================
 Módulo de processamento de dados climáticos.
 
-Este módulo contém todas as funcionalidades de processamento de dados:
-- Download de dados climáticos de múltiplas APIs
-- Pré-processamento e validação de dados
-- Detecção de outliers e imputação
-- Fusão de dados via Kalman Ensemble
-- Localização de estações meteorológicas
-
-IMPORTANTE: Este módulo usa imports lazy para evitar dependências circulares.
-Todos os imports são feitos apenas quando necessário.
+NOVA ARQUITETURA MODULAR:
+- climate_ensemble.py: Orquestrador (ClimateKalmanEnsemble)
+- climate_fusion.py: Fusão multi-fonte (ClimateFusion)
+- kalman_filters.py: Filtros Kalman
+- historical_loader.py: Referências climáticas
+- data_preprocessing.py: Pré-processamento e validação
 """
 
 import importlib
@@ -52,31 +49,33 @@ def __getattr__(name: str) -> Any:
             "backend.core.data_processing.data_preprocessing",
             "preprocessing",
         ),
-        # Kalman ensemble
-        "KalmanEnsembleStrategy": (
-            "backend.core.data_processing.kalman_ensemble",
-            "KalmanEnsembleStrategy",
+        # Orquestrador principal
+        "ClimateKalmanEnsemble": (
+            "backend.core.data_processing.climate_ensemble",
+            "ClimateKalmanEnsemble",
         ),
-        "ClimateKalmanFusion": (
-            "backend.core.data_processing.kalman_ensemble",
-            "ClimateKalmanFusion",
+        # Fusão inteligente
+        "ClimateFusion": (
+            "backend.core.data_processing.climate_fusion",
+            "ClimateFusion",
         ),
-        "SimpleKalmanFilter": (
-            "backend.core.data_processing.kalman_ensemble",
-            "SimpleKalmanFilter",
-        ),
+        # Filtros Kalman
         "AdaptiveKalmanFilter": (
-            "backend.core.data_processing.kalman_ensemble",
+            "backend.core.data_processing.kalman_filters",
             "AdaptiveKalmanFilter",
         ),
-        # Station finder
-        "StationFinder": (
-            "backend.core.data_processing.station_finder",
-            "StationFinder",
+        "SimpleKalmanFilter": (
+            "backend.core.data_processing.kalman_filters",
+            "SimpleKalmanFilter",
         ),
-        "find_studied_city_sync": (
-            "backend.core.data_processing.station_finder",
-            "find_studied_city_sync",
+        "KalmanApplier": (
+            "backend.core.data_processing.kalman_filters",
+            "KalmanApplier",
+        ),
+        # Loader de dados históricos (lê JSON diretamente)
+        "HistoricalDataLoader": (
+            "backend.core.data_processing.historical_loader",
+            "HistoricalDataLoader",
         ),
     }
 
@@ -97,13 +96,35 @@ def __getattr__(name: str) -> Any:
 # VERSÃO E METADADOS
 # ===========================================
 
-__version__ = "1.0.0"  # Atualizado após correções em kalman_ensemble
+__version__ = "1.0.0"
 __author__ = "EVAonline Team"
 __description__ = (
-    "Data processing module for climate data analysis and ETo calculation. "
-    "Includes optimized preprocessing pipeline with physical validation, "
-    "IQR outlier detection, and linear imputation following FAO-56 guidelines. "
-    "Enhanced Kalman ensemble filters with improved NaN handling, "
-    "input validations, and timestamp support "
-    "for accurate data fusion."
+    "Data processing module for climate data analysis and "
+    "ETo calculation. Includes optimized preprocessing pipeline "
+    "with physical validation, IQR outlier detection, and linear "
+    "imputation following FAO-56 guidelines. "
+    "NOVA ARQUITETURA MODULAR: climate_ensemble, climate_fusion, "
+    "kalman_filters, historical_loader. Enhanced Kalman ensemble "
+    "filters with improved NaN handling, input validations, and "
+    "timestamp support for accurate data fusion."
 )
+
+# Nota: Todos os símbolos são carregados via __getattr__ (lazy loading)
+# Os avisos do Pylance sobre "not present in module" são falsos positivos
+# pyright: reportUnsupportedDunderAll=false
+__all__ = [
+    # Download
+    "download_weather_data",
+    # Preprocessing
+    "data_initial_validate",
+    "detect_outliers_iqr",
+    "data_impute",
+    "preprocessing",
+    # Nova arquitetura modular
+    "ClimateKalmanEnsemble",  # Orquestrador principal
+    "ClimateFusion",  # Fusão inteligente
+    "AdaptiveKalmanFilter",  # Filtro adaptativo
+    "SimpleKalmanFilter",  # Filtro simples
+    "KalmanApplier",  # Aplicador de filtros
+    "HistoricalDataLoader",  # Loader de dados históricos (JSON)
+]

@@ -135,6 +135,7 @@ def register_favorites_callbacks(app):
             Output("empty-favorites-alert", "style"),
         ],
         [Input("favorites-store", "data")],
+        prevent_initial_call=True,
     )
     def update_favorites_list(favorites):
         """Atualiza a exibição da lista de favoritos na interface"""

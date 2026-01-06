@@ -24,13 +24,13 @@ def update_visitor_counter(n_intervals):
     Atualiza o contador de visitantes a cada intervalo.
 
     Args:
-        n_intervals: Número de intervalos passados (incrementa a cada 10s)
+        n_intervals: Numero de intervalos passados (incrementa a cada 10s)
 
     Returns:
         Tuple[str, str]: (total_visitors, hourly_visitors)
     """
     try:
-        # Chamar API para obter estatísticas
+        # Chamar API para obter estatisticas
         response = requests.get(f"{API_BASE_URL}/visitors/stats", timeout=3)
 
         if response.status_code == 200:
@@ -38,27 +38,25 @@ def update_visitor_counter(n_intervals):
             total = data.get("total_visitors", 0)
             hourly = data.get("current_hour_visitors", 0)
 
-            logger.debug(f"📊 Visitantes: {total} total, {hourly} última hora")
+            logger.debug(f"Visitantes: {total} total, {hourly} ultima hora")
 
             return f"{total:,}", f"{hourly:,}"
         else:
-            logger.warning(f"⚠️ API retornou status {response.status_code}")
+            logger.warning(f"API retornou status {response.status_code}")
             return "N/A", "N/A"
 
     except requests.exceptions.Timeout:
-        logger.warning("⏱️ Timeout ao buscar estatísticas de visitantes")
+        logger.warning("Timeout ao buscar estatisticas de visitantes")
         return "...", "..."
     except requests.exceptions.ConnectionError:
-        logger.warning(
-            "🔌 Erro de conexão ao buscar estatísticas de visitantes"
-        )
+        logger.warning("Erro de conexao ao buscar estatisticas de visitantes")
         return "offline", "offline"
     except Exception as e:
-        logger.error(f"❌ Erro ao atualizar contador de visitantes: {e}")
+        logger.error(f"Erro ao atualizar contador de visitantes: {e}")
         return "erro", "erro"
 
 
-# Callback para incrementar visitante quando página carrega
+# Callback para incrementar visitante quando pagina carrega
 @callback(
     Output("visitor-counter-interval", "n_intervals", allow_duplicate=True),
     Input("url", "pathname"),
@@ -66,13 +64,13 @@ def update_visitor_counter(n_intervals):
 )
 def increment_visitor_on_page_load(pathname):
     """
-    Incrementa o contador quando usuário acessa qualquer página.
+    Incrementa o contador quando usuario acessa qualquer pagina.
 
     Args:
         pathname: Caminho da URL atual
 
     Returns:
-        no_update: Não atualiza o n_intervals (apenas trigger para efeito colateral)
+        no_update: Nao atualiza o n_intervals (apenas trigger para efeito colateral)
     """
     try:
         # Chamar API para incrementar contador
@@ -83,11 +81,11 @@ def increment_visitor_on_page_load(pathname):
         if response.status_code == 200:
             data = response.json()
             logger.info(
-                f"✅ Visitante registrado: {data.get('total_visitors')} total"
+                f"Visitante registrado: {data.get('total_visitors')} total"
             )
         else:
             logger.warning(
-                f"⚠️ Falha ao registrar visitante: status {response.status_code}"
+                f"Falha ao registrar visitante: status {response.status_code}"
             )
 
     except Exception as e:
@@ -96,4 +94,4 @@ def increment_visitor_on_page_load(pathname):
     return no_update
 
 
-logger.info("✅ Callbacks de contador de visitantes registrados")
+logger.info("Callbacks de contador de visitantes registrados")

@@ -63,27 +63,38 @@ async def get_available_sources(
                 "geographic_context": None,
             }
 
-        # Com lat/lon: detectar região e retornar fontes compatíveis
-        is_usa = _manager.is_in_usa(lat, lon)
-        is_nordic = _manager.is_in_nordic(lat, lon)
+        # Com lat/lon: obter fontes formatadas do seletor
+        from backend.api.services.climate_source_selector import (
+            get_available_sources_for_frontend,
+        )
+
+        frontend_data = get_available_sources_for_frontend(lat, lon)
+
+        # Extrair contexto geográfico
+        location_info = frontend_data.get("location_info", {})
+        region = location_info.get("region", "Global")
 
         geographic_context = "global"
-        if is_usa:
+        if location_info.get("in_usa"):
             geographic_context = "usa"
-        elif is_nordic:
+        elif location_info.get("in_nordic"):
             geographic_context = "nordic"
 
-        # Obter fontes disponíveis para localização
-        available = _selector.get_available_sources_for_frontend(lat, lon)
-
+        # Transformar formato do seletor para formato da API
+        sources_list = frontend_data.get("sources", [])
         sources = []
-        for source_id in available:
-            if source_id in _manager.SOURCES_CONFIG:
+
+        for source in sources_list:
+            source_id = source.get("value")
+            if source_id and source_id in _manager.SOURCES_CONFIG:
                 config = _manager.SOURCES_CONFIG[source_id]
+                source_name = source.get(
+                    "label", config.get("name", source_id)
+                )
                 sources.append(
                     {
                         "id": source_id,
-                        "name": config.get("name", source_id),
+                        "name": source_name,
                         "type": config.get("coverage", "unknown"),
                         "coverage": config.get("coverage", "unknown"),
                         "license": config.get("license", "unknown"),
@@ -91,6 +102,7 @@ async def get_available_sources(
                         "data_types": config.get("variables", []),
                         "realtime": config.get("realtime", False),
                         "priority": config.get("priority", 0),
+                        "description": source.get("description", ""),
                     }
                 )
 
@@ -103,8 +115,10 @@ async def get_available_sources(
             "status": "success",
             "sources": sources,
             "total_sources": len(sources),
+            "recommended": frontend_data.get("recommended"),
             "location": {"lat": lat, "lon": lon},
             "geographic_context": geographic_context,
+            "region": region,
         }
 
     except Exception as e:

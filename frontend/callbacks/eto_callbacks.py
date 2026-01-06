@@ -3,24 +3,24 @@ Callbacks para página ETo.
 
 Integração com 6 fontes climáticas do backend:
 - Open-Meteo Archive: Histórico (1990 → hoje-2d)
-- Open-Meteo Forecast: Previsão/Recent (hoje-30d → hoje+5d)
-- NASA POWER: Histórico global (1990 → hoje-7d)
+- Open-Meteo Forecast: Previsão/Recent (hoje-29d → hoje+5d)
+- NASA POWER: Histórico global (1990 → hoje-2d)
 - MET Norway: Previsão global (hoje → hoje+5d)
 - NWS Forecast: Previsão USA (hoje → hoje+5d)
-- NWS Stations: Observações USA (hoje-1d → agora)
+- NWS Stations: Observações USA (hoje-2d → hoje)
 
 Validações (api_limits.py):
-- Histórico: 1990-01-01 (padrão EVA), máx 90 dias
-- Real-time: 7-30 dias
+- Histórico: 1990-01-01 (padrão EVA), min 1 dia e máx 90 dias
+- Real-time: min 7 dias e máx 30 dias
 - Forecast: até +5 dias
 """
 
 import logging
 from datetime import datetime, timedelta
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs
 
 import dash_bootstrap_components as dbc
-from dash import Input, Output, State, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html, no_update
 
 logger = logging.getLogger(__name__)
 
@@ -574,7 +574,8 @@ def validate_manual_coordinates(n_clicks, lat, lon):
 )
 def populate_sources_from_url(coords_data):
     """
-    Popular dropdown de fontes quando coordenadas vêm da URL (modo mapa).
+    NÃO popular dropdown automaticamente.
+    Aguardar seleção de Data Type pelo usuário.
     """
     logger.info(
         f"🔍 populate_sources_from_url CHAMADO! coords_data={coords_data}"
@@ -584,59 +585,18 @@ def populate_sources_from_url(coords_data):
         logger.warning("⚠️ coords_data vazio")
         return [], None, True, ""
 
-    try:
-        lat = coords_data.get("lat")
-        lon = coords_data.get("lon")
+    # Retornar dropdown desabilitado com mensagem informativa
+    info_alert = dbc.Alert(
+        [
+            html.I(className="bi bi-info-circle me-2"),
+            html.Strong("Selecione o Data Type acima "),
+            "para ver as fontes disponíveis.",
+        ],
+        color="info",
+        className="mb-0",
+    )
 
-        logger.info(f"📍 Coordenadas: lat={lat}, lon={lon}")
-
-        if get_available_sources_for_frontend is None:
-            logger.error("❌ get_available_sources_for_frontend = None")
-            return [], None, True, ""
-
-        logger.info("🔄 Chamando backend...")
-        sources_data = get_available_sources_for_frontend(lat, lon)
-        logger.info(
-            f"✅ Backend retornou: {sources_data.get('total_sources')} fontes"
-        )
-
-        # Formatar opções do dropdown
-        dropdown_options = [
-            {"label": source["label"], "value": source["value"]}
-            for source in sources_data["sources"]
-        ]
-
-        # Info sobre região
-        region = sources_data["location_info"]["region"]
-        region_icon = (
-            "🇺🇸"
-            if sources_data["location_info"]["in_usa"]
-            else ("🇳🇴" if sources_data["location_info"]["in_nordic"] else "🌍")
-        )
-
-        info_alert = dbc.Alert(
-            [
-                html.I(className="bi bi-info-circle me-2"),
-                html.Strong(f"{region_icon} Região: {region}"),
-                html.Br(),
-                html.Small(
-                    f"{sources_data['total_sources']} fontes de dados disponíveis para esta localização."
-                ),
-            ],
-            color="info",
-            className="mb-0",
-        )
-
-        return (
-            dropdown_options,
-            sources_data["recommended"],
-            False,
-            info_alert,
-        )
-
-    except (ValueError, TypeError, KeyError) as e:
-        logger.warning(f"⚠️ Erro ao processar URL para fontes: {e}")
-        return [], None, True, ""
+    return [], None, True, info_alert
 
 
 @callback(
@@ -662,6 +622,100 @@ def update_source_description(selected_source):
     }
 
     return descriptions.get(selected_source, "")
+
+
+@callback(
+    [
+        Output("climate-source-dropdown", "options", allow_duplicate=True),
+        Output("climate-source-dropdown", "value", allow_duplicate=True),
+        Output("climate-source-dropdown", "disabled", allow_duplicate=True),
+        Output("source-selection-info", "children", allow_duplicate=True),
+    ],
+    [
+        Input("data-type-radio", "value"),
+        Input("navigation-coordinates", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def filter_sources_by_mode(data_type, coords_data):
+    """
+    Filtra fontes compatíveis com o modo selecionado e localização.
+
+    Modos e fontes compatíveis:
+    - historical: nasa_power, openmeteo_archive
+    - recent: nasa_power, openmeteo_archive, openmeteo_forecast
+    - forecast: openmeteo_forecast, met_norway, nws_forecast (EUA)
+    """
+    if not coords_data or not data_type:
+        return no_update, no_update, no_update, no_update
+
+    # Verificar se está nos EUA
+    lat = coords_data.get("lat", 0)
+    lon = coords_data.get("lon", 0)
+    in_usa = -125 <= lon <= -65 and 25 <= lat <= 50
+
+    # Definir fontes por modo
+    mode_sources = {
+        "historical": [
+            {"label": "🔀 Smart Fusion (Recommended)", "value": "fusion"},
+            {"label": "🛰️ NASA POWER", "value": "nasa_power"},
+            {
+                "label": "🌍 Open-Meteo Archive",
+                "value": "openmeteo_archive",
+            },
+        ],
+        "recent": [
+            {"label": "🔀 Smart Fusion (Recommended)", "value": "fusion"},
+            {
+                "label": "🌍 Open-Meteo Forecast",
+                "value": "openmeteo_forecast",
+            },
+            {"label": "🛰️ NASA POWER", "value": "nasa_power"},
+            {
+                "label": "🌍 Open-Meteo Archive",
+                "value": "openmeteo_archive",
+            },
+        ],
+        "forecast": [
+            {"label": "🔀 Smart Fusion (Recommended)", "value": "fusion"},
+            {
+                "label": "🌍 Open-Meteo Forecast",
+                "value": "openmeteo_forecast",
+            },
+            {"label": "🇳🇴 MET Norway", "value": "met_norway"},
+        ],
+    }
+
+    # Adicionar fontes específicas dos EUA no forecast
+    if in_usa and data_type == "forecast":
+        mode_sources["forecast"].extend(
+            [
+                {"label": "🇺🇸 NWS Forecast", "value": "nws_forecast"},
+                {"label": "🇺🇸 NWS Stations", "value": "nws_stations"},
+            ]
+        )
+
+    sources = mode_sources.get(data_type, [])
+
+    # Criar mensagem informativa
+    mode_labels = {
+        "historical": "📅 Histórico",
+        "recent": "📊 Recente",
+        "forecast": "🔮 Previsão",
+    }
+
+    info_alert = dbc.Alert(
+        [
+            html.I(className="bi bi-check-circle me-2"),
+            html.Strong(f"{mode_labels.get(data_type, '')} - "),
+            f"{len(sources)} fontes disponíveis.",
+        ],
+        color="success",
+        className="mb-0",
+    )
+
+    # Sempre selecionar fusion por padrão e HABILITAR o dropdown
+    return sources, "fusion", False, info_alert
 
 
 @callback(
@@ -724,53 +778,85 @@ def render_conditional_form(data_type):
                     className="mb-3",
                 ),
                 # MANDATORY Email field for historical data
-                dbc.Row(
+                html.Div(
                     [
-                        dbc.Col(
+                        html.Label(
                             [
-                                html.Label(
-                                    [
-                                        "E-mail ",
-                                        html.Span(
-                                            "*",
-                                            style={"color": "red"},
-                                        ),
-                                    ],
-                                    className="mb-2",
-                                ),
-                                dbc.Input(
-                                    id="email-historical",
-                                    type="email",
-                                    placeholder="seu.email@exemplo.com",
-                                    className="w-100",
-                                    required=True,
-                                ),
-                                dbc.FormFeedback(
-                                    "Por favor, insira um e-mail válido",
-                                    type="invalid",
-                                ),
-                                html.Small(
-                                    "📧 Obrigatório para envio de relatório com dados históricos",
-                                    className="text-info d-block mt-1",
-                                ),
+                                "E-mail ",
+                                html.Span("*", style={"color": "red"}),
                             ],
-                            md=12,
+                            className="mb-2 fw-bold",
+                        ),
+                        dbc.Input(
+                            id="email-historical",
+                            type="email",
+                            placeholder="seu.email@exemplo.com",
+                            className="w-100",
+                            required=True,
+                        ),
+                        dbc.FormFeedback(
+                            "Por favor, insira um e-mail valido",
+                            type="invalid",
+                        ),
+                        html.Small(
+                            "Obrigatorio para envio de relatorio",
+                            className="text-info d-block mt-1",
+                        ),
+                    ],
+                    className="mb-3",
+                ),
+                # File format selection
+                html.Div(
+                    [
+                        html.Label(
+                            "Formato do arquivo",
+                            className="mb-2 fw-bold",
+                        ),
+                        dbc.RadioItems(
+                            id="file-format-historical",
+                            options=[
+                                {
+                                    "label": " Excel (.xlsx)",
+                                    "value": "excel",
+                                },
+                                {
+                                    "label": " CSV (.csv)",
+                                    "value": "csv",
+                                },
+                            ],
+                            value="csv",
+                            inline=False,
+                            className="mb-2",
+                        ),
+                        html.Small(
+                            "Formato dos dados enviados por email",
+                            className="text-muted d-block",
                         ),
                     ],
                     className="mb-3",
                 ),
                 html.Small(
-                    "💡 Dados históricos: 01/01/1990 até ontem (padrão EVAonline)",
-                    className="text-muted",
+                    "Dados historicos: 01/01/1990 ate ontem",
+                    className="text-muted d-block",
                 ),
-                html.Br(),
                 html.Small(
-                    "⚠️ Limite: 90 dias por requisição",
-                    className="text-warning",
+                    "Limite: 90 dias por requisicao",
+                    className="text-warning d-block",
+                ),
+                # Hidden field for callback compatibility
+                dbc.Input(
+                    id="days-current",
+                    value="7",
+                    type="hidden",
+                    style={"display": "none"},
                 ),
             ]
         )
-    else:  # current
+
+    # ========================================================================
+    # MODO 2: RECENT
+    # ========================================================================
+    elif data_type == "recent":
         return html.Div(
             [
                 html.Label(
@@ -778,39 +864,6 @@ def render_conditional_form(data_type):
                     className="fw-bold mb-3",
                     style={"fontSize": "1.1rem"},
                 ),
-                # Sub-opções: Dados recentes vs Previsão
-                dbc.RadioItems(
-                    id="current-subtype-radio",
-                    options=[
-                        {
-                            "label": "📊 Dados Recentes (até 30 dias atrás)",
-                            "value": "recent",
-                        },
-                        {
-                            "label": "🔮 Previsão (próximos 5 dias)",
-                            "value": "forecast",
-                        },
-                    ],
-                    value="recent",
-                    className="mb-3",
-                    inline=False,
-                ),
-                # Formulário condicional interno
-                html.Div(id="current-subform"),
-            ]
-        )
-
-
-# Callback para sub-formulário de dados atuais
-@callback(
-    Output("current-subform", "children"),
-    Input("current-subtype-radio", "value"),
-)
-def render_current_subform(subtype):
-    """Renderiza sub-formulário para dados atuais: recentes ou previsão."""
-    if subtype == "recent":
-        return html.Div(
-            [
                 dbc.Row(
                     [
                         dbc.Col(
@@ -851,11 +904,38 @@ def render_current_subform(subtype):
                 ),
                 html.Br(),
                 html.Small(
-                    "📡 Fontes: Open-Meteo Forecast, MET Norway, NWS (se USA)",
+                    "📡 Fontes: Open-Meteo Forecast, NASA POWER, "
+                    "Open-Meteo Archive",
                     className="text-info",
+                ),
+                # Hidden fields for callback compatibility
+                dbc.Input(
+                    id="start-date-historical",
+                    type="hidden",
+                    style={"display": "none"},
+                ),
+                dbc.Input(
+                    id="end-date-historical",
+                    type="hidden",
+                    style={"display": "none"},
+                ),
+                dbc.Input(
+                    id="email-historical",
+                    type="hidden",
+                    style={"display": "none"},
+                ),
+                dbc.Input(
+                    id="file-format-historical",
+                    value="excel",
+                    type="hidden",
+                    style={"display": "none"},
                 ),
             ]
         )
+
+    # ========================================================================
+    # MODO 3: FORECAST
+    # ========================================================================
     else:  # forecast
         return html.Div(
             [
@@ -864,152 +944,63 @@ def render_current_subform(subtype):
                         html.I(className="bi bi-info-circle me-2"),
                         html.Strong("Previsão de 5 dias"),
                         html.Br(),
-                        "Será calculado ETo para os próximos 5 dias com base em dados de previsão meteorológica.",
+                        "Será calculado ETo para os próximos 5 dias com base "
+                        "em dados de previsão meteorológica.",
                     ],
                     color="info",
                     className="mb-3",
                 ),
                 html.Small(
-                    "� Período: hoje até hoje+5 dias (padrão EVAonline)",
+                    "🔮 Período: hoje até hoje+5 dias (padrão EVAonline)",
                     className="text-muted",
                 ),
                 html.Br(),
                 html.Small(
-                    "📡 Fontes: Open-Meteo Forecast, MET Norway, NWS Forecast (se USA)",
+                    "📡 Fontes: Open-Meteo Forecast, MET Norway, "
+                    "NWS Forecast (se USA)",
                     className="text-info",
+                ),
+                # Hidden fields for callback compatibility
+                dbc.Input(
+                    id="days-current",
+                    value="6",
+                    type="hidden",
+                    style={"display": "none"},
+                ),
+                dbc.Input(
+                    id="start-date-historical",
+                    type="hidden",
+                    style={"display": "none"},
+                ),
+                dbc.Input(
+                    id="end-date-historical",
+                    type="hidden",
+                    style={"display": "none"},
+                ),
+                dbc.Input(
+                    id="email-historical",
+                    type="hidden",
+                    style={"display": "none"},
+                ),
+                dbc.Input(
+                    id="file-format-historical",
+                    value="csv",
+                    type="hidden",
+                    style={"display": "none"},
                 ),
             ]
         )
 
 
 @callback(
-    Output("validation-alert", "children"),
-    Input("calculate-eto-btn", "n_clicks"),
-    State("url", "href"),
-    State("data-type-radio", "value"),
-    State("start-date-historical", "date"),
-    State("end-date-historical", "date"),
-    State("current-subtype-radio", "value"),
-    State("days-current", "value"),
-    prevent_initial_call=True,
-)
-def validate_calculation_inputs(
-    n_clicks,
-    href,
-    data_type,
-    start_date_hist,
-    end_date_hist,
-    current_subtype,
-    days_current,
-):
-    """
-    Valida inputs conforme regras do backend (api_limits.py).
-
-    Validações:
-    - Coordenadas válidas na URL
-    - Histórico: 1990-01-01 → ontem, máx 90 dias
-    - Atual: 7-30 dias
-    - start_date < end_date
-    """
-    if n_clicks == 0:
-        return None
-
-    errors = []
-
-    # Valida localização
-    if not href:
-        errors.append("❌ Nenhuma localização selecionada")
-    else:
-        try:
-            parsed = urlparse(href)
-            params = parse_qs(parsed.query)
-            lat = params.get("lat", [None])[0]
-            lon = params.get("lon", [None])[0]
-
-            if not lat or not lon:
-                errors.append("❌ Coordenadas inválidas na URL")
-            else:
-                lat_f = float(lat)
-                lon_f = float(lon)
-                if not (-90 <= lat_f <= 90) or not (-180 <= lon_f <= 180):
-                    errors.append("❌ Coordenadas fora dos limites válidos")
-        except Exception:
-            errors.append("❌ Erro ao processar coordenadas")
-
-    # Valida datas (histórico)
-    if data_type == "historical":
-        if not start_date_hist or not end_date_hist:
-            errors.append("❌ Selecione as datas de início e fim")
-        else:
-            try:
-                start = datetime.fromisoformat(
-                    start_date_hist.replace("Z", "")
-                )
-                end = datetime.fromisoformat(end_date_hist.replace("Z", ""))
-                yesterday = datetime.now() - timedelta(days=1)
-                eva_start = datetime(1990, 1, 1)
-
-                if start < eva_start:
-                    errors.append(
-                        "❌ Data inicial deve ser >= 01/01/1990 (padrão EVA)"
-                    )
-
-                if start >= end:
-                    errors.append(
-                        "❌ Data inicial deve ser anterior à data final"
-                    )
-
-                if end.date() > yesterday.date():
-                    errors.append(
-                        "❌ Data final não pode ser posterior a ontem"
-                    )
-
-                # Limita período a 90 dias (regra api_limits.py)
-                days = (end - start).days + 1
-                if days > 90:
-                    errors.append(
-                        f"⚠️ Período máximo: 90 dias (solicitado: {days} dias)"
-                    )
-
-            except Exception:
-                errors.append("❌ Formato de data inválido")
-
-    # Valida dias (atual - recent)
-    if data_type == "current":
-        if current_subtype == "recent":
-            if not days_current or int(days_current) not in [7, 14, 21, 30]:
-                errors.append("❌ Selecione um período válido (7-30 dias)")
-        elif current_subtype == "forecast":
-            # Previsão sempre válida (5 dias fixo)
-            pass
-
-    # Retorna alertas
-    if errors:
-        return dbc.Alert(
-            [html.P(error, className="mb-1") for error in errors],
-            color="danger",
-            dismissable=True,
-        )
-    else:
-        # Sucesso - backend ainda não implementado
-        return dbc.Alert(
-            [
-                html.I(className="bi bi-check-circle me-2"),
-                html.Strong("✅ Validação OK! "),
-                "Todos os parâmetros estão corretos. ",
-                html.Br(),
-                html.Small(
-                    "🔧 Backend de cálculo ETo será implementado na próxima fase."
-                ),
-            ],
-            color="success",
-            dismissable=True,
-        )
-
-
-@callback(
-    Output("eto-results-container", "children"),
-    Output("operation-mode-indicator", "children"),  # NEW: Visual indicator
+    [
+        Output("eto-results-container", "children"),
+        Output("operation-mode-indicator", "children"),
+        Output("validation-alert", "children"),
+        Output("current-task-id", "data"),
+        Output("progress-interval", "disabled"),
+        Output("current-operation-mode", "data"),
+    ],
     Input("calculate-eto-btn", "n_clicks"),
     [
         State("navigation-coordinates", "data"),
@@ -1017,9 +1008,10 @@ def validate_calculation_inputs(
         State("data-type-radio", "value"),
         State("start-date-historical", "date"),
         State("end-date-historical", "date"),
-        State("email-historical", "value"),  # NEW: Email field
-        State("current-subtype-radio", "value"),
+        State("email-historical", "value"),
+        State("file-format-historical", "value"),
         State("days-current", "value"),
+        State("app-session-id", "data"),
     ],
     prevent_initial_call=True,
 )
@@ -1031,8 +1023,9 @@ def calculate_eto(
     start_date_hist,
     end_date_hist,
     email_hist,
-    current_subtype,
+    file_format_hist,
     days_current,
+    session_id,
 ):
     """
     Calcula ETo com detecção automática de modo operacional.
@@ -1044,14 +1037,26 @@ def calculate_eto(
     - "recent" → DASHBOARD_CURRENT (7/14/21/30 days)
     - "forecast" → DASHBOARD_FORECAST (6 days fixed)
 
+    Args:
+        session_id: ID único da sessão do usuário (gerado automaticamente)
+
     Returns:
-        Tuple (results_container, mode_indicator)
+        Tuple (results_container, mode_indicator, validation_alert)
     """
+    import uuid
+
     logger.info("🧮 calculate_eto callback triggered")
 
     if n_clicks is None or n_clicks == 0:
         logger.warning("⚠️ Aborting - n_clicks empty or zero")
-        return None, None
+        return None, None, None, None, True, None
+
+    # Garantir session_id único para esta sessão
+    if not session_id:
+        session_id = f"sess_{uuid.uuid4().hex}"
+        logger.info(f"🆕 Nova sessão gerada: {session_id}")
+    else:
+        logger.info(f"🔑 Sessão existente: {session_id}")
 
     logger.info("✅ Proceeding with validation...")
 
@@ -1068,7 +1073,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return error_alert, None
+        return None, None, error_alert, None, True, None
 
     try:
         lat = float(coords_data.get("lat"))
@@ -1080,11 +1085,11 @@ def calculate_eto(
                 [
                     html.I(className="bi bi-exclamation-triangle me-2"),
                     html.Strong("Erro: "),
-                    f"Coordenadas inválidas.",
+                    "Coordenadas inválidas.",
                 ],
                 color="danger",
             )
-            return error_alert, None
+            return None, None, error_alert, None, True, None
 
     except (ValueError, TypeError, KeyError) as e:
         logger.error(f"❌ Error parsing coordinates: {e}")
@@ -1096,20 +1101,14 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return error_alert, None
+        return None, None, error_alert, None, True, None
 
     # ========================================================================
     # 2. DETECT OPERATION MODE & VALIDATE
     # ========================================================================
     try:
-        # Determine UI selection based on data_type
-        if data_type == "historical":
-            ui_selection = "historical"
-        elif current_subtype == "recent":
-            ui_selection = "recent"
-        else:  # forecast
-            ui_selection = "forecast"
-
+        # UI selection agora vem diretamente do data_type radio
+        ui_selection = data_type  # "historical", "recent", ou "forecast"
         logger.info(f"🎯 UI Selection: {ui_selection}")
 
         # Parse dates
@@ -1128,7 +1127,7 @@ def calculate_eto(
                     ],
                     color="warning",
                 )
-                return error_alert, None
+                return None, None, error_alert, None, True, None
 
             # Parse historical dates
             start_date = parse_date_from_ui(start_date_hist)
@@ -1153,6 +1152,11 @@ def calculate_eto(
             period_days=period_days,
             email=email_hist if ui_selection == "historical" else None,
         )
+
+        # Adicionar formato de arquivo para modo historical
+        if ui_selection == "historical" and file_format_hist:
+            payload["file_format"] = file_format_hist
+            logger.info(f"📎 File format: {file_format_hist}")
 
         # Detect mode for visual indicator
         backend_mode, mode_config = OperationModeDetector.detect_mode(
@@ -1187,7 +1191,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return error_alert, None
+        return None, None, error_alert, None, True, None
 
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
@@ -1199,7 +1203,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return error_alert, None
+        return None, None, error_alert, None, True, None
 
     # ========================================================================
     # 3. CALL BACKEND API
@@ -1210,7 +1214,15 @@ def calculate_eto(
         logger.info("🔄 Sending request to backend...")
 
         # Add selected source to payload
-        payload["sources"] = selected_source
+        # Backend não aceita "fusion", mapear para "auto"
+        if selected_source == "fusion":
+            payload["sources"] = "auto"
+        else:
+            payload["sources"] = selected_source
+
+        # Adicionar session_id para identificação única do usuário
+        payload["session_id"] = session_id
+        payload["visitor_id"] = session_id  # Para compatibilidade
 
         logger.info(f"📦 Final payload: {payload}")
 
@@ -1223,50 +1235,36 @@ def calculate_eto(
 
         # Check status
         if response.status_code == 200:
-            logger.info("✅ Backend responded successfully!")
-            results = response.json()
-            logger.info(f"📊 Results: {len(results.get('data', []))}")
+            logger.info("✅ Task submitted to backend!")
+            task_response = response.json()
 
-            # Create results visualization
-            results_card = dbc.Card(
+            # Backend retorna task_id, não resultado direto
+            if task_response.get("status") == "accepted":
+                task_id = task_response.get("task_id")
+                logger.info(f"📋 Task ID: {task_id}")
+
+                # Iniciar monitoramento via interval callback
+                # Retornar: results=None, mode_indicator, alert=None,
+                #          task_id, interval_disabled=False, operation_mode
+                return (
+                    None,
+                    mode_indicator,
+                    None,
+                    task_id,
+                    False,  # Habilitar interval
+                    backend_mode,  # Salvar o modo de operação
+                )
+
+            # Se não foi aceito
+            error_alert = dbc.Alert(
                 [
-                    dbc.CardHeader(
-                        [
-                            html.H5(
-                                [
-                                    html.I(
-                                        className="bi bi-check-circle-fill me-2"
-                                    ),
-                                    "Cálculo Concluído",
-                                ],
-                                className="mb-0",
-                            )
-                        ]
-                    ),
-                    dbc.CardBody(
-                        [
-                            dbc.Alert(
-                                [
-                                    html.I(
-                                        className="bi bi-check-circle-fill me-2"
-                                    ),
-                                    html.Strong(
-                                        f"✅ Sucesso! {len(results.get('data', []))} dias calculados"
-                                    ),
-                                    html.Br(),
-                                    html.Br(),
-                                    html.Pre(
-                                        str(results)[:500] + "..."
-                                    ),  # Preview dos dados
-                                ],
-                                color="success",
-                            ),
-                        ]
-                    ),
+                    html.I(className="bi bi-exclamation-triangle me-2"),
+                    html.Strong("Erro: "),
+                    f"Task não foi aceita: {task_response}",
                 ],
-                className="mt-4",
+                color="danger",
             )
-            return results_card, mode_indicator
+            return None, mode_indicator, error_alert, None, True, None
 
         else:
             logger.error(f"❌ Backend error {response.status_code}")
@@ -1278,7 +1276,7 @@ def calculate_eto(
                 ],
                 color="danger",
             )
-            return error_alert, mode_indicator
+            return None, mode_indicator, error_alert, None, True, None
 
     except requests.Timeout:
         logger.error("⏱️ Request timeout")
@@ -1290,7 +1288,7 @@ def calculate_eto(
             ],
             color="warning",
         )
-        return error_alert, mode_indicator
+        return None, mode_indicator, error_alert, None, True, None
 
     except requests.ConnectionError:
         logger.error("🔌 Connection error")
@@ -1302,7 +1300,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return error_alert, mode_indicator
+        return None, mode_indicator, error_alert, None, True, None
 
     except Exception as e:
         logger.error(f"💥 Unexpected error: {str(e)}")
@@ -1314,57 +1312,385 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return error_alert, mode_indicator
+        return None, mode_indicator, error_alert, None, True, None
 
-    # Fallback
-    fallback_card = dbc.Card(
-        [
-            dbc.CardHeader(
+
+@callback(
+    [
+        Output("eto-progress-container", "children"),
+        Output("eto-results-container", "children", allow_duplicate=True),
+        Output("progress-interval", "disabled", allow_duplicate=True),
+        Output("current-task-id", "data", allow_duplicate=True),
+    ],
+    Input("progress-interval", "n_intervals"),
+    [
+        State("current-task-id", "data"),
+        State("current-operation-mode", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def update_progress(n_intervals, task_id, operation_mode):
+    """Atualiza indicador de progresso consultando status da task no Redis.
+
+    Para modo HISTORICAL_EMAIL: Não exibe dados na interface, apenas confirmação.
+    Para outros modos (DASHBOARD_CURRENT, DASHBOARD_FORECAST): Exibe dados normalmente.
+    """
+    if not task_id:
+        return None, no_update, True, None
+
+    try:
+        import redis
+        import json
+
+        r = redis.Redis(
+            host="localhost",
+            port=6379,
+            db=0,
+            decode_responses=True,
+        )
+
+        result_key = f"celery-task-meta-{task_id}"
+        result_data = r.get(result_key)
+
+        logger.info(f"🔍 Checking task {task_id}, mode: {operation_mode}")
+
+        if not result_data:
+            # Task ainda não iniciou ou não tem dados - mostrar spinner elegante
+            progress_indicator = html.Div(
                 [
-                    html.H5(
+                    html.Div(
                         [
-                            html.I(className="bi bi-check-circle-fill me-2"),
-                            "Validação Concluída",
-                        ],
-                        className="mb-0",
-                    )
-                ]
-            ),
-            dbc.CardBody(
-                [
-                    dbc.Alert(
-                        [
-                            html.I(className="bi bi-info-circle-fill me-2"),
-                            html.Strong(
-                                "✅ Todos os parâmetros validados com sucesso!"
+                            dbc.Spinner(
+                                color="success",
+                                type="grow",
+                                size="sm",
+                                spinner_class_name="me-2",
                             ),
-                            html.Br(),
-                            html.Br(),
-                            html.Strong("Próximos passos:"),
-                            html.Ul(
+                            html.Span(
+                                "Baixando dados e calculando ETo...",
+                                className="text-success fw-semibold",
+                            ),
+                        ],
+                        className="d-flex align-items-center",
+                    ),
+                ],
+                className="p-3 bg-light rounded-3 border",
+            )
+            return progress_indicator, no_update, False, task_id
+
+        result = json.loads(result_data)
+        status = result.get("status")
+        logger.info(f"📊 Task status: {status}")
+
+        if status == "SUCCESS":
+            task_result = result.get("result", {})
+            days_calculated = len(task_result.get("et0_series", []))
+            logger.info(
+                f"✅ Task SUCCESS - {days_calculated} days, mode: {operation_mode}"
+            )
+
+            # ================================================================
+            # MODO HISTORICAL_EMAIL: Apenas confirmação, sem exibir dados
+            # ================================================================
+            if operation_mode == "HISTORICAL_EMAIL":
+                logger.info("📧 Modo HISTORICAL_EMAIL - exibindo confirmação")
+                email_sent = task_result.get("email_sent", True)
+
+                if email_sent:
+                    success_content = dbc.Card(
+                        [
+                            dbc.CardHeader(
                                 [
-                                    html.Li(
-                                        f"📍 Coordenadas: {lat:.6f}, {lon:.6f}"
+                                    html.I(
+                                        className="bi bi-envelope-check me-2"
                                     ),
-                                    html.Li(f"📡 Fonte: {selected_source}"),
-                                    html.Li(f"📅 Tipo: {data_type}"),
-                                    html.Li(
-                                        "🔄 Integrar com backend/api/routes/eto_routes.py"
+                                    html.Strong("📧 Dados Enviados por Email"),
+                                ],
+                                className="bg-success text-white",
+                            ),
+                            dbc.CardBody(
+                                [
+                                    dbc.Alert(
+                                        [
+                                            html.I(
+                                                className="bi bi-check-circle-fill me-2"
+                                            ),
+                                            html.Strong(
+                                                "Processamento concluído com sucesso!"
+                                            ),
+                                        ],
+                                        color="success",
+                                        className="mb-3",
                                     ),
-                                    html.Li(
-                                        "📊 Exibir gráficos e tabelas de resultados"
+                                    html.P(
+                                        [
+                                            html.I(
+                                                className="bi bi-calendar-check me-2"
+                                            ),
+                                            f"Período processado: {days_calculated} dias",
+                                        ],
+                                        className="mb-2",
+                                    ),
+                                    html.P(
+                                        [
+                                            html.I(
+                                                className="bi bi-envelope me-2"
+                                            ),
+                                            "Os dados foram enviados para o email informado.",
+                                        ],
+                                        className="mb-2",
+                                    ),
+                                    html.P(
+                                        [
+                                            html.I(
+                                                className="bi bi-info-circle me-2"
+                                            ),
+                                            html.Small(
+                                                "Verifique sua caixa de entrada e spam. "
+                                                "O arquivo está anexado no formato solicitado.",
+                                                className="text-muted",
+                                            ),
+                                        ],
+                                        className="mb-0",
+                                    ),
+                                    html.Hr(),
+                                    html.P(
+                                        [
+                                            html.I(
+                                                className="bi bi-clock-history me-2"
+                                            ),
+                                            f"Tempo de processamento: {task_result.get('processing_time_seconds', 'N/A')}s",
+                                        ],
+                                        className="text-muted small mb-0",
                                     ),
                                 ]
                             ),
                         ],
-                        color="success",
+                        className="mt-3 shadow",
+                    )
+                else:
+                    success_content = dbc.Alert(
+                        [
+                            html.I(
+                                className="bi bi-exclamation-triangle me-2"
+                            ),
+                            html.Strong("Processamento concluído, "),
+                            "mas houve um problema ao enviar o email. ",
+                            "Verifique as configurações SMTP.",
+                        ],
+                        color="warning",
+                        className="mt-3",
+                    )
+
+                return None, success_content, True, None
+
+            # ================================================================
+            # OUTROS MODOS (DASHBOARD_CURRENT, DASHBOARD_FORECAST):
+            # Exibir dados na interface normalmente
+            # ================================================================
+            logger.info(
+                f"📊 Modo {operation_mode} - exibindo dados na interface"
+            )
+
+            import pandas as pd
+            from backend.core.data_results.results_layout import (
+                create_results_tabs,
+            )
+
+            # Convert result to DataFrame
+            et0_data = task_result.get("et0_series", [])
+            logger.info(f"📈 Dados recebidos: {len(et0_data)} registros")
+
+            if not et0_data:
+                error_card = dbc.Alert(
+                    [
+                        html.I(className="bi bi-exclamation-triangle me-2"),
+                        "Nenhum dado retornado pelo backend.",
+                    ],
+                    color="warning",
+                )
+                return None, error_card, True, None
+
+            # Create DataFrame with standardized column names
+            df_records = []
+            for record in et0_data:
+                df_records.append(
+                    {
+                        "date": pd.to_datetime(record.get("date")),
+                        "T2M_MAX": record.get("tmax_c", 0),
+                        "T2M_MIN": record.get("tmin_c", 0),
+                        "T2M": record.get("tmed_c", 0),
+                        "RH2M": record.get("humidity_pct", 0),
+                        "WS2M": record.get("wind_ms", 0),
+                        "ALLSKY_SFC_SW_DWN": record.get("radiation_mj_m2", 0),
+                        "PRECTOTCORR": record.get("precip_mm", 0),
+                        "eto_evaonline": record.get("et0_mm_day", 0),
+                        "eto_openmeteo": record.get(
+                            "eto_openmeteo", record.get("et0_mm_day", 0)
+                        ),  # Fallback se não houver
+                    }
+                )
+
+            df = pd.DataFrame(df_records)
+
+            # Get sources used
+            sources_used = task_result.get("sources_used", [])
+
+            # Create results with new tab system
+            try:
+                results_content = html.Div(
+                    [
+                        # Success alert
+                        dbc.Alert(
+                            [
+                                html.I(
+                                    className="bi bi-check-circle-fill me-2"
+                                ),
+                                html.Strong(
+                                    f"✅ Sucesso! {days_calculated} dias "
+                                    "calculados"
+                                ),
+                            ],
+                            color="success",
+                            className="mb-3",
+                        ),
+                        # Tabs with results
+                        create_results_tabs(
+                            df, sources=sources_used, lang="pt"
+                        ),
+                    ],
+                    className="results-container",
+                )
+
+                # Desabilitar interval e limpar task_id
+                return None, results_content, True, None
+
+            except Exception as e:
+                logger.error(f"Error creating results tabs: {e}")
+                # Fallback to simple table
+                error_card = dbc.Alert(
+                    [
+                        html.I(className="bi bi-exclamation-triangle me-2"),
+                        f"Erro ao criar visualização: {str(e)}",
+                    ],
+                    color="warning",
+                )
+                return None, error_card, True, None
+
+        elif status == "FAILURE":
+            # Handle FAILURE status
+            error_msg = result.get("result", "Erro desconhecido")
+            warnings = []
+
+            error_card = dbc.Card(
+                [
+                    dbc.CardHeader(
+                        [
+                            html.I(
+                                className="bi bi-exclamation-triangle me-2"
+                            ),
+                            html.Strong("❌ Erro no cálculo"),
+                        ],
+                        className="bg-danger text-white",
                     ),
-                ]
-            ),
-        ],
-        className="mt-4",
-    )
-    return fallback_card, mode_indicator
+                    dbc.CardBody(
+                        [
+                            html.P(
+                                [
+                                    html.Strong("Erro: "),
+                                    html.Span(str(error_msg)),
+                                ]
+                            ),
+                            html.Hr() if warnings else None,
+                            (
+                                html.Div(
+                                    [
+                                        html.H6("⚠️ Avisos:"),
+                                        html.Ul(
+                                            [
+                                                html.Li(warning)
+                                                for warning in warnings[
+                                                    :5
+                                                ]  # Max 5 warnings
+                                            ]
+                                        ),
+                                    ]
+                                )
+                                if warnings
+                                else None
+                            ),
+                            html.Hr(),
+                            html.P(
+                                "Por favor, tente novamente ou contate o suporte.",
+                                className="mb-0 text-muted",
+                            ),
+                        ]
+                    ),
+                ],
+                className="mt-3",
+            )
+            return None, error_card, True, None
+
+        elif status == "PENDING" or status == "STARTED":
+            # Task em execução - mostrar indicador elegante com percentual
+            elapsed = n_intervals * 2  # 2 segundos por intervalo
+            estimated_progress = min(95, 10 + (elapsed / 60) * 85)
+
+            progress_indicator = html.Div(
+                [
+                    # Linha com spinner e mensagem
+                    html.Div(
+                        [
+                            dbc.Spinner(
+                                color="success",
+                                type="border",
+                                size="sm",
+                                spinner_class_name="me-3",
+                            ),
+                            html.Div(
+                                [
+                                    html.Span(
+                                        "Baixando dados e calculando ETo...",
+                                        className="fw-semibold text-dark",
+                                    ),
+                                    html.Br(),
+                                    html.Small(
+                                        f"Tempo estimado: {max(1, 30 - elapsed)}s",
+                                        className="text-muted",
+                                    ),
+                                ],
+                            ),
+                            html.Div(
+                                html.Span(
+                                    f"{int(estimated_progress)}%",
+                                    className="fw-bold text-success fs-5",
+                                ),
+                                className="ms-auto",
+                            ),
+                        ],
+                        className="d-flex align-items-center mb-3",
+                    ),
+                    # Barra de progresso fina e elegante
+                    dbc.Progress(
+                        value=estimated_progress,
+                        color="success",
+                        className="mb-0",
+                        style={"height": "8px", "borderRadius": "4px"},
+                    ),
+                ],
+                className="p-3 bg-light rounded-3 border",
+            )
+
+            return progress_indicator, no_update, False, task_id
+
+        else:
+            # Status desconhecido - manter consultando
+            logger.warning(f"⚠️ Status desconhecido: {status}")
+            return None, no_update, False, task_id
+
+    except Exception as e:
+        logger.error(f"Erro ao atualizar progresso: {e}")
+        return None, no_update, False, task_id
 
 
 logger.info("✅ Página ETo carregada com sucesso")

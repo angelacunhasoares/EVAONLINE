@@ -1,12 +1,10 @@
 """
-CORRIGIDO
 Callbacks para navegação entre páginas e controle de roteamento.
 
 Features:
-- Navegação entre Home, ETo, Documentação e Sobre
-- Redirecionamento para página ETo com localização
+- Navegação entre Home, Documentação e Sobre
+- Estrutura simplificada (página unificada)
 - Controle de estado da navbar
-- Integração com sistema de localização
 """
 
 import logging
@@ -15,8 +13,8 @@ from dash import callback_context, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from ..pages.home import home_layout
-from ..pages.dash_eto import eto_layout
+# Usar página unificada
+from ..pages.home_unified import home_layout
 from ..pages.about import about_layout
 from ..pages.documentation import documentation_layout
 
@@ -35,32 +33,17 @@ def register_navigation_callbacks(app):
     def display_page(pathname):
         """
         Controla a exibição das páginas baseado na URL.
+        Estrutura simplificada: HOME | DOCUMENTATION | ABOUT
         """
         logger.info(f"🧭 Navegando para: {pathname}")
         pages = {
-            "/eto-calculator": eto_layout,  # ✅ Rota principal
             "/about": about_layout,
             "/documentation": documentation_layout,
         }
+        # Qualquer rota não mapeada vai para home (incluindo "/" e "/eto-calculator")
         return pages.get(pathname, home_layout)
 
-    # Navigation callback - Link direto navbar para ETo (sem coordenadas)
-    @app.callback(
-        Output("url", "pathname", allow_duplicate=True),
-        Input("nav-eto", "n_clicks"),
-        prevent_initial_call=True,
-    )
-    def navigate_to_eto_from_navbar(n_clicks):
-        """
-        Navega para ETo calculator via navbar (SEM coordenadas).
-        Callbacks específicos (botão Home) preservam coordenadas via Store.
-        """
-        if n_clicks:
-            logger.info("� Navegando para ETo (navbar)")
-            return "/eto-calculator"
-        raise PreventUpdate
-
-    # Navigation callback - Navbar links (EXCETO nav-eto que tem callback próprio)
+    # Navigation callback - Navbar links
     @app.callback(
         Output("url", "pathname", allow_duplicate=True),
         [

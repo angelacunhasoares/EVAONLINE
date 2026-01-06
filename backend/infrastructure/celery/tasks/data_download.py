@@ -143,7 +143,7 @@ def process_historical_download(
         warnings.extend(preprocess_warnings)
 
         # 3. Calcular ETo (elevação padrão 0m - TODO: obter elevação real)
-        from backend.core.eto_calculation.eto_calculation import (
+        from backend.core.eto_calculation.eto_services import (
             calculate_eto,
         )
 

@@ -81,22 +81,7 @@ def create_navbar():
                                 ),
                                 dbc.NavItem(
                                     dbc.NavLink(
-                                        "CALCULAR ETO",
-                                        href="/eto-calculator",
-                                        id="nav-eto",
-                                        className="nav-link-custom",
-                                        style={
-                                            "fontWeight": "500",
-                                            "fontSize": "0.95rem",
-                                            "color": "#424242",
-                                            "textTransform": "uppercase",
-                                            "letterSpacing": "0.5px",
-                                        },
-                                    )
-                                ),
-                                dbc.NavItem(
-                                    dbc.NavLink(
-                                        "DOCUMENTAÇÃO",
+                                        "DOCUMENTATION",
                                         href="/documentation",
                                         id="nav-documentation",
                                         className="nav-link-custom",
@@ -111,7 +96,7 @@ def create_navbar():
                                 ),
                                 dbc.NavItem(
                                     dbc.NavLink(
-                                        "SOBRE",
+                                        "ABOUT",
                                         href="/about",
                                         id="nav-about",
                                         className="nav-link-custom",
@@ -138,8 +123,9 @@ def create_navbar():
                                             ),
                                             "GITHUB",
                                         ],
-                                        href="https://github.com/angelacunhasoares/EVAonline_SoftwareX",
+                                        href="https://github.com/silvianesoares/EVAONLINE",
                                         target="_blank",
+                                        id="nav-github",
                                         className="nav-link-custom",
                                         style={
                                             "fontWeight": "500",

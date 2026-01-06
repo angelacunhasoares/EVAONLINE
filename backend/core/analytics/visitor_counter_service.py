@@ -60,8 +60,8 @@ class VisitorCounterService:
 
             # Obter pico de hora do dia
             peak_hour = self.redis.get(self.REDIS_KEY_PEAK_HOUR)
-            if peak_hour:
-                peak_hour = peak_hour.decode() if isinstance(peak_hour, bytes) else peak_hour
+            if peak_hour and isinstance(peak_hour, bytes):
+                peak_hour = peak_hour.decode()
 
             return {
                 "total_visitors": total,
@@ -93,9 +93,9 @@ class VisitorCounterService:
                 )
                 self.db.add(stats)
             else:
-                stats.total_visitors = total
-                stats.last_sync = datetime.utcnow()
-                stats.peak_hour = current_hour
+                stats.total_visitors = total  # type: ignore[assignment]
+                stats.last_sync = datetime.utcnow()  # type: ignore[assignment]
+                stats.peak_hour = current_hour  # type: ignore[assignment]
 
             self.db.commit()
 
@@ -113,12 +113,18 @@ class VisitorCounterService:
         try:
             stats = self.db.query(VisitorStats).first()
             if stats:
+                last_sync = getattr(stats, "last_sync", None)
+                created_at = getattr(stats, "created_at", None)
                 return {
                     "total_visitors": stats.total_visitors,
                     "unique_visitors_today": stats.unique_visitors_today,
                     "peak_hour": stats.peak_hour,
-                    "last_sync": (stats.last_sync.isoformat() if stats.last_sync else None),
-                    "created_at": (stats.created_at.isoformat() if stats.created_at else None),
+                    "last_sync": (
+                        last_sync.isoformat() if last_sync else None
+                    ),
+                    "created_at": (
+                        created_at.isoformat() if created_at else None
+                    ),
                 }
             return None
         except Exception as e:

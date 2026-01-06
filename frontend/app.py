@@ -41,20 +41,20 @@ logger = logging.getLogger(__name__)
 def initialize_dash_app(standalone=False):
     """
     Inicializa a aplicação Dash com layout e callbacks.
-    Called by: backend/main.py → mount_dash()
+    Called by: backend/main.py - mount_dash()
     Args:
         standalone: Se True, configura para execução independente
     Returns:
         tuple: (app, server) - Instâncias Dash e Flask
     """
-    logger.info("🔄 Inicializando Dash Frontend...")
+    logger.info("Initializing Dash Frontend...")
     # Criar instância Dash + Flask server
     app, server = create_dash_app(standalone=standalone)
     # Configurar layout
     app.layout = create_base_layout()
     # Registrar callbacks
     register_all_callbacks(app)
-    logger.info("✅ Dash Frontend inicializado com sucesso")
+    logger.info("Dash Frontend initialized successfully")
     return app, server
 
 
@@ -63,12 +63,11 @@ standalone_mode = os.getenv("EVA_FRONTEND_STANDALONE") == "1"
 app, server = initialize_dash_app(standalone=standalone_mode)
 
 if __name__ == "__main__":
-    print("🚀 Iniciando EVAonline Frontend (Dash) na porta 8050...")
-    print("📡 API disponível em: http://localhost:8000")
-    print("🌐 Frontend disponível em: http://localhost:8050")
+    logger.info("Starting EVAonline Frontend (Dash) on port 8050...")
+    logger.info("API available at: http://localhost:8000")
+    logger.info("Frontend available at: http://localhost:8050")
 
     # Re-inicializar com configuração standalone
-    print("🔧 Re-inicializando com modo standalone...")
     app, server = initialize_dash_app(standalone=True)
 
     # Run the Dash server

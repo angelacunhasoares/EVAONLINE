@@ -177,7 +177,7 @@ def process_historical_download(
         warnings.extend(preprocess_warnings)
 
         # 3. Calcular ETo (assumir elevação padrão de 0m se não disponível)
-        from backend.core.eto_calculation.eto_calculation import calculate_eto
+        from backend.core.eto_calculation.eto_services import calculate_eto
 
         df_eto, eto_warnings = calculate_eto(
             weather_df=df_processed,

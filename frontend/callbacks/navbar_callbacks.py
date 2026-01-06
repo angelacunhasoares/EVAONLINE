@@ -60,13 +60,12 @@ def toggle_language(n_clicks, current_language):
     return new_label, button_style, new_language_code
 
 
-# Callback para destacar o link ativo (opcional - futuro)
+# Callback para destacar o link ativo
 @callback(
     [
         Output("nav-home", "style"),
-        Output("nav-about", "style"),
         Output("nav-documentation", "style"),
-        Output("nav-eto", "style"),
+        Output("nav-about", "style"),
     ],
     Input("url", "pathname"),
     prevent_initial_call=True,
@@ -99,12 +98,14 @@ def highlight_active_link(pathname):
     }
 
     # Define qual link está ativo
-    home_style = active_style if pathname == "/" else base_style
-    about_style = active_style if pathname == "/about" else base_style
+    # Home é ativo para "/" ou qualquer rota não mapeada
+    home_style = (
+        active_style if pathname in ["/", "/eto-calculator"] else base_style
+    )
     docs_style = active_style if pathname == "/documentation" else base_style
-    eto_style = active_style if pathname == "/eto-calculator" else base_style
+    about_style = active_style if pathname == "/about" else base_style
 
-    return home_style, about_style, docs_style, eto_style
+    return home_style, docs_style, about_style
 
 
 logger.info("✅ Callbacks da navbar registrados com sucesso")

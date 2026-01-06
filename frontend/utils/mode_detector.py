@@ -273,13 +273,22 @@ class OperationModeDetector:
                 f"Invalid dates for mode {backend_mode}: {message}"
             )
 
-        # Montar payload
+        # Mapear backend_mode → period_type do backend (lowercase com _)
+        # Backend espera: "historical_email", "dashboard_current", "dashboard_forecast"
+        period_type_map = {
+            "HISTORICAL_EMAIL": "historical_email",
+            "DASHBOARD_CURRENT": "dashboard_current",
+            "DASHBOARD_FORECAST": "dashboard_forecast",
+        }
+        period_type = period_type_map.get(backend_mode, "dashboard_current")
+
+        # Montar payload para o backend
         payload = {
-            "latitude": latitude,
-            "longitude": longitude,
+            "lat": latitude,  # Backend espera "lat", não "latitude"
+            "lng": longitude,  # Backend espera "lng", não "longitude"
             "start_date": request_start.isoformat(),
             "end_date": request_end.isoformat(),
-            "mode": backend_mode,
+            "period_type": period_type,
             "email": email if config["requires_email"] else None,
         }
 

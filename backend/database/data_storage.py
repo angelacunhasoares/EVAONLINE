@@ -38,16 +38,23 @@ def get_variable_mapping(source_api: str) -> Dict[str, str]:
             ...
         }
     """
-    with get_db_context() as db:
-        variables = (
-            db.query(APIVariables)
-            .filter(APIVariables.source_api == source_api)
-            .all()
+    try:
+        with get_db_context() as db:
+            variables = (
+                db.query(APIVariables)
+                .filter(APIVariables.source_api == source_api)
+                .all()
+            )
+            mapping = {
+                var.variable_name: var.standard_name for var in variables
+            }
+        return mapping
+    except Exception as e:
+        logger.warning(
+            f"⚠️ Não foi possível obter mapeamento do banco "
+            f"para {source_api}: {e}. Retornando vazio."
         )
-
-        mapping = {var.variable_name: var.standard_name for var in variables}
-
-    return mapping
+        return {}
 
 
 def harmonize_data(

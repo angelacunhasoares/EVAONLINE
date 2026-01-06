@@ -187,6 +187,7 @@ def register_home_callbacks(app):
         [
             Output("map-click-data", "data"),
             Output("selected-location-data", "data"),
+            Output("navigation-coordinates", "data"),
             Output("marker-layer", "children"),
             Output("selected-coords-display", "children"),
             Output("add-favorite-btn", "disabled"),
@@ -200,59 +201,56 @@ def register_home_callbacks(app):
         Captura clique no mapa e habilita botões.
 
         Args:
-            click_data: Dict com 'latlng' = {"lat": float, "lng": float}
+            click_data: Dict com 'latlng' = [lat, lng] (lista de 2 números)
 
         Returns:
-            tuple: (click_data, location_data, marker, coords_display, btn_disabled, btn_disabled)
+            tuple: (click_data, location_data, nav_coords, marker, coords_display, btn_disabled, btn_disabled)
         """
-        # ✅ DEBUG: Log sempre, mesmo se None
+        # DEBUG: Log sempre, mesmo se None
         logger.info(
-            f"🔍 Callback disparado! click_data cru: "
+            f"Callback disparado! click_data: "
             f"{json.dumps(click_data, indent=2) if click_data else 'None/Empty'}"
         )
 
         if not click_data or click_data == {}:
-            logger.warning(
-                "⚠️ click_data vazio ou None - clique não detectado?"
-            )
-            # Retorna estado inicial com mensagem de debug
+            logger.warning("click_data vazio ou None")
             debug_msg = html.Div(
-                "👆 Clique no mapa para ativar (ver logs para debug)",
+                "Click on the map to select a location",
                 className="alert alert-info small",
             )
-            return None, None, [], debug_msg, True, True
+            return None, None, None, [], debug_msg, True, True
 
         try:
-            # ✅ CHECK: Verifica estrutura exata do click_data
+            # Verifica estrutura do click_data
             if "latlng" not in click_data:
-                logger.error(
-                    f"❌ 'latlng' ausente em click_data: {click_data}"
-                )
+                logger.error(f"'latlng' ausente em click_data: {click_data}")
                 error_msg = html.Div(
-                    f"Erro: Estrutura inválida - {click_data}",
+                    f"Error: Invalid structure - {click_data}",
                     className="alert alert-danger small",
                 )
-                return None, None, [], error_msg, True, True
+                return None, None, None, [], error_msg, True, True
 
             latlng = click_data["latlng"]
-            if (
-                not isinstance(latlng, dict)
-                or "lat" not in latlng
-                or "lng" not in latlng
-            ):
-                logger.error(f"❌ latlng malformado: {latlng}")
+
+            # dash-leaflet 1.x retorna latlng como LISTA [lat, lng]
+            if isinstance(latlng, list) and len(latlng) >= 2:
+                lat = latlng[0]
+                lon = latlng[1]
+            # Fallback para formato dict (versões antigas ou outras libs)
+            elif isinstance(latlng, dict):
+                lat = latlng.get("lat")
+                lon = latlng.get("lng")
+            else:
+                logger.error(f"latlng malformado: {latlng}")
                 error_msg = html.Div(
-                    f"Erro: latlng inválido - {latlng}",
+                    f"Error: Invalid latlng format - {latlng}",
                     className="alert alert-danger small",
                 )
-                return None, None, [], error_msg, True, True
+                return None, None, None, [], error_msg, True, True
 
-            lat = latlng["lat"]
-            lon = latlng["lng"]  # ✅ Corrigido: "lng" (Leaflet usa isso)
+            logger.info(f"Click processed: LAT={lat:.6f}, LON={lon:.6f}")
 
-            logger.info(f"✅ Clique processado: LAT={lat:.6f}, LON={lon:.6f}")
-
-            # Criar dados da localização (SIMPLIFICADO - só coordenadas)
+            # Criar dados da localização
             location_data = {
                 "lat": lat,
                 "lon": lon,
@@ -260,43 +258,44 @@ def register_home_callbacks(app):
 
             # Criar marcador no mapa
             marker = create_map_marker(
-                lat, lon, label=f"Lat: {lat:.4f}°, Lon: {lon:.4f}°"
+                lat, lon, label=f"Lat: {lat:.4f}, Lon: {lon:.4f}"
             )
 
             # Criar display de coordenadas compacto
             coords_display = html.Div(
                 [
-                    html.Strong("📍 Selecionado:"),
+                    html.Strong("Selected:"),
                     html.Br(),
-                    html.Small(f"Lat: {lat:.6f}°"),
+                    html.Small(f"Lat: {lat:.6f}"),
                     html.Br(),
-                    html.Small(f"Lon: {lon:.6f}°"),
+                    html.Small(f"Lon: {lon:.6f}"),
                 ],
                 className="text-center p-2 bg-light rounded",
             )
 
             return (
-                {"lat": lat, "lon": lon},
-                location_data,
-                [marker],
-                coords_display,
-                False,  # Habilita botão Adicionar
-                False,  # Habilita botão Calcular
+                {"lat": lat, "lon": lon},  # map-click-data
+                location_data,  # selected-location-data
+                location_data,  # navigation-coordinates (NEW)
+                [marker],  # marker-layer
+                coords_display,  # selected-coords-display
+                False,  # add-favorite-btn disabled
+                False,  # calculate-eto-btn disabled
             )
 
         except KeyError as e:
-            logger.error(f"❌ KeyError em latlng: {e} - Dados: {click_data}")
+            logger.error(f"KeyError em latlng: {e} - Dados: {click_data}")
             error_msg = html.Div(
                 f"KeyError: {e}", className="alert alert-danger small"
             )
-            return None, None, [], error_msg, True, True
+            return None, None, None, [], error_msg, True, True
         except Exception as e:
-            logger.error(f"❌ Erro geral: {e} - Stack: {sys.exc_info()}")
+            logger.error(f"Erro geral: {e} - Stack: {sys.exc_info()}")
             error_msg = html.Div(
-                f"Erro inesperado: {str(e)}",
+                f"Unexpected error: {str(e)}",
                 className="alert alert-danger small",
             )
-            return None, None, [], error_msg, True, True
+            return None, None, None, [], error_msg, True, True
 
     # ==========================================================================
     # CALLBACKS DE FAVORITOS
@@ -325,7 +324,7 @@ def register_home_callbacks(app):
 
         # Verificar limite máximo (5 favoritos)
         if len(current_favorites) >= 5:
-            logger.warning("⚠️ Limite de 5 favoritos atingido")
+            logger.warning("Limite de 5 favoritos atingido")
             toast = dbc.Toast(
                 [
                     html.P(
@@ -337,7 +336,7 @@ def register_home_callbacks(app):
                         className="mb-0 small text-muted",
                     ),
                 ],
-                header="⚠️ Limite Atingido",
+                header="Limite Atingido",
                 icon="warning",
                 is_open=True,
                 dismissable=True,
@@ -355,10 +354,10 @@ def register_home_callbacks(app):
                 abs(fav["lat"] - lat) < 0.0001
                 and abs(fav["lon"] - lon) < 0.0001
             ):
-                logger.info(f"📍 Localização já existe: {lat}, {lon}")
+                logger.info(f"Localizacao ja existe: {lat}, {lon}")
                 toast = dbc.Toast(
                     "Esta localização já está na lista de favoritos.",
-                    header="ℹ️ Favorito Existente",
+                    header="Favorito Existente",
                     icon="info",
                     is_open=True,
                     dismissable=True,
@@ -375,7 +374,7 @@ def register_home_callbacks(app):
         }
         current_favorites.append(new_favorite)
 
-        logger.info(f"⭐ Favorito adicionado: {new_favorite['label']}")
+        logger.info(f"Favorito adicionado: {new_favorite['label']}")
 
         favorites_count = len(current_favorites)
 
@@ -391,7 +390,7 @@ def register_home_callbacks(app):
                     className="text-muted",
                 ),
             ],
-            header="✅ Favorito Adicionado",
+            header="Favorito Adicionado",
             icon="success",
             is_open=True,
             dismissable=True,
@@ -409,6 +408,7 @@ def register_home_callbacks(app):
             Output("favorites-count-badge", "children"),
         ],
         Input("favorites-store", "data"),
+        prevent_initial_call=True,
     )
     def update_favorites_display(favorites):
         """Atualiza a exibição da lista de favoritos."""
@@ -490,7 +490,7 @@ def register_home_callbacks(app):
     def clear_all_favorites(n_clicks):
         """Limpa todos os favoritos."""
         if n_clicks:
-            logger.info("🗑️ Todos os favoritos foram removidos")
+            logger.info("Todos os favoritos foram removidos")
             return []
         return []
 
@@ -509,7 +509,7 @@ def register_home_callbacks(app):
         for idx, n_clicks in enumerate(n_clicks_list):
             if n_clicks:
                 removed = current_favorites.pop(idx)
-                logger.info(f"🗑️ Favorito removido: {removed['label']}")
+                logger.info(f"Favorito removido: {removed['label']}")
                 break
 
         return current_favorites
@@ -592,7 +592,7 @@ def create_selection_info_card(location_data):
             dbc.CardBody(
                 [
                     html.H5(
-                        "📍 Localização Selecionada",
+                        "Localizacao Selecionada",
                         className="card-title mb-3",
                     ),
                     html.Div(
@@ -683,17 +683,17 @@ def register_layer_control_callbacks(app):
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
         if trigger_id == "layer-control-toggle":
-            # Botão Toggle - alterna entre mostrar/ocultar
+            # Botao Toggle - alterna entre mostrar/ocultar
             if current_style.get("display") == "none":
-                logger.info("🗺️ Painel de camadas ABERTO")
+                logger.info("Painel de camadas ABERTO")
                 return {**current_style, "display": "block"}
             else:
-                logger.info("🗺️ Painel de camadas FECHADO (toggle)")
+                logger.info("Painel de camadas FECHADO (toggle)")
                 return {**current_style, "display": "none"}
 
         elif trigger_id == "layer-control-close":
-            # Botão Fechar - sempre oculta
-            logger.info("🗺️ Painel de camadas FECHADO (close)")
+            # Botao Fechar - sempre oculta
+            logger.info("Painel de camadas FECHADO (close)")
             return {**current_style, "display": "none"}
 
         return current_style
@@ -707,12 +707,14 @@ def register_layer_control_callbacks(app):
         """Controla visibilidade da camada Brasil."""
         if selected and "brasil" in selected:
             brasil_geojson = load_brasil_geojson()
-            # ✅ Retornar em lista para o FeatureGroup aceitar
+            # Retornar em lista para o FeatureGroup aceitar
             if brasil_geojson is not None:
-                print(f"✅ Brasil GeoJSON carregado: {type(brasil_geojson)}")
+                logger.debug(
+                    f"Brasil GeoJSON carregado: {type(brasil_geojson)}"
+                )
                 return [brasil_geojson]
             else:
-                print("❌ Brasil GeoJSON retornou None")
+                logger.warning("Brasil GeoJSON retornou None")
                 return []
         return []
 
@@ -725,14 +727,14 @@ def register_layer_control_callbacks(app):
         """Controla visibilidade da camada MATOPIBA."""
         if selected and "matopiba" in selected:
             matopiba_geojson = load_matopiba_geojson()
-            # ✅ Retornar em lista para o FeatureGroup aceitar
+            # Retornar em lista para o FeatureGroup aceitar
             if matopiba_geojson is not None:
-                print(
-                    f"✅ MATOPIBA GeoJSON carregado: {type(matopiba_geojson)}"
+                logger.debug(
+                    f"MATOPIBA GeoJSON carregado: {type(matopiba_geojson)}"
                 )
                 return [matopiba_geojson]
             else:
-                print("❌ MATOPIBA GeoJSON retornou None")
+                logger.warning("MATOPIBA GeoJSON retornou None")
                 return []
         return []
 
@@ -761,81 +763,78 @@ def register_layer_control_callbacks(app):
         return []
 
     @app.callback(
-        [
-            Output("navigation-coordinates", "data"),
-            Output("url", "pathname", allow_duplicate=True),
-        ],
+        Output("navigation-coordinates", "data", allow_duplicate=True),
         Input("calculate-eto-btn", "n_clicks"),
         State("selected-location-data", "data"),
         prevent_initial_call=True,
     )
-    def navigate_to_eto_with_coords(n_clicks, location_data):
+    def sync_coords_for_calculation(n_clicks, location_data):
         """
-        Navega para página ETo salvando coordenadas no Store GLOBAL.
-        Usa sessionStorage para persistir durante a sessão do navegador.
+        Sincroniza coordenadas do mapa para o Store antes do calculo.
+
+        NOTA: Na arquitetura unificada, NAO navegamos para outra pagina.
+        O callback calculate_eto em eto_callbacks.py lera as coordenadas
+        do navigation-coordinates Store.
 
         Args:
-            n_clicks: Número de cliques no botão
+            n_clicks: Numero de cliques no botao
             location_data: Dict com {'lat': float, 'lon': float}
 
         Returns:
-            tuple: (coordinates_dict, pathname)
+            dict: Coordenadas para o Store
         """
         logger.info(
-            f"🚀 navigate_to_eto_with_coords CHAMADO! n_clicks={n_clicks}, location_data={location_data}"
+            f"sync_coords_for_calculation: n_clicks={n_clicks}, location_data={location_data}"
         )
 
         if not n_clicks:
-            logger.warning("⚠️ Abortando - n_clicks vazio")
+            logger.warning("Abortando - n_clicks vazio")
             raise PreventUpdate
 
         if not location_data:
-            logger.warning(
-                "⚠️ Navegando para ETo sem coordenadas (location_data vazio)"
-            )
-            return None, "/eto-calculator"
+            logger.warning("Sem coordenadas selecionadas")
+            raise PreventUpdate
 
         lat = location_data.get("lat")
         lon = location_data.get("lon")
 
         if lat is not None and lon is not None:
             coords = {"lat": lat, "lon": lon}
-            logger.info(f"📍 Salvando coordenadas no Store: {coords}")
-            logger.info(f"🔗 Navegando para: /eto-calculator")
-            return coords, "/eto-calculator"
+            logger.info(f"Coordenadas sincronizadas para calculo: {coords}")
+            return coords
 
-        logger.warning("⚠️ Coordenadas inválidas, navegando sem dados")
-        return None, "/eto-calculator"
+        logger.warning("Coordenadas invalidas")
+        raise PreventUpdate
 
     @app.callback(
-        [
-            Output("navigation-coordinates", "data", allow_duplicate=True),
-            Output("url", "pathname", allow_duplicate=True),
-        ],
+        Output("navigation-coordinates", "data", allow_duplicate=True),
         Input({"type": "calc-eto-favorite", "index": ALL}, "n_clicks"),
         State("favorites-data", "data"),
         prevent_initial_call=True,
     )
-    def navigate_to_eto_from_favorite(n_clicks_list, favorites_data):
+    def sync_coords_from_favorite(n_clicks_list, favorites_data):
         """
-        Navega para ETo calculator a partir de um favorito usando Store.
+        Sincroniza coordenadas de um favorito para o Store.
+
+        NOTA: Na arquitetura unificada, apenas sincronizamos as coordenadas.
+        O usuario ainda precisa clicar no botao CALCULATE ETO para iniciar.
 
         Args:
-            n_clicks_list: Lista de clicks nos botões dos favoritos
+            n_clicks_list: Lista de clicks nos botoes dos favoritos
             favorites_data: Dados dos favoritos
 
         Returns:
-            tuple: (coordinates_dict, pathname)
+            dict: Coordenadas para o Store
         """
         if not any(n_clicks_list) or not favorites_data:
             raise PreventUpdate
 
-        # Encontrar qual botão foi clicado
+        # Encontrar qual botao foi clicado
         ctx = callback_context
         if not ctx.triggered:
             raise PreventUpdate
 
-        # Extrair o índice do botão clicado
+        # Extrair o indice do botao clicado
         button_id = ctx.triggered[0]["prop_id"].split(".")[0]
         import json
 
@@ -850,13 +849,51 @@ def register_layer_control_callbacks(app):
 
             if lat is not None and lon is not None:
                 coords = {"lat": lat, "lon": lon}
-                logger.info(
-                    f"📍 Favorito clicado - Salvando no Store: {coords}"
-                )
-                logger.info(f"🔗 Navegando para: /eto-calculator")
-                return coords, "/eto-calculator"
+                logger.info(f"Favorito clicado - coordenadas: {coords}")
+                return coords
 
-        logger.warning("⚠️ Favorito sem coordenadas válidas")
+        logger.warning("Favorito sem coordenadas validas")
         raise PreventUpdate
 
-    logger.info("✅ Callbacks de controle de camadas registrados")
+    # =========================================================================
+    # SIDEBAR TOGGLE CALLBACK
+    # =========================================================================
+    @app.callback(
+        [
+            Output("settings-sidebar", "is_open"),
+            Output("main-content-area", "style"),
+            Output("sidebar-state", "data"),
+        ],
+        Input("sidebar-toggle-btn", "n_clicks"),
+        State("sidebar-state", "data"),
+        prevent_initial_call=True,
+    )
+    def toggle_sidebar(n_clicks, current_state):
+        """
+        Alterna a visibilidade da sidebar de configuracoes.
+        Ajusta a margem da area principal de acordo.
+        """
+        if not n_clicks:
+            raise PreventUpdate
+
+        new_state = not current_state if current_state is not None else False
+
+        if new_state:
+            # Sidebar aberta
+            style = {
+                "marginLeft": "320px",
+                "transition": "margin-left 0.3s ease-in-out",
+                "minHeight": "calc(100vh - 56px)",
+            }
+        else:
+            # Sidebar fechada
+            style = {
+                "marginLeft": "0px",
+                "transition": "margin-left 0.3s ease-in-out",
+                "minHeight": "calc(100vh - 56px)",
+            }
+
+        logger.info(f"Sidebar toggled: {'open' if new_state else 'closed'}")
+        return new_state, style, new_state
+
+    logger.info("Callbacks de controle de camadas e sidebar registrados")

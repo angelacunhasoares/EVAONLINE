@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -74,6 +74,7 @@ async def download_weather_data(
         start_date=data_inicial,
         end_date=data_final,
         allow_future=True,  # Allow forecast
+        max_future_days=5,  # Forecast: today + 5 days
     )
     if not date_valid:
         msg = f"Invalid dates: {date_details.get('errors')}"
@@ -85,6 +86,9 @@ async def download_weather_data(
     data_final_formatted = pd.to_datetime(data_final)
     period_days = date_details["period_days"]
 
+    # Define today for use throughout function
+    today = datetime.now().date()
+
     # 3. MODE DETECTION (using official module)
     detected_mode, error = ClimateValidationService.detect_mode_from_dates(
         data_inicial, data_final
@@ -92,7 +96,6 @@ async def download_weather_data(
     if not detected_mode:
         warnings_list.append(f"Mode not detected: {error}")
         # Use default mode based on dates
-        today = datetime.now().date()
         end_date_obj = pd.to_datetime(data_final).date()
         if end_date_obj > today:
             detected_mode = "dashboard_forecast"
@@ -211,8 +214,12 @@ async def download_weather_data(
 
         try:
             if source == "nasa_power":
-                from backend.api.services.nasa_power.nasa_power_sync_adapter import (
-                    NASAPowerSyncAdapter,
+                from backend.api.services.nasa_power import (
+                    nasa_power_sync_adapter,
+                )
+
+                NASAPowerSyncAdapter = (
+                    nasa_power_sync_adapter.NASAPowerSyncAdapter
                 )
 
                 client = NASAPowerSyncAdapter()
@@ -250,16 +257,40 @@ async def download_weather_data(
 
             elif source == "openmeteo_archive":
                 # Open-Meteo Archive (historical since 1950)
-                from backend.api.services.openmeteo_archive.openmeteo_archive_sync_adapter import (
-                    OpenMeteoArchiveSyncAdapter,
+                # IMPORTANT: end_date must be <= today - 2 days
+                from backend.api.services.openmeteo_archive import (
+                    openmeteo_archive_sync_adapter,
                 )
+
+                OpenMeteoArchiveSyncAdapter = (
+                    openmeteo_archive_sync_adapter.OpenMeteoArchiveSyncAdapter
+                )
+
+                # Adjust end_date for Archive API limit
+                archive_max_date = (today - timedelta(days=2)).strftime(
+                    "%Y-%m-%d"
+                )
+                archive_max_date_dt = pd.to_datetime(archive_max_date)
+                data_final_dt = pd.to_datetime(data_final_adjusted)
+                archive_end_date = min(data_final_dt, archive_max_date_dt)
+                archive_end_date_str = archive_end_date.strftime("%Y-%m-%d")
+
+                # Skip if start_date > archive_max_date
+                data_inicial_dt = pd.to_datetime(data_inicial_formatted)
+                if data_inicial_dt > archive_max_date_dt:
+                    logger.info(
+                        f"Open-Meteo Archive skipped: requested period "
+                        f"({data_inicial_formatted} to {data_final_adjusted}) "
+                        f"is after archive limit ({archive_max_date})"
+                    )
+                    continue
 
                 client = OpenMeteoArchiveSyncAdapter()
                 openmeteo_data = client.get_daily_data_sync(
                     lat=latitude,
                     lon=longitude,
                     start_date=data_inicial_formatted,
-                    end_date=data_final_adjusted,
+                    end_date=archive_end_date_str,
                 )
 
                 if not openmeteo_data:
@@ -301,8 +332,12 @@ async def download_weather_data(
 
             elif source == "openmeteo_forecast":
                 # Open-Meteo Forecast (forecast + recent: -29d to +5d)
-                from backend.api.services.openmeteo_forecast.openmeteo_forecast_sync_adapter import (
-                    OpenMeteoForecastSyncAdapter,
+                from backend.api.services.openmeteo_forecast import (
+                    openmeteo_forecast_sync_adapter,
+                )
+
+                OpenMeteoForecastSyncAdapter = (
+                    openmeteo_forecast_sync_adapter.OpenMeteoForecastSyncAdapter
                 )
 
                 client = OpenMeteoForecastSyncAdapter()
@@ -404,16 +439,29 @@ async def download_weather_data(
                 # Convert to DataFrame - FILTER variables by region
                 data_records = []
                 for record in met_data:
-                    row = {
-                        "date": record.date,
-                        "temp_max": record.temp_max,
-                        "temp_min": record.temp_min,
-                        "temp_mean": record.temp_mean,
-                        "humidity_mean": record.humidity_mean,
-                    }
-                    # Add precipitation only if recommended
-                    if include_precipitation:
-                        row["precipitation_sum"] = record.precipitation_sum
+                    # Handle both dict and object formats
+                    if isinstance(record, dict):
+                        row = {
+                            "date": record.get("date"),
+                            "temp_max": record.get("temp_max"),
+                            "temp_min": record.get("temp_min"),
+                            "temp_mean": record.get("temp_mean"),
+                            "humidity_mean": record.get("humidity_mean"),
+                        }
+                        if include_precipitation:
+                            row["precipitation_sum"] = record.get(
+                                "precipitation_sum"
+                            )
+                    else:
+                        row = {
+                            "date": record.date,
+                            "temp_max": record.temp_max,
+                            "temp_min": record.temp_min,
+                            "temp_mean": record.temp_mean,
+                            "humidity_mean": record.humidity_mean,
+                        }
+                        if include_precipitation:
+                            row["precipitation_sum"] = record.precipitation_sum
                     data_records.append(row)
 
                 weather_df = pd.DataFrame(data_records)
@@ -436,8 +484,12 @@ async def download_weather_data(
 
             elif source == "nws_forecast":
                 # NWS Forecast (USA, forecasts)
-                from backend.api.services.nws_forecast.nws_forecast_sync_adapter import (
-                    NWSDailyForecastSyncAdapter,
+                from backend.api.services.nws_forecast import (
+                    nws_forecast_sync_adapter,
+                )
+
+                NWSDailyForecastSyncAdapter = (
+                    nws_forecast_sync_adapter.NWSDailyForecastSyncAdapter
                 )
 
                 client = NWSDailyForecastSyncAdapter()
@@ -485,8 +537,12 @@ async def download_weather_data(
                 )
 
             elif source == "nws_stations":
-                from backend.api.services.nws_stations.nws_stations_sync_adapter import (
-                    NWSStationsSyncAdapter,
+                from backend.api.services.nws_stations import (
+                    nws_stations_sync_adapter,
+                )
+
+                NWSStationsSyncAdapter = (
+                    nws_stations_sync_adapter.NWSStationsSyncAdapter
                 )
 
                 client = NWSStationsSyncAdapter()
@@ -513,7 +569,8 @@ async def download_weather_data(
 
         # Don't standardize columns - preserve native API names
         # Each API returns its own specific variables
-        # Validation will be done in data_preprocessing.py with appropriate limits
+        # Validation will be done in data_preprocessing.py with
+        # appropriate limits
         weather_df = weather_df.replace(-999.00, np.nan)
         weather_df = weather_df.dropna(how="all", subset=weather_df.columns)
 
@@ -561,11 +618,53 @@ async def download_weather_data(
             if percentage > 25:
                 var_display = variable_names.get(str(var_name), str(var_name))
                 warnings_list.append(
-                    f"{source}: {var_display} has {percentage:.1f}% missing data"
+                    f"{source}: {var_display} has "
+                    f"{percentage:.1f}% missing data"
                 )
 
+        # Log dados de cada fonte para debug da fusão
+        min_date = weather_df.index.min()
+        max_date = weather_df.index.max()
+        logger.info(
+            f"📦 {source.upper()}: {len(weather_df)} dias obtidos "
+            f"({min_date.date()} a {max_date.date()})"
+        )
+
+        # Mostrar primeiras linhas com variáveis principais
+        display_cols = []
+        key_vars = [
+            "T2M_MAX",
+            "T2M_MIN",
+            "T2M",
+            "temperature_2m_max",
+            "temperature_2m_min",
+            "temperature_2m_mean",
+            "temp_max",
+            "temp_min",
+            "temp_mean",
+            "RH2M",
+            "relative_humidity_2m_mean",
+            "humidity_mean",
+            "WS2M",
+            "wind_speed_10m_mean",
+            "wind_speed_2m_mean",
+            "ALLSKY_SFC_SW_DWN",
+            "shortwave_radiation_sum",
+            "PRECTOTCORR",
+            "precipitation_sum",
+        ]
+        for col in weather_df.columns:
+            if col in key_vars:
+                display_cols.append(col)
+
+        if display_cols:
+            logger.info(f"   Variáveis: {', '.join(display_cols)}")
+            # Mostrar primeiros 3 registros
+            sample_df = weather_df.head(3)[display_cols]
+            logger.info(f"\n{sample_df.to_string()}")
+
         weather_data_sources.append(weather_df)
-        logger.debug("%s: DataFrame obtained\n%s", source, weather_df)
+        logger.debug("%s: DataFrame completo\n%s", source, weather_df)
 
     # Consolidate data (Kalman fusion will be done in eto_services.py)
     if not weather_data_sources:

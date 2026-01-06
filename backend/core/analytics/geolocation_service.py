@@ -41,7 +41,7 @@ class GeolocationService:
         Args:
             visitor_id: UUID único do visitante
             session_id: ID da sessão
-            geolocation: {'latitude': float, 'longitude': float, 'accuracy': float}
+            geolocation: Dict com 'latitude', 'longitude', 'accuracy'
             user_agent: String do User-Agent
             ip_address: IP do visitante (opcional)
             country: País detectado (opcional)
@@ -55,7 +55,11 @@ class GeolocationService:
             >>> visitor = service.create_or_update_visitor(
             ...     visitor_id="visitor_abc123",
             ...     session_id="sess_xyz789",
-            ...     geolocation={'latitude': -15.7939, 'longitude': -47.8828, 'accuracy': 50},
+            ...     geolocation={
+            ...         'latitude': -15.7939,
+            ...         'longitude': -47.8828,
+            ...         'accuracy': 50
+            ...     },
             ...     user_agent="Mozilla/5.0...",
             ...     country="Brazil",
             ...     city="Brasília"
@@ -81,25 +85,28 @@ class GeolocationService:
 
             if visitor:
                 # Atualizar visitante existente
-                visitor.session_id = session_id
+                visitor.session_id = session_id  # type: ignore[assignment]
                 visitor.last_visit = datetime.now(timezone.utc)
                 visitor.visit_count += 1
 
                 # Atualizar geolocalização se fornecida
                 if geolocation:
-                    visitor.last_latitude = geolocation.get("latitude")
-                    visitor.last_longitude = geolocation.get("longitude")
-                    visitor.geolocation_accuracy = geolocation.get("accuracy")
+                    lat = geolocation.get("latitude")
+                    lon = geolocation.get("longitude")
+                    acc = geolocation.get("accuracy")
+                    visitor.last_latitude = lat  # type: ignore[assignment]
+                    visitor.last_longitude = lon  # type: ignore[assignment]
+                    visitor.geolocation_accuracy = acc  # type: ignore
 
                 # Atualizar metadados
                 if country:
-                    visitor.country = country
+                    visitor.country = country  # type: ignore[assignment]
                 if city:
-                    visitor.city = city
+                    visitor.city = city  # type: ignore[assignment]
 
                 # Atualizar região climática
                 if climate_region:
-                    visitor.climate_region = climate_region
+                    visitor.climate_region = climate_region  # type: ignore
 
                 logger.info(
                     f"✅ Visitante atualizado: {visitor_id} "
@@ -209,9 +216,9 @@ class GeolocationService:
             )
 
             if visitor:
-                visitor.last_latitude = latitude
-                visitor.last_longitude = longitude
-                visitor.geolocation_accuracy = accuracy
+                visitor.last_latitude = latitude  # type: ignore[assignment]
+                visitor.last_longitude = longitude  # type: ignore[assignment]
+                visitor.geolocation_accuracy = accuracy  # type: ignore
                 visitor.last_visit = datetime.now(timezone.utc)
                 db.commit()
                 logger.info(f"✅ Geolocalização atualizada: {visitor_id}")

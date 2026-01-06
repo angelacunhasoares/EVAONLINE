@@ -57,23 +57,29 @@ def create_application() -> FastAPI:
             "/frontend/assets", StaticFiles(directory="assets"), name="assets"
         )
 
-    # Add root endpoint
-    @app.get("/")
-    async def root():
-        """Redirect to Dash frontend."""
-        return {
-            "message": "EVAonline API",
-            "frontend": "http://localhost:8050",
-            "docs": "/docs",
-        }
+    # Note: Root endpoint will be handled by Dash frontend
+    # API docs available at /api/v1/docs
 
     return app
 
 
 def mount_dash(app: FastAPI) -> FastAPI:
-    """Dash will run separately on port 8050."""
-    logger.info("Dash will run separately on port 8050")
-    return app
+    """Mount Dash application into FastAPI."""
+    try:
+        from frontend.app import app as dash_app
+        from fastapi.middleware.wsgi import WSGIMiddleware
+
+        logger.info("Mounting Dash frontend into FastAPI...")
+
+        # Mount Dash app at root path
+        app.mount("/", WSGIMiddleware(dash_app.server))
+
+        logger.info("✅ Dash frontend mounted successfully at /")
+        return app
+    except Exception as e:
+        logger.error(f"❌ Failed to mount Dash: {e}")
+        logger.info("Dash will run separately on port 8050")
+        return app
 
 
 # Criar aplicação FastAPI primeiro

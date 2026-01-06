@@ -182,49 +182,46 @@ class WeatherValidationUtils:
     """
     Validações de dados meteorológicos.
 
+    ⚠️ IMPORTANTE: Limites definidos em climate_limits.py
+    (single source of truth). Esta classe fornece interface de
+    validação usando aqueles limites.
+
     Verifica ranges válidos para variáveis meteorológicas
     baseado em limites físicos e práticos.
     """
 
-    # ═══════════════════════════════════════════════════════════════
-    # LIMITES GLOBAIS (Mundo inteiro)
-    # Baseado em records mundiais e limites físicos
-    # ═══════════════════════════════════════════════════════════════
-    TEMP_MIN = (
-        -90.0
-    )  # °C (Record mundial: -89.2°C: https://svs.gsfc.nasa.gov/4126/)
-    TEMP_MAX = 60.0  # °C (Record mundial: 56.7°C: https://www.ncei.noaa.gov/news/earths-hottest-temperature)
-    HUMIDITY_MIN = 0.0  # % (https://www.psu.edu/news/research/story/humans-cant-endure-temperatures-and-humidities-high-previously-thought)
-    HUMIDITY_MAX = 100.0  # % (https://www.psu.edu/news/research/story/humans-cant-endure-temperatures-and-humidities-high-previously-thought)
-    WIND_MIN = (
-        0.0  # m/s (https://mountwashington.org/remembering-the-big-wind/)
+    # Importar limites do módulo centralizado
+    from backend.core.data_processing.climate_limits import (
+        GLOBAL_LIMITS_FUSION as _GLOBAL_LIMITS,
     )
-    WIND_MAX = 120.0  # m/s (~432 km/h, furacão categoria 5: https://mountwashington.org/remembering-the-big-wind/)
-    PRECIP_MIN = 0.0  # mm (https://www.weather.gov/owp/hdsc_world_record)
-    PRECIP_MAX = 2000.0  # mm/dia (record: ~1825mm: (https://www.weather.gov/owp/hdsc_world_record)
-    SOLAR_MIN = 0.0  # MJ/m²/dia (https://www.bom.gov.au/climate/austmaps/metadata-daily-solar-exposure.shtml)
-    SOLAR_MAX = 35.0  # MJ/m²/dia (https://www.bom.gov.au/climate/austmaps/metadata-daily-solar-exposure.shtml)
 
-    # ═══════════════════════════════════════════════════════════════
-    # LIMITES BRASIL (Xavier et al. 2016, 2022)
-    # "New improved Brazilian daily weather gridded data (1961–2020)"
-    # https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.7731
-    # Validações mais rigorosas para dados brasileiros
-    # ═══════════════════════════════════════════════════════════════
-    BRAZIL_TEMP_MIN = -30.0  # °C (limites Xavier)
-    BRAZIL_TEMP_MAX = 50.0  # °C (limites Xavier)
-    BRAZIL_HUMIDITY_MIN = 0.0  # %
-    BRAZIL_HUMIDITY_MAX = 100.0  # %
-    BRAZIL_WIND_MIN = 0.0  # m/s
-    BRAZIL_WIND_MAX = 100.0  # m/s (limites Xavier)
-    BRAZIL_PRECIP_MIN = 0.0  # mm
-    BRAZIL_PRECIP_MAX = 450.0  # mm/dia (limites Xavier)
-    BRAZIL_SOLAR_MIN = 0.0  # MJ/m²/dia
-    BRAZIL_SOLAR_MAX = 40.0  # MJ/m²/dia (limites Xavier)
-    BRAZIL_PRESSURE_MIN = 900.0  # hPa
-    BRAZIL_PRESSURE_MAX = 1100.0  # hPa
+    # Mapeamento simplificado para compatibilidade
+    TEMP_MIN = _GLOBAL_LIMITS["T2M_MIN"][0]
+    TEMP_MAX = _GLOBAL_LIMITS["T2M_MAX"][1]
+    HUMIDITY_MIN = _GLOBAL_LIMITS["RH2M"][0]
+    HUMIDITY_MAX = _GLOBAL_LIMITS["RH2M"][1]
+    WIND_MIN = _GLOBAL_LIMITS["WS2M"][0]
+    WIND_MAX = _GLOBAL_LIMITS["WS2M"][1]
+    PRECIP_MIN = _GLOBAL_LIMITS["PRECTOTCORR"][0]
+    PRECIP_MAX = _GLOBAL_LIMITS["PRECTOTCORR"][1]
+    SOLAR_MIN = _GLOBAL_LIMITS["ALLSKY_SFC_SW_DWN"][0]
+    SOLAR_MAX = _GLOBAL_LIMITS["ALLSKY_SFC_SW_DWN"][1]
 
-    # Dicionário de limites por região
+    # Limites Brasil (extraídos de climate_limits.BRAZIL_LIMITS_VALIDATION)
+    BRAZIL_TEMP_MIN = -30.0
+    BRAZIL_TEMP_MAX = 50.0
+    BRAZIL_HUMIDITY_MIN = 0.0
+    BRAZIL_HUMIDITY_MAX = 100.0
+    BRAZIL_WIND_MIN = 0.0
+    BRAZIL_WIND_MAX = 100.0
+    BRAZIL_PRECIP_MIN = 0.0
+    BRAZIL_PRECIP_MAX = 450.0
+    BRAZIL_SOLAR_MIN = 0.0
+    BRAZIL_SOLAR_MAX = 40.0
+    BRAZIL_PRESSURE_MIN = 900.0
+    BRAZIL_PRESSURE_MAX = 1100.0
+
+    # Dicionário de limites por região (mantido para compatibilidade)
     REGIONAL_LIMITS = {
         "global": {
             "temperature": (TEMP_MIN, TEMP_MAX),
@@ -321,7 +318,7 @@ class WeatherValidationUtils:
         is_valid = temp_min <= temp <= temp_max
 
         # Registrar erro em Prometheus
-        if not is_valid and PROMETHEUS_AVAILABLE:
+        if not is_valid and PROMETHEUS_AVAILABLE and VALIDATION_ERRORS:
             from .geographic_utils import GeographicUtils
 
             detected_region = (

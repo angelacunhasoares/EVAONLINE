@@ -66,15 +66,33 @@ class NASAPowerSyncAdapter:
                 end_date=datetime(2024, 1, 7)
             )
         """
-        return asyncio.run(
-            self._async_get_daily_data(
-                lat=lat,
-                lon=lon,
-                start_date=start_date,
-                end_date=end_date,
-                community=community,
+        try:
+            # Check if event loop is already running
+            loop = asyncio.get_running_loop()
+            # If we're here, there's an existing loop - use nest_asyncio
+            import nest_asyncio
+
+            nest_asyncio.apply()
+            return loop.run_until_complete(
+                self._async_get_daily_data(
+                    lat=lat,
+                    lon=lon,
+                    start_date=start_date,
+                    end_date=end_date,
+                    community=community,
+                )
             )
-        )
+        except RuntimeError:
+            # No loop running - safe to use asyncio.run()
+            return asyncio.run(
+                self._async_get_daily_data(
+                    lat=lat,
+                    lon=lon,
+                    start_date=start_date,
+                    end_date=end_date,
+                    community=community,
+                )
+            )
 
     async def _async_get_daily_data(
         self,

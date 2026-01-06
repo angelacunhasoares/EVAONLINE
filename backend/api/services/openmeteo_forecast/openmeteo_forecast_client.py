@@ -107,7 +107,7 @@ class OpenMeteoForecastClient:
         cache_type = "Redis" if cache else "Local"
         logger.info(
             f"OpenMeteoForecastClient initialized ({cache_type} cache, "
-            f"-29d to +5d)"
+            f"-29d to +5d | EVAonline standard: today+5 days)"
         )
 
     def _setup_client(self, cache_dir: str):
@@ -204,9 +204,11 @@ class OpenMeteoForecastClient:
         else:
             forecast_days = 0
 
-        # Limites da API (conforme configurado no projeto)
-        past_days = min(past_days, 29)  # Project limit: 29 past days
-        forecast_days = min(forecast_days, 5)  # API supports up to 5
+        # Limites configurados para o projeto EVAonline
+        # NOTA: API suporta até past_days=92 e forecast_days=16,
+        # mas EVAonline padroniza para 6 dias totais (hoje + 5 futuros)
+        past_days = min(past_days, 29)  # EVAonline limit: 29 past days
+        forecast_days = min(forecast_days, 6)  # EVAonline limit: 6 future days
 
         # API Forecast sempre inclui hoje (day 0) automaticamente
         # past_days=29 + hoje + forecast_days=5 = 35 dias
