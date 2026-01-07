@@ -1321,6 +1321,7 @@ def calculate_eto(
         Output("eto-results-container", "children", allow_duplicate=True),
         Output("progress-interval", "disabled", allow_duplicate=True),
         Output("current-task-id", "data", allow_duplicate=True),
+        Output("calculation-success-status", "children"),
     ],
     Input("progress-interval", "n_intervals"),
     [
@@ -1336,7 +1337,7 @@ def update_progress(n_intervals, task_id, operation_mode):
     Para outros modos (DASHBOARD_CURRENT, DASHBOARD_FORECAST): Exibe dados normalmente.
     """
     if not task_id:
-        return None, no_update, True, None
+        return None, no_update, True, None, no_update
 
     try:
         import redis
@@ -1376,7 +1377,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                 ],
                 className="p-3 bg-light rounded-3 border",
             )
-            return progress_indicator, no_update, False, task_id
+            return progress_indicator, no_update, False, task_id, no_update
 
         result = json.loads(result_data)
         status = result.get("status")
@@ -1482,7 +1483,17 @@ def update_progress(n_intervals, task_id, operation_mode):
                         className="mt-3",
                     )
 
-                return None, success_content, True, None
+                # Success status for sidebar
+                sidebar_success = dbc.Alert(
+                    [
+                        html.I(className="bi bi-check-circle-fill me-2"),
+                        html.Strong(f"✅ {days_calculated} dias processados"),
+                    ],
+                    color="success",
+                    className="py-2 px-3 mb-0",
+                )
+
+                return None, success_content, True, None, sidebar_success
 
             # ================================================================
             # OUTROS MODOS (DASHBOARD_CURRENT, DASHBOARD_FORECAST):
@@ -1509,7 +1520,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                     ],
                     color="warning",
                 )
-                return None, error_card, True, None
+                return None, error_card, True, None, no_update
 
             # Create DataFrame with standardized column names
             df_records = []
@@ -1540,21 +1551,7 @@ def update_progress(n_intervals, task_id, operation_mode):
             try:
                 results_content = html.Div(
                     [
-                        # Success alert
-                        dbc.Alert(
-                            [
-                                html.I(
-                                    className="bi bi-check-circle-fill me-2"
-                                ),
-                                html.Strong(
-                                    f"✅ Sucesso! {days_calculated} dias "
-                                    "calculados"
-                                ),
-                            ],
-                            color="success",
-                            className="mb-3",
-                        ),
-                        # Tabs with results
+                        # Tabs with results (success message moved to sidebar)
                         create_results_tabs(
                             df, sources=sources_used, lang="pt"
                         ),
@@ -1562,8 +1559,20 @@ def update_progress(n_intervals, task_id, operation_mode):
                     className="results-container",
                 )
 
+                # Success status for sidebar
+                sidebar_success = dbc.Alert(
+                    [
+                        html.I(className="bi bi-check-circle-fill me-2"),
+                        html.Strong(
+                            f"✅ Sucesso! {days_calculated} dias calculados"
+                        ),
+                    ],
+                    color="success",
+                    className="py-2 px-3 mb-0",
+                )
+
                 # Desabilitar interval e limpar task_id
-                return None, results_content, True, None
+                return None, results_content, True, None, sidebar_success
 
             except Exception as e:
                 logger.error(f"Error creating results tabs: {e}")
@@ -1575,7 +1584,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                     ],
                     color="warning",
                 )
-                return None, error_card, True, None
+                return None, error_card, True, None, no_update
 
         elif status == "FAILURE":
             # Handle FAILURE status
@@ -1629,7 +1638,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                 ],
                 className="mt-3",
             )
-            return None, error_card, True, None
+            return None, error_card, True, None, no_update
 
         elif status == "PENDING" or status == "STARTED":
             # Task em execução - mostrar indicador elegante com percentual
@@ -1681,16 +1690,16 @@ def update_progress(n_intervals, task_id, operation_mode):
                 className="p-3 bg-light rounded-3 border",
             )
 
-            return progress_indicator, no_update, False, task_id
+            return progress_indicator, no_update, False, task_id, no_update
 
         else:
             # Status desconhecido - manter consultando
             logger.warning(f"⚠️ Status desconhecido: {status}")
-            return None, no_update, False, task_id
+            return None, no_update, False, task_id, no_update
 
     except Exception as e:
         logger.error(f"Erro ao atualizar progresso: {e}")
-        return None, no_update, False, task_id
+        return None, no_update, False, task_id, no_update
 
 
 logger.info("✅ Página ETo carregada com sucesso")

@@ -12,11 +12,15 @@ Responsibilities:
 """
 
 from datetime import date, timedelta
-from typing import Any
+from typing import Any, Optional
 
 from loguru import logger
 
 from .climate_source_availability import OperationMode
+from backend.api.services.timezone_utils import (
+    get_today_for_location,
+    get_today_utc,
+)
 
 
 class ClimateValidationService:
@@ -92,6 +96,8 @@ class ClimateValidationService:
         start_date: str,
         end_date: str,
         period_days: int | None = None,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
     ) -> tuple[bool, dict[str, Any]]:
         """
         Validate operation mode and its specific constraints.
@@ -102,6 +108,8 @@ class ClimateValidationService:
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD)
             period_days: Number of days (optional, will be calculated if omitted)
+            lat: Latitude (optional, for timezone-aware validation)
+            lng: Longitude (optional, for timezone-aware validation)
 
         Returns:
             Tuple (valid, details)
@@ -126,7 +134,15 @@ class ClimateValidationService:
         if period_days is None:
             period_days = (end - start).days + 1
 
-        today = date.today()  # Consistent with date.today()
+        # Use location-based timezone if coordinates provided, else UTC
+        if lat is not None and lng is not None:
+            today = get_today_for_location(lat, lng)
+            logger.debug(
+                f"📅 Using location-based today ({lat}, {lng}): {today}"
+            )
+        else:
+            today = get_today_utc()
+            logger.debug(f"📅 Using UTC today: {today}")
         errors: list[str] = []
 
         # MODE 1: HISTORICAL_EMAIL (old data, email delivery)
@@ -270,6 +286,8 @@ class ClimateValidationService:
         end_date: str,
         allow_future: bool = False,
         max_future_days: int = 0,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
     ) -> tuple[bool, dict[str, Any]]:
         """
         Validate date FORMAT and future limits.
@@ -285,6 +303,8 @@ class ClimateValidationService:
             allow_future: If future dates are allowed in range
             max_future_days: Maximum days in future allowed
                 (0 = up to today, 5 = up to today+5d for forecast)
+            lat: Latitude (optional, for timezone-aware validation)
+            lng: Longitude (optional, for timezone-aware validation)
 
         Returns:
             Tuple (valid, details)
@@ -297,7 +317,12 @@ class ClimateValidationService:
             return False, {"error": str(e)}
 
         errors: list[str] = []
-        today = date.today()
+
+        # Use location-based timezone if coordinates provided, else UTC
+        if lat is not None and lng is not None:
+            today = get_today_for_location(lat, lng)
+        else:
+            today = get_today_utc()
         max_allowed_date = today + timedelta(days=max_future_days)
 
         # Validation 1: start <= end
@@ -410,7 +435,10 @@ class ClimateValidationService:
 
     @staticmethod
     def detect_mode_from_dates(
-        start_date: str, end_date: str
+        start_date: str,
+        end_date: str,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
     ) -> tuple[str | None, str | None]:
         """
         Auto-detect operation mode based on dates.
@@ -425,6 +453,8 @@ class ClimateValidationService:
         Args:
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD)
+            lat: Latitude (optional, for timezone-aware detection)
+            lng: Longitude (optional, for timezone-aware detection)
 
         Returns:
             Tuple (detected mode or None, error message)
@@ -436,7 +466,11 @@ class ClimateValidationService:
         except ValueError as e:
             return None, str(e)
 
-        today = date.today()
+        # Use location-based timezone if coordinates provided, else UTC
+        if lat is not None and lng is not None:
+            today = get_today_for_location(lat, lng)
+        else:
+            today = get_today_utc()
         period_days = (end - start).days + 1
 
         # Rule 1: DASHBOARD_FORECAST (with ±1 day tolerance for timezone)

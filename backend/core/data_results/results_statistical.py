@@ -124,7 +124,7 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
                         [
                             html.Th(
                                 col,
-                                className="text-center bg-success text-white",
+                                className="text-center bg-primary text-white",
                             )
                             for col in stats_df.columns
                         ]
@@ -232,7 +232,8 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
                     html.Tr(
                         [
                             html.Th(
-                                col, className="text-center bg-info text-white"
+                                col,
+                                className="text-center bg-primary text-white",
                             )
                             for col in normality_df.columns
                         ]
@@ -409,7 +410,7 @@ def display_eto_summary(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         header = html.Thead(
             html.Tr(
                 [
-                    html.Th(col, className="text-center bg-warning text-dark")
+                    html.Th(col, className="text-center bg-primary text-white")
                     for col in df_renamed.columns
                 ]
             )

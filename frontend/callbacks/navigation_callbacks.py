@@ -14,7 +14,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 # Usar página unificada
-from ..pages.home_unified import home_layout
+from ..pages.home import home_layout
 from ..pages.about import about_layout
 from ..pages.documentation import documentation_layout
 
@@ -55,8 +55,7 @@ def register_navigation_callbacks(app):
     )
     def handle_navbar_navigation(home_clicks, doc_clicks, about_clicks):
         """
-        Manipula navegação pela navbar (EXCETO nav-eto).
-        nav-eto é controlado por callbacks específicos que preservam query params.
+        Manipula navegação pela navbar.
         """
         ctx = callback_context
         if not ctx.triggered:
@@ -95,7 +94,6 @@ def register_navigation_callbacks(app):
     @app.callback(
         [
             Output("nav-home", "active"),
-            Output("nav-eto", "active"),
             Output("nav-documentation", "active"),
             Output("nav-about", "active"),
         ],
@@ -105,14 +103,12 @@ def register_navigation_callbacks(app):
         """
         Atualiza os links ativos na navbar baseado na página atual
         """
-        if pathname == "/eto-calculator":
-            return False, True, False, False
-        elif pathname == "/documentation":
-            return False, False, True, False
+        if pathname == "/documentation":
+            return False, True, False
         elif pathname == "/about":
-            return False, False, False, True
+            return False, False, True
         else:  # Home ou qualquer outra página
-            return True, False, False, False
+            return True, False, False
 
     # Clientside callback para atualizar título da página (sem duplicação)
     app.clientside_callback(

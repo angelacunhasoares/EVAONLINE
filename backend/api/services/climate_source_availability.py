@@ -37,6 +37,7 @@ from typing import Any
 from loguru import logger
 
 from backend.api.services.geographic_utils import GeographicUtils
+from backend.api.services.timezone_utils import get_today_for_location
 
 
 class OperationMode(StrEnum):  # StrEnum for Pydantic v2 compatibility
@@ -158,7 +159,9 @@ class ClimateSourceAvailability:
                 f"end_date ({end_parsed})"
             )
 
-        today = date.today()  # Always use today() for consistency
+        # Use location-based timezone for "today"
+        today = get_today_for_location(lat, lon)
+        logger.debug(f"📅 Using location-based today ({lat}, {lon}): {today}")
         result: dict[str, dict[str, Any]] = {}
 
         # Check location (with log bind for context)

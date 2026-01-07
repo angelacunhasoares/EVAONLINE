@@ -10,8 +10,67 @@ Mapeia interface do usuário → modos do backend:
 from datetime import date, datetime, timedelta
 from typing import Tuple, Optional
 import logging
+import pytz
+from timezonefinderL import TimezoneFinder
 
 logger = logging.getLogger(__name__)
+
+# Cache do TimezoneFinder para melhor performance
+_tf = None
+
+
+def _get_timezone_finder() -> TimezoneFinder:
+    """Retorna instância singleton do TimezoneFinder."""
+    global _tf
+    if _tf is None:
+        _tf = TimezoneFinder()
+    return _tf
+
+
+def get_timezone_for_location(lat: float, lng: float) -> pytz.BaseTzInfo:
+    """
+    Detecta o timezone baseado nas coordenadas.
+
+    Args:
+        lat: Latitude
+        lng: Longitude
+
+    Returns:
+        Timezone pytz para a localização
+    """
+    tf = _get_timezone_finder()
+    tz_name = tf.timezone_at(lat=lat, lng=lng)
+
+    if tz_name:
+        logger.debug(f"🌍 Timezone detectado para ({lat}, {lng}): {tz_name}")
+        return pytz.timezone(tz_name)
+
+    # Fallback para UTC se não conseguir detectar
+    logger.warning(f"⚠️ Timezone não detectado para ({lat}, {lng}), usando UTC")
+    return pytz.UTC
+
+
+def get_today_for_location(lat: float, lng: float) -> date:
+    """
+    Retorna a data de hoje no timezone da localização especificada.
+
+    Args:
+        lat: Latitude
+        lng: Longitude
+
+    Returns:
+        Data atual na localização
+    """
+    tz = get_timezone_for_location(lat, lng)
+    return datetime.now(tz).date()
+
+
+def get_today_local() -> date:
+    """
+    Retorna a data de hoje no timezone de São Paulo (fallback).
+    Use get_today_for_location() quando tiver coordenadas.
+    """
+    return datetime.now(pytz.timezone("America/Sao_Paulo")).date()
 
 
 class OperationModeDetector:
@@ -122,7 +181,7 @@ class OperationModeDetector:
             return False, f"Invalid mode: {mode}"
 
         config = cls.BACKEND_MODES[mode]
-        today = date.today()
+        today = get_today_local()
         period_days = (end_date - start_date).days + 1
 
         if mode == "HISTORICAL_EMAIL":
@@ -234,7 +293,11 @@ class OperationModeDetector:
             ui_selection, start_date, end_date, period_days
         )
 
-        today = date.today()
+        # Usar timezone baseado na localização selecionada
+        today = get_today_for_location(latitude, longitude)
+        logger.info(
+            f"📅 Data local para ({latitude}, {longitude}): {today.isoformat()}"
+        )
 
         # Calcular datas baseado no modo
         if ui_selection == "historical":
