@@ -35,7 +35,7 @@ GLOBAL_LIMITS_VALIDATION = {
     "T2M": (-90, 60, "neither"),
     "RH2M": (0, 100, "both"),
     "WS2M": (0, 113, "left"),
-    "PRECTOTCORR": (0, 2000, "neither"),
+    "PRECTOTCORR": (0, 2000, "left"),
     "ALLSKY_SFC_SW_DWN": (0, 45, "left"),
     # ─────────────────────────────────────────────────────────────
     # Open-Meteo Archive/Forecast
@@ -51,7 +51,7 @@ GLOBAL_LIMITS_VALIDATION = {
     "shortwave_radiation_sum": (0, 45, "left"),
     "daylight_duration": (0, 24, "both"),
     "sunshine_duration": (0, 24, "both"),
-    "precipitation_sum": (0, 2000, "neither"),
+    "precipitation_sum": (0, 2000, "left"),
     "et0_fao_evapotranspiration": (0, 20, "left"),
     # ─────────────────────────────────────────────────────────────
     # MET Norway
@@ -63,7 +63,7 @@ GLOBAL_LIMITS_VALIDATION = {
     # NWS
     # ─────────────────────────────────────────────────────────────
     "wind_speed_ms": (0, 113, "left"),
-    "precipitation_mm": (0, 2000, "neither"),
+    "precipitation_mm": (0, 2000, "left"),
 }
 
 # Formato GLOBAL_LIMITS_FUSION: {variável: (min, max)}
@@ -95,7 +95,7 @@ BRAZIL_LIMITS_VALIDATION = {
     "T2M": (-30, 50, "neither"),
     "RH2M": (0, 100, "both"),
     "WS2M": (0, 100, "left"),
-    "PRECTOTCORR": (0, 450, "neither"),
+    "PRECTOTCORR": (0, 450, "left"),
     "ALLSKY_SFC_SW_DWN": (0, 40, "left"),
     # Open-Meteo Archive/Forecast
     "temperature_2m_max": (-30, 50, "neither"),
@@ -109,7 +109,7 @@ BRAZIL_LIMITS_VALIDATION = {
     "shortwave_radiation_sum": (0, 40, "left"),
     "daylight_duration": (0, 24, "both"),
     "sunshine_duration": (0, 24, "both"),
-    "precipitation_sum": (0, 450, "neither"),
+    "precipitation_sum": (0, 450, "left"),
     "et0_fao_evapotranspiration": (0, 15, "left"),
     # MET Norway
     "pressure_mean_sea_level": (900, 1100, "both"),
@@ -117,7 +117,7 @@ BRAZIL_LIMITS_VALIDATION = {
     "humidity_percent": (0, 100, "both"),
     # NWS
     "wind_speed_ms": (0, 100, "left"),
-    "precipitation_mm": (0, 450, "neither"),
+    "precipitation_mm": (0, 450, "left"),
 }
 
 

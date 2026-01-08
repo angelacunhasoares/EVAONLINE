@@ -41,6 +41,7 @@ def calculate_eto_task(
     visitor_id: str | None = None,
     session_id: str | None = None,
     file_format: str = "excel",
+    enable_fusion: bool = False,  # 🔀 Flag para fusão Kalman
 ) -> dict[str, Any]:
     """
     Calcula ETo para localização com progresso em tempo real.
@@ -52,6 +53,7 @@ def calculate_eto_task(
         sources: Fontes climáticas (None = auto-select)
         elevation: Elevação em metros (None = buscar via OpenTopo)
         mode: Modo de operação (None = auto-detect)
+        enable_fusion: Se True, aplica fusão Kalman (Smart Fusion)
 
     Returns:
         Dict com resultado completo:
@@ -184,6 +186,7 @@ def calculate_eto_task(
                 end_date=end_date,
                 sources=selected_sources,
                 elevation=elevation,
+                enable_fusion=enable_fusion,  # 🔀 Passar flag de fusão
             )
         )
 

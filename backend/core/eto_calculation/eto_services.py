@@ -13,6 +13,7 @@ import math
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 import pandas as pd
 from loguru import logger
 
@@ -202,6 +203,7 @@ class EToProcessingService:
         sources: List[str],
         elevation: Optional[float] = None,
         use_precise_elevation: bool = True,
+        enable_fusion: bool = False,  # 🔀 Controla fusão Kalman explicitamente
     ) -> Dict[str, Any]:
         warnings = []
 
@@ -239,16 +241,81 @@ class EToProcessingService:
             df_clean, prep_warnings = preprocessing(multi_source_df, latitude)
             warnings.extend(prep_warnings)
 
-            # 4. FUSÃO + KALMAN (NOVA ARQUITETURA MODULAR)
-            logger.info(
-                f"Iniciando fusão inteligente com {len(sources)} fontes"
-            )
-            fused_df = self.ensemble.process(
-                df_multi_source=df_clean, lat=latitude, lon=longitude
-            )
+            # 4. DECISÃO: Fusão Kalman SOMENTE se enable_fusion=True
+            if enable_fusion:
+                # 🔀 SMART FUSION: usuário escolheu explicitamente
+                logger.info(
+                    f"🔀 Smart Fusion ativada pelo usuário: "
+                    f"aplicando Kalman em {len(sources)} fonte(s)"
+                )
+                fused_df = self.ensemble.process(
+                    df_multi_source=df_clean, lat=latitude, lon=longitude
+                )
+            else:
+                # 🔵 FONTE ÚNICA OU DESABILITADA: usar dados originais
+                sources_str = ", ".join(sources)
+                logger.info(
+                    f"🔵 Fusão desabilitada: usando dados originais "
+                    f"de {sources_str} (sem fusão Kalman)"
+                )
+                fused_df = df_clean.copy()
+
+                # Adicionar informação de fusão
+                fused_df["fusion_mode"] = "single_source"
+                fused_df["fusion_description"] = (
+                    f"Dados originais de {sources_str} (sem fusão)"
+                )
+                fused_df["fusion_sources"] = sources_str
 
             if fused_df.empty:
                 raise ValueError("Fusão resultou em DataFrame vazio")
+
+            # Garantir que a coluna 'date' existe a partir do index
+            logger.info(
+                f"🔍 Verificando coluna 'date'. Index type: "
+                f"{type(fused_df.index).__name__}, "
+                f"Index name: {fused_df.index.name}, "
+                f"Has 'date' column: {'date' in fused_df.columns}"
+            )
+
+            if "date" not in fused_df.columns:
+                logger.warning("⚠️ Coluna 'date' não encontrada!")
+                # Se o index é DatetimeIndex, criar coluna date a partir dele
+                if isinstance(fused_df.index, pd.DatetimeIndex):
+                    fused_df["date"] = fused_df.index
+                    logger.info(
+                        f"✅ Coluna 'date' criada a partir do index. "
+                        f"Shape: {fused_df.shape}, primeiros valores: "
+                        f"{fused_df['date'].head().tolist()}"
+                    )
+                else:
+                    # Reset index e renomear se necessário
+                    logger.info("🔄 Executando reset_index...")
+                    fused_df.reset_index(inplace=True)
+                    logger.info(
+                        f"Colunas após reset_index: {list(fused_df.columns)}"
+                    )
+
+                    if "date" not in fused_df.columns:
+                        # Tentar encontrar coluna temporal
+                        for col in fused_df.columns:
+                            if col in ["index", "time", "datetime"]:
+                                fused_df.rename(
+                                    columns={col: "date"}, inplace=True
+                                )
+                                logger.info(
+                                    f"✅ Coluna '{col}' renomeada para 'date'"
+                                )
+                                break
+
+                # Verificação final
+                if "date" not in fused_df.columns:
+                    raise ValueError(
+                        f"Impossível criar coluna 'date'. "
+                        f"Colunas disponíveis: {list(fused_df.columns)}"
+                    )
+            else:
+                logger.info("✅ Coluna 'date' já existe!")
 
             # 5. Garantir et0_mm (caso não tenha sido calculado antes)
             if "et0_mm" not in fused_df.columns:
@@ -311,6 +378,11 @@ class EToProcessingService:
             }
             final_series = final_series.rename(columns=rename_map)
 
+            logger.info(
+                f"📊 Série final montada: {len(final_series)} registros. "
+                f"Colunas: {list(final_series.columns)}"
+            )
+
             # Modo de fusão
             mode = result_df["fusion_mode"].iloc[0]
             mode_text = (
@@ -336,16 +408,20 @@ class EToProcessingService:
                 ),
                 "warnings": warnings,
                 "message": (
-                    f"ETo calculado com sucesso usando fusão modular. "
-                    f"{mode_text}"
+                    f"ETo calculado com sucesso para "
+                    f"{len(final_series)} dias"
                 ),
             }
 
         except Exception as e:
-            logger.error(
-                f"Erro fatal no processamento ETo: {e}", exc_info=True
-            )
-            return {"error": str(e), "warnings": warnings}
+            logger.error(f"Erro fatal no processamento ETo: {e}")
+            import traceback
+
+            traceback.print_exc()
+            return {
+                "error": str(e),
+                "warnings": warnings,
+            }
 
     async def _get_best_elevation(self, lat, lon, user_elev, use_precise):
         if user_elev is not None:
@@ -367,22 +443,53 @@ class EToProcessingService:
         return 0.0, {"value": 0.0, "source": "padrão"}
 
     def _calculate_raw_eto(self, df, lat, lon, elevation, factors):
+        """Calcula ETo linha por linha usando FAO-56"""
         df["elevation_m"] = elevation
         et0_values = []
+
+        # Garantir que temos a coluna date
+        if "date" not in df.columns:
+            if isinstance(df.index, pd.DatetimeIndex):
+                df["date"] = df.index
+            else:
+                raise ValueError(
+                    "DataFrame sem coluna 'date' e sem DatetimeIndex"
+                )
+
         for _, row in df.iterrows():
             meas = row.to_dict()
+
+            # Converter date para string no formato correto
+            date_value = row.get("date", "")
+            if pd.isna(date_value) or date_value == "":
+                logger.warning(f"Linha sem data válida: {row}")
+                et0_values.append(np.nan)
+                continue
+
+            # Garantir formato YYYY-MM-DD
+            if isinstance(date_value, pd.Timestamp):
+                date_str = date_value.strftime("%Y-%m-%d")
+            else:
+                date_str = str(date_value)[:10]
+
             meas.update(
                 {
                     "latitude": lat,
                     "longitude": lon,
-                    "date": str(row.get("date", ""))[:10],
+                    "date": date_str,
                     "elevation_m": elevation,
                 }
             )
-            result = self.et0_calc.calculate_et0(
-                meas, elevation_factors=factors
-            )
-            et0_values.append(result["et0_mm_day"])
+
+            try:
+                result = self.et0_calc.calculate_et0(
+                    meas, elevation_factors=factors
+                )
+                et0_values.append(result["et0_mm_day"])
+            except Exception as e:
+                logger.error(f"Erro ao calcular ETo para {date_str}: {e}")
+                et0_values.append(np.nan)
+
         df["et0_mm"] = et0_values
         return df
 

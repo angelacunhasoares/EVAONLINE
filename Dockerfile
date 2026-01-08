@@ -6,7 +6,7 @@
 # ===========================================
 # Stage 1: Builder - Production Dependencies
 # ===========================================
-FROM python:3.12-slim-alpine AS builder-prod
+FROM python:3.12-slim AS builder-prod
 
 # Metadata para melhor rastreabilidade da imagem
 LABEL maintainer="Ângela Cunha Soares <angelassilviane@gmail.com>"
@@ -16,20 +16,22 @@ LABEL description="Builder stage for production dependencies"
 # Configurar diretório de trabalho para o build
 WORKDIR /build
 
+# Copiar apenas os arquivos necessários para instalar dependências
+COPY pyproject.toml ./
+COPY requirements.txt ./
+
 # Instalar dependências de compilação APENAS para build
-RUN apk add --no-cache --virtual .build-deps \
-    postgresql-dev \
-    gcc \
-    musl-dev \
-    linux-headers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    libgdal-dev \
+    libgeos-dev \
+    libproj-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instalar projeto e dependências de produção em diretório isolado
+# Instalar dependências de produção usando requirements.txt em diretório isolado
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --target /dependencies .
-
-# Limpar dependências de compilação (reduz tamanho do builder)
-RUN apk del .build-deps && \
-    rm -rf /var/cache/apk/*
+    pip install --no-cache-dir --target /dependencies -r requirements.txt
 
 # ===========================================
 # Stage 1B: Builder - Development Dependencies
@@ -45,7 +47,7 @@ RUN pip install --no-cache-dir --user .[dev]
 # ===========================================
 # Stage 2: Runtime (Production) - IMAGEM FINAL LEVE
 # ===========================================
-FROM python:3.12-slim-alpine AS runtime
+FROM python:3.12-slim AS runtime
 
 # Metadata da imagem final
 LABEL maintainer="Ângela Cunha Soares <angelassilviane@gmail.com>"
@@ -53,14 +55,20 @@ LABEL stage="runtime"
 LABEL description="Production runtime image for EVAonline"
 
 # Instalar APENAS dependências essenciais de runtime
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     # Runtime do PostgreSQL
-    postgresql-libs \
-    # Para health checks (versão Alpine)
-    curl
+    libpq5 \
+    # Bibliotecas geoespaciais
+    libgdal36 \
+    libgeos-c1t64 \
+    libproj25 \
+    # Para health checks e scripts
+    curl \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
 
-# Criar usuário não-root para segurança (Alpine)
-RUN adduser -D -u 1000 -s /bin/sh evaonline
+# Criar usuário não-root para segurança
+RUN useradd -m -u 1000 -s /bin/bash evaonline
 
 
 # Configurar variáveis de ambiente para otimização Python
@@ -79,15 +87,17 @@ RUN mkdir -p /app/logs /app/data /app/temp && \
 # Copiar APENAS dependências de produção (não inclui dev tools)
 COPY --from=builder-prod --chown=evaonline:evaonline /dependencies /dependencies
 
-# Copiar entrypoint
-COPY --chown=evaonline:evaonline docker/backend/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 # Copiar código em ordem estratégica para cache
 # Arquivos que mudam pouco primeiro (melhor cache)
 COPY --chown=evaonline:evaonline pyproject.toml .
 COPY --chown=evaonline:evaonline alembic.ini .
 COPY --chown=evaonline:evaonline pytest.ini .
+
+# Copiar entrypoint (como root para definir permissões)
+USER root
+COPY --chown=root:root docker/backend/entrypoint.sh /entrypoint.sh
+RUN chmod 755 /entrypoint.sh && \
+    dos2unix /entrypoint.sh 2>/dev/null || sed -i 's/\r$//' /entrypoint.sh
 
 # Arquivos que mudam com média frequência
 COPY --chown=evaonline:evaonline config/ ./config/

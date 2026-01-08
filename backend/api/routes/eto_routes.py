@@ -172,6 +172,7 @@ async def calculate_eto(
 
             # Usar TODAS as fontes disponíveis para fusão Kalman
             selected_sources = compatible_sources
+            enable_fusion = True  # 🔀 Usuário escolheu Smart Fusion
             logger.info(
                 f"Auto-seleção (fusão): {operation_mode.value} em "
                 f"({request.lat}, {request.lng}) → {selected_sources} "
@@ -198,6 +199,7 @@ async def calculate_eto(
 
             # Usar apenas a fonte especificada (sem fusão)
             selected_sources = [specified_source]
+            enable_fusion = False  # 🔵 Fonte única: dados originais
             logger.info(f"Fonte especificada: {specified_source}")
 
         # 4. Obter elevação (se não fornecida)
@@ -222,6 +224,7 @@ async def calculate_eto(
             visitor_id=request.visitor_id,  # ID único do visitante
             session_id=request.session_id,  # ID da sessão
             file_format=request.file_format,  # Formato: excel ou csv
+            enable_fusion=enable_fusion,  # 🔀 Flag de fusão Kalman
         )
 
         task_id = task.id

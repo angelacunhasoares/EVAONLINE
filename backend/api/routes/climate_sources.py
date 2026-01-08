@@ -8,12 +8,14 @@ from loguru import logger
 
 from backend.api.services.climate_source_manager import ClimateSourceManager
 from backend.api.services.climate_source_selector import ClimateSourceSelector
+from backend.api.services.eto_variable_validator import EToVariableValidator
 
 router = APIRouter(prefix="/climate/sources", tags=["Climate"])
 
 # Inicializar gerenciador e seletor globalmente
 _manager = ClimateSourceManager()
 _selector = ClimateSourceSelector()
+_eto_validator = EToVariableValidator()
 
 
 # ============================================================================
@@ -41,6 +43,9 @@ async def get_available_sources(
         if lat is None or lon is None:
             sources = []
             for source_id, config in _manager.SOURCES_CONFIG.items():
+                # Obter informações de variáveis ETo
+                eto_info = _eto_validator.get_source_description(source_id)
+
                 sources.append(
                     {
                         "id": source_id,
@@ -52,6 +57,9 @@ async def get_available_sources(
                         "data_types": config.get("variables", []),
                         "realtime": config.get("realtime", False),
                         "priority": config.get("priority", 0),
+                        "has_complete_eto": eto_info["has_complete_eto"],
+                        "eto_status": eto_info["description"],
+                        "missing_variables": eto_info["missing_variables"],
                     }
                 )
 
@@ -91,6 +99,10 @@ async def get_available_sources(
                 source_name = source.get(
                     "label", config.get("name", source_id)
                 )
+
+                # Obter informações de variáveis ETo
+                eto_info = _eto_validator.get_source_description(source_id)
+
                 sources.append(
                     {
                         "id": source_id,
@@ -103,6 +115,9 @@ async def get_available_sources(
                         "realtime": config.get("realtime", False),
                         "priority": config.get("priority", 0),
                         "description": source.get("description", ""),
+                        "has_complete_eto": eto_info["has_complete_eto"],
+                        "eto_status": eto_info["description"],
+                        "missing_variables": eto_info["missing_variables"],
                     }
                 )
 

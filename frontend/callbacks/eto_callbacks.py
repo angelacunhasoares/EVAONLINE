@@ -1342,10 +1342,15 @@ def update_progress(n_intervals, task_id, operation_mode):
     try:
         import redis
         import json
+        import os
+
+        # Usar variável de ambiente ou padrão para Docker
+        redis_host = os.getenv("REDIS_HOST", "redis")
+        redis_port = int(os.getenv("REDIS_PORT", "6379"))
 
         r = redis.Redis(
-            host="localhost",
-            port=6379,
+            host=redis_host,
+            port=redis_port,
             db=0,
             decode_responses=True,
         )
