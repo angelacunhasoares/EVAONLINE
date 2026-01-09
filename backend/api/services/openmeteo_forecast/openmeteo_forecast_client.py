@@ -208,7 +208,9 @@ class OpenMeteoForecastClient:
         # NOTA: API suporta até past_days=92 e forecast_days=16,
         # mas EVAonline padroniza para 6 dias totais (hoje + 5 futuros)
         past_days = min(past_days, 29)  # EVAonline limit: 29 past days
-        forecast_days = min(forecast_days, 6)  # EVAonline limit: 6 future days
+        forecast_days = min(
+            forecast_days, 5
+        )  # EVAonline limit: 5 future days (+ hoje = 6 total)
 
         # API Forecast sempre inclui hoje (day 0) automaticamente
         # past_days=29 + hoje + forecast_days=5 = 35 dias

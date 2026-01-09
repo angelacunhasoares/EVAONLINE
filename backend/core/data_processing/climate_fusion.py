@@ -191,6 +191,10 @@ class ClimateFusion:
 
         # Fusão por dia
         result_rows = []
+        fusion_strategy = (
+            {}
+        )  # Track which variables use single vs multi-source
+
         for date, group in df.groupby(df.index):
             row = {"date": date}
             if "source" in group.columns:
@@ -208,7 +212,17 @@ class ClimateFusion:
                     row[var] = np.nan
                     continue
 
-                # Fusão ponderada pelas fontes saudáveis
+                # Se apenas uma fonte tem a variável → usar 100% dela (single-source)
+                if len(values) == 1:
+                    source_name = list(values.keys())[0]
+                    if var not in fusion_strategy:
+                        fusion_strategy[var] = {"single": source_name}
+                    row[var] = list(values.values())[0]
+                    continue
+
+                # Fusão ponderada pelas fontes saudáveis (multi-source)
+                if var not in fusion_strategy:
+                    fusion_strategy[var] = {"multi": list(values.keys())}
                 weighted = 0.0
                 total_w = 0.0
                 for src, val in values.items():
@@ -234,6 +248,20 @@ class ClimateFusion:
 
         result_df = result_df.dropna(thresh=4)  # pelo menos 3 vars + date
         result_df = result_df.reset_index()
+
+        # Log da estratégia de fusão por variável
+        logger.info(f"🔀 Fusion strategy for {region['name']} region:")
+        for var, strategy in fusion_strategy.items():
+            if "single" in strategy:
+                logger.info(
+                    f"   {var}: 100% {strategy['single']} (single-source)"
+                )
+            else:
+                sources_str = ", ".join(
+                    f"{s} ({weights.get(s, 0.1)*100:.0f}%)"
+                    for s in strategy["multi"]
+                )
+                logger.info(f"   {var}: {sources_str} (multi-source fusion)")
 
         logger.success(
             f"Fusão concluída: {len(result_df)} dias | Região: {region['name']}"
