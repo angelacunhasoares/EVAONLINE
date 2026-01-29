@@ -60,6 +60,7 @@ dependencies = [
     "scipy>=1.16.3",
     "scikit-learn>=1.7.2",
     "statsmodels>=0.14.0",
+    "openpyxl>=3.1.5",  # Excel export for historical email
 
     # Dashboard (atualizado)
     "dash>=3.2.0",

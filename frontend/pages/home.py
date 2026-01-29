@@ -137,35 +137,52 @@ def create_sidebar_card():
                         ],
                         className="mb-4",
                     ),
-                    # Secao 2: Fonte de Dados
+                    # Secao 2: Info de Fusão Automática (somente leitura)
                     html.Div(
                         [
                             html.Div(
                                 [
                                     html.I(
-                                        className="bi bi-cloud-download me-2 text-primary"
+                                        className="bi bi-stars me-2 text-success"
                                     ),
                                     html.Span(
-                                        "Climate Source",
+                                        "Smart Fusion",
                                         className="fw-semibold text-dark",
+                                    ),
+                                    dbc.Badge(
+                                        "Automatic",
+                                        color="success",
+                                        className="ms-2",
+                                        pill=True,
                                     ),
                                 ],
                                 className="mb-2",
                             ),
+                            # Info sobre fusão (atualizado dinamicamente)
+                            html.Div(
+                                id="fusion-info-card",
+                                children=dbc.Alert(
+                                    [
+                                        html.I(
+                                            className="bi bi-info-circle me-2"
+                                        ),
+                                        "Select a Data Type above to see the data sources that will be used.",
+                                    ],
+                                    color="info",
+                                    className="mb-0 small",
+                                ),
+                            ),
+                            # Componentes ocultos para manter compatibilidade
+                            dcc.Store(
+                                id="climate-source-dropdown", data="auto"
+                            ),
                             html.Div(
                                 id="source-selection-info",
-                                className="small text-muted mb-2",
+                                style={"display": "none"},
                             ),
-                            dbc.Select(
-                                id="climate-source-dropdown",
-                                placeholder="Select data type first...",
-                                disabled=True,
-                                className="mb-2",
-                                style={"borderRadius": "8px"},
-                            ),
-                            html.Small(
+                            html.Div(
                                 id="source-description",
-                                className="text-muted fst-italic",
+                                style={"display": "none"},
                             ),
                         ],
                         className="mb-4 pb-3 border-bottom",
@@ -324,6 +341,9 @@ home_layout = dbc.Container(
         dcc.Store(id="parsed-coordinates", data=None),
         dcc.Store(id="current-task-id"),
         dcc.Store(id="current-operation-mode"),
+        dcc.Store(id="eto-results-data", data=None),  # Dados para download
+        dcc.Download(id="download-csv"),
+        dcc.Download(id="download-excel"),
         dcc.Interval(
             id="progress-interval",
             interval=2000,
@@ -349,6 +369,9 @@ home_layout = dbc.Container(
                 dbc.Button(id="favorite-button", n_clicks=0),
                 dbc.RadioItems(id="file-format-historical", value="csv"),
                 dcc.Store(id="favorites-data", data=[]),
+                # Botões de download (renderizados dinamicamente nos resultados)
+                dbc.Button(id="btn-download-csv", n_clicks=0),
+                dbc.Button(id="btn-download-excel", n_clicks=0),
             ],
             style={"display": "none"},
         ),

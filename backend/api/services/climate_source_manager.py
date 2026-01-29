@@ -426,6 +426,11 @@ class ClimateSourceManager:
         2. Temporal filter (Historical, Current, Forecast)
         3. API availability
 
+        🔀 FUSÃO AUTOMÁTICA - Fontes por modo:
+        - HISTORICAL_EMAIL:    NASA POWER + Open-Meteo Archive
+        - DASHBOARD_CURRENT:   NASA POWER + Open-Meteo Archive + Open-Meteo Forecast
+        - DASHBOARD_FORECAST:  Open-Meteo Forecast + MET Norway (+ NWS se USA)
+
         Args:
             lat: Latitude
             lon: Longitude
@@ -468,9 +473,14 @@ class ClimateSourceManager:
             key=lambda s: self.SOURCES_CONFIG[s]["priority"]
         )
 
-        logger.bind(
-            mode=mode.value, lat=lat, lon=lon, sources=compatible_sources
-        ).debug("Compatible sources by mode obtained")
+        # Log detalhado para fusão automática
+        logger.info(
+            f"🔀 Fontes para fusão automática:\n"
+            f"   Modo: {mode_value}\n"
+            f"   Local: ({lat}, {lon})\n"
+            f"   Fontes selecionadas: {compatible_sources}"
+        )
+
         return compatible_sources
 
     def get_sources_for_data_download(

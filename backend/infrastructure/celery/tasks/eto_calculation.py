@@ -40,7 +40,7 @@ def calculate_eto_task(
     email: str | None = None,
     visitor_id: str | None = None,
     session_id: str | None = None,
-    file_format: str = "excel",
+    file_format: str = "csv",  # csv (padrão) ou excel
     enable_fusion: bool = False,  # 🔀 Flag para fusão Kalman
 ) -> dict[str, Any]:
     """

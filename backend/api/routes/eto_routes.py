@@ -41,14 +41,20 @@ eto_router = APIRouter(prefix="/internal/eto", tags=["ETo"])
 
 
 class EToCalculationRequest(BaseModel):
-    """Request para cálculo ETo."""
+    """Request para cálculo ETo.
+    
+    NOTA: Fusão de dados é SEMPRE automática.
+    O sistema seleciona as melhores fontes baseado no period_type:
+    - historical_email: NASA POWER + Open-Meteo Archive
+    - dashboard_current: NASA POWER + Open-Meteo Archive + Open-Meteo Forecast
+    - dashboard_forecast: Open-Meteo Forecast + MET Norway
+    """
 
     lat: float
     lng: float
     start_date: str
     end_date: str
-    sources: Optional[str] = "auto"
-    period_type: Optional[str] = "dashboard"  # historical, dashboard, forecast
+    period_type: Optional[str] = "dashboard_current"  # historical_email, dashboard_current, dashboard_forecast
     elevation: Optional[float] = None
     estado: Optional[str] = None
     cidade: Optional[str] = None
@@ -57,7 +63,7 @@ class EToCalculationRequest(BaseModel):
     )
     visitor_id: Optional[str] = None  # ID único do visitante
     session_id: Optional[str] = None  # ID da sessão
-    file_format: Optional[str] = "excel"  # excel ou csv
+    file_format: Optional[str] = "csv"  # csv (padrão) ou excel
 
 
 class LocationInfoRequest(BaseModel):
@@ -125,11 +131,8 @@ async def calculate_eto(
             period_type_str, OperationMode.DASHBOARD_CURRENT
         )
 
-        # 1. Usar ClimateValidationService (agora aceita "auto")
+        # 1. Usar ClimateValidationService (sempre modo "auto" para fusão)
         validator = ClimateValidationService()
-
-        # Determine source for validation (use "auto" if not specified)
-        source_to_validate = request.sources if request.sources else "auto"
 
         is_valid, validation_result = validator.validate_all(
             lat=request.lat,
@@ -137,7 +140,7 @@ async def calculate_eto(
             start_date=request.start_date,
             end_date=request.end_date,
             variables=["et0_fao_evapotranspiration"],
-            source=source_to_validate,
+            source="auto",  # Sempre fusão automática
             mode=operation_mode.value,
         )
 
@@ -150,57 +153,33 @@ async def calculate_eto(
                 ),
             )
 
-        # 2. Usar ClimateSourceManager para seleção
+        # 2. Usar ClimateSourceManager para auto-seleção de fontes
         manager = ClimateSourceManager()
 
-        if request.sources == "auto" or not request.sources:
-            # Auto-seleção: obter TODAS as fontes compatíveis para fusão
-            compatible_sources = manager.get_available_sources_by_mode(
-                lat=request.lat,
-                lon=request.lng,
-                mode=operation_mode,
+        # FUSÃO AUTOMÁTICA: obter TODAS as fontes compatíveis para o modo
+        compatible_sources = manager.get_available_sources_by_mode(
+            lat=request.lat,
+            lon=request.lng,
+            mode=operation_mode,
+        )
+
+        if not compatible_sources:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Nenhuma fonte disponível para modo "
+                    f"{operation_mode.value} na localização fornecida"
+                ),
             )
 
-            if not compatible_sources:
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        f"Nenhuma fonte disponível para modo "
-                        f"{operation_mode.value} na localização fornecida"
-                    ),
-                )
-
-            # Usar TODAS as fontes disponíveis para fusão Kalman
-            selected_sources = compatible_sources
-            enable_fusion = True  # 🔀 Usuário escolheu Smart Fusion
-            logger.info(
-                f"Auto-seleção (fusão): {operation_mode.value} em "
-                f"({request.lat}, {request.lng}) → {selected_sources} "
-                f"(opções: {compatible_sources})"
-            )
-        else:
-            # Fonte especificada: verificar se é compatível
-            specified_source = request.sources
-            compatible_sources = manager.get_available_sources_by_mode(
-                lat=request.lat,
-                lon=request.lng,
-                mode=operation_mode,
-            )
-
-            if specified_source not in compatible_sources:
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        f"Fonte '{specified_source}' incompatível com modo "
-                        f"{operation_mode.value}. Fontes válidas: "
-                        f"{compatible_sources}"
-                    ),
-                )
-
-            # Usar apenas a fonte especificada (sem fusão)
-            selected_sources = [specified_source]
-            enable_fusion = False  # 🔵 Fonte única: dados originais
-            logger.info(f"Fonte especificada: {specified_source}")
+        # Usar TODAS as fontes disponíveis para fusão Kalman
+        selected_sources = compatible_sources
+        enable_fusion = True  # Sempre fusão automática
+        
+        logger.info(
+            f"Fusão automática: {operation_mode.value} em "
+            f"({request.lat}, {request.lng}) → Fontes: {selected_sources}"
+        )
 
         # 4. Obter elevação (se não fornecida)
         elevation = request.elevation
@@ -224,12 +203,12 @@ async def calculate_eto(
             visitor_id=request.visitor_id,  # ID único do visitante
             session_id=request.session_id,  # ID da sessão
             file_format=request.file_format,  # Formato: excel ou csv
-            enable_fusion=enable_fusion,  # 🔀 Flag de fusão Kalman
+            enable_fusion=enable_fusion,  # Flag de fusão Kalman
         )
 
         task_id = task.id
         logger.info(
-            f"✅ Task ETo iniciada: {task_id} para "
+            f"Task ETo iniciada: {task_id} para "
             f"({request.lat}, {request.lng}) - Fontes: {selected_sources}"
         )
 
@@ -238,11 +217,16 @@ async def calculate_eto(
             "status": "accepted",
             "task_id": task_id,
             "message": (
-                "Cálculo ETo iniciado. Use WebSocket "
-                "para acompanhar progresso."
+                "Cálculo ETo iniciado com fusão automática. "
+                "Use WebSocket para acompanhar progresso."
             ),
             "websocket_url": f"/ws/task_status/{task_id}",
-            "sources": selected_sources,
+            # Informações de fusão (sempre automática)
+            "fusion": {
+                "enabled": True,
+                "method": "kalman",
+                "sources_used": selected_sources,
+            },
             "operation_mode": operation_mode.value,
             "location": {
                 "lat": request.lat,
@@ -250,7 +234,6 @@ async def calculate_eto(
                 "elevation_m": elevation,
             },
             "estimated_duration_seconds": "5-30",
-            # Estimativa baseada no período
         }
 
     except HTTPException:
@@ -272,7 +255,7 @@ async def calculate_eto(
 @eto_router.post("/location-info")
 async def get_location_info(request: LocationInfoRequest) -> Dict[str, Any]:
     """
-    ✅ Informações de localização (timezone, elevação).
+    Informações de localização (timezone, elevação).
     """
     try:
         # TODO: Implementar busca real de timezone e elevação
@@ -300,7 +283,7 @@ async def add_favorite(
     db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
 ) -> Dict[str, Any]:
     """
-    ✅ Adicionar favorito.
+    Adicionar favorito.
     """
     try:
         # Verificar duplicata
@@ -351,7 +334,7 @@ async def list_favorites(
     db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
 ) -> Dict[str, Any]:
     """
-    ✅ Listar favoritos do usuário.
+    Listar favoritos do usuário.
     """
     try:
         favorites = (
@@ -391,7 +374,7 @@ async def remove_favorite(
     db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
 ) -> Dict[str, Any]:
     """
-    ✅ Remover favorito.
+    Remover favorito.
     """
     try:
         favorite = (

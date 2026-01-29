@@ -401,11 +401,102 @@ def render_location_input(mode, search):
 
 
 @callback(
+    Output("fusion-info-card", "children"),
     [
-        Output("coord-validation-feedback", "children"),
-        Output("climate-source-dropdown", "options", allow_duplicate=True),
-        Output("climate-source-dropdown", "value", allow_duplicate=True),
-        Output("climate-source-dropdown", "disabled", allow_duplicate=True),
+        Input("data-type-radio", "value"),
+        Input("navigation-coordinates", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def update_fusion_info(data_type, coords_data):
+    """
+    Atualiza info de fusão automática baseado no modo selecionado.
+
+    🔀 FUSÃO AUTOMÁTICA - Fontes por modo:
+    - historical: NASA POWER + Open-Meteo Archive
+    - recent: NASA POWER + Open-Meteo Archive + Open-Meteo Forecast
+    - forecast: Open-Meteo Forecast + MET Norway (+ NWS se EUA)
+    """
+    if not data_type:
+        return dbc.Alert(
+            [
+                html.I(className="bi bi-info-circle me-2"),
+                "Select a Data Type above to see the data sources.",
+            ],
+            color="info",
+            className="mb-0 small",
+        )
+
+    # Verificar se está nos EUA
+    in_usa = False
+    if coords_data:
+        lat = coords_data.get("lat", 0)
+        lon = coords_data.get("lon", 0)
+        in_usa = -125 <= lon <= -65 and 25 <= lat <= 50
+
+    # Definir fontes por modo
+    fusion_sources = {
+        "historical": {
+            "icon": "📅",
+            "label": "Historical Mode",
+            "sources": ["NASA POWER", "Open-Meteo Archive"],
+            "description": "Data fusion from satellite and reanalysis models (1990-present)",
+        },
+        "recent": {
+            "icon": "📊",
+            "label": "Recent Mode",
+            "sources": [
+                "NASA POWER",
+                "Open-Meteo Archive",
+                "Open-Meteo Forecast",
+            ],
+            "description": "Combines historical and forecast data for the best recent coverage",
+        },
+        "forecast": {
+            "icon": "🔮",
+            "label": "Forecast Mode",
+            "sources": ["Open-Meteo Forecast", "MET Norway"]
+            + (["NWS Forecast"] if in_usa else []),
+            "description": "Multi-model ensemble forecast (6 days)"
+            + (" with NWS for USA" if in_usa else ""),
+        },
+    }
+
+    config = fusion_sources.get(data_type, fusion_sources["recent"])
+
+    # Criar lista de fontes como badges
+    source_badges = [
+        dbc.Badge(src, color="light", text_color="dark", className="me-1 mb-1")
+        for src in config["sources"]
+    ]
+
+    return dbc.Card(
+        dbc.CardBody(
+            [
+                html.Div(
+                    [
+                        html.Span(config["icon"], className="me-2"),
+                        html.Strong(config["label"]),
+                    ],
+                    className="mb-2",
+                ),
+                html.Div(source_badges, className="mb-2"),
+                html.Small(config["description"], className="text-muted"),
+            ],
+            className="py-2 px-3",
+        ),
+        className="border-success",
+        style={"borderLeft": "3px solid var(--bs-success)"},
+    )
+
+
+# ============================================================================
+# CALLBACKS DE COMPATIBILIDADE (mantidos para não quebrar referências)
+# ============================================================================
+
+
+@callback(
+    [
         Output("source-selection-info", "children", allow_duplicate=True),
     ],
     Input("validate-coords-button", "n_clicks"),
@@ -417,156 +508,24 @@ def render_location_input(mode, search):
 )
 def validate_manual_coordinates(n_clicks, lat, lon):
     """
-    Valida coordenadas inseridas manualmente e busca fontes disponíveis.
+    Valida coordenadas inseridas manualmente.
+    SIMPLIFICADO: Não precisa mais popular dropdown de fontes.
     """
     if not n_clicks:
-        return "", [], None, True, ""
+        return [""]
 
-    # Validar entrada
+    # Validar entrada básica
     if lat is None or lon is None:
-        return (
-            dbc.Alert(
-                [
-                    html.I(className="bi bi-exclamation-triangle me-2"),
-                    "Por favor, insira latitude e longitude.",
-                ],
-                color="warning",
-                className="mb-0",
-            ),
-            [],
-            None,
-            True,
-            "",
-        )
+        return [""]
 
-    # Validar ranges
-    if not (-90 <= lat <= 90):
-        return (
-            dbc.Alert(
-                [
-                    html.I(className="bi bi-x-circle me-2"),
-                    "Latitude deve estar entre -90° e 90°.",
-                ],
-                color="danger",
-                className="mb-0",
-            ),
-            [],
-            None,
-            True,
-            "",
-        )
+    if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+        return [""]
 
-    if not (-180 <= lon <= 180):
-        return (
-            dbc.Alert(
-                [
-                    html.I(className="bi bi-x-circle me-2"),
-                    "Longitude deve estar entre -180° e 180°.",
-                ],
-                color="danger",
-                className="mb-0",
-            ),
-            [],
-            None,
-            True,
-            "",
-        )
-
-    # Buscar fontes disponíveis
-    if get_available_sources_for_frontend is None:
-        return (
-            dbc.Alert(
-                [
-                    html.I(className="bi bi-exclamation-triangle me-2"),
-                    "Serviço de seleção de fontes indisponível.",
-                ],
-                color="warning",
-                className="mb-0",
-            ),
-            [],
-            None,
-            True,
-            "",
-        )
-
-    try:
-        sources_data = get_available_sources_for_frontend(lat, lon)
-
-        # Formatar opções do dropdown
-        dropdown_options = [
-            {"label": source["label"], "value": source["value"]}
-            for source in sources_data["sources"]
-        ]
-
-        # Info sobre região
-        region = sources_data["location_info"]["region"]
-        region_icon = (
-            "🇺🇸"
-            if sources_data["location_info"]["in_usa"]
-            else ("🇳🇴" if sources_data["location_info"]["in_nordic"] else "🌍")
-        )
-
-        info_alert = dbc.Alert(
-            [
-                html.I(className="bi bi-info-circle me-2"),
-                html.Strong(f"{region_icon} Região: {region}"),
-                html.Br(),
-                html.Small(
-                    f"{sources_data['total_sources']} fontes de dados disponíveis para esta localização."
-                ),
-            ],
-            color="info",
-            className="mb-0",
-        )
-
-        # Sucesso
-        lat_dms = decimal_to_dms(lat, is_latitude=True)
-        lon_dms = decimal_to_dms(lon, is_latitude=False)
-
-        feedback = dbc.Alert(
-            [
-                html.I(className="bi bi-check-circle me-2"),
-                html.Strong("Coordenadas válidas!"),
-                html.Br(),
-                html.Small(f"Lat: {lat_dms} ({lat:.6f}°)"),
-                html.Br(),
-                html.Small(f"Lon: {lon_dms} ({lon:.6f}°)"),
-            ],
-            color="success",
-            className="mb-0",
-        )
-
-        return (
-            feedback,
-            dropdown_options,
-            sources_data["recommended"],
-            False,
-            info_alert,
-        )
-
-    except Exception as e:
-        logger.error(f"❌ Erro ao buscar fontes: {e}")
-        return (
-            dbc.Alert(
-                [
-                    html.I(className="bi bi-x-circle me-2"),
-                    f"Erro ao buscar fontes disponíveis: {str(e)}",
-                ],
-                color="danger",
-                className="mb-0",
-            ),
-            [],
-            None,
-            True,
-            "",
-        )
+    return [""]  # Fusão automática, não precisa popular dropdown
 
 
 @callback(
     [
-        Output("climate-source-dropdown", "options", allow_duplicate=True),
-        Output("climate-source-dropdown", "value", allow_duplicate=True),
-        Output("climate-source-dropdown", "disabled", allow_duplicate=True),
         Output("source-selection-info", "children", allow_duplicate=True),
     ],
     Input("parsed-coordinates", "data"),
@@ -574,148 +533,30 @@ def validate_manual_coordinates(n_clicks, lat, lon):
 )
 def populate_sources_from_url(coords_data):
     """
-    NÃO popular dropdown automaticamente.
-    Aguardar seleção de Data Type pelo usuário.
+    SIMPLIFICADO: Não precisa mais popular dropdown.
+    Fusão é automática.
     """
-    logger.info(
-        f"🔍 populate_sources_from_url CHAMADO! coords_data={coords_data}"
-    )
-
-    if not coords_data:
-        logger.warning("⚠️ coords_data vazio")
-        return [], None, True, ""
-
-    # Retornar dropdown desabilitado com mensagem informativa
-    info_alert = dbc.Alert(
-        [
-            html.I(className="bi bi-info-circle me-2"),
-            html.Strong("Selecione o Data Type acima "),
-            "para ver as fontes disponíveis.",
-        ],
-        color="info",
-        className="mb-0",
-    )
-
-    return [], None, True, info_alert
+    return [""]
 
 
 @callback(
     Output("source-description", "children"),
-    Input("climate-source-dropdown", "value"),
+    Input("data-type-radio", "value"),
 )
-def update_source_description(selected_source):
+def update_source_description(data_type):
     """
-    Atualiza descrição da fonte selecionada.
+    SIMPLIFICADO: Fusão automática, não precisa descrição de fonte individual.
     """
-    if not selected_source:
-        return ""
-
-    # Mapeamento de descrições
-    descriptions = {
-        "fusion": "🔀 Combina dados de múltiplas fontes automaticamente para melhor cobertura e precisão.",
-        "openmeteo_forecast": "🌍 Dados de previsão e recentes (até 30 dias) com cobertura global.",
-        "openmeteo_archive": "🌍 Dados históricos desde 1990 com cobertura global.",
-        "nasa_power": "🛰️ Dados de satélite da NASA desde 1990.",
-        "met_norway": "🇳🇴 Previsão meteorológica de alta qualidade para região nórdica.",
-        "nws_forecast": "🇺🇸 Previsão oficial do National Weather Service (EUA).",
-        "nws_stations": "🇺🇸 Observações de estações meteorológicas do NWS.",
-    }
-
-    return descriptions.get(selected_source, "")
+    return ""
 
 
-@callback(
-    [
-        Output("climate-source-dropdown", "options", allow_duplicate=True),
-        Output("climate-source-dropdown", "value", allow_duplicate=True),
-        Output("climate-source-dropdown", "disabled", allow_duplicate=True),
-        Output("source-selection-info", "children", allow_duplicate=True),
-    ],
-    [
-        Input("data-type-radio", "value"),
-        Input("navigation-coordinates", "data"),
-    ],
-    prevent_initial_call=True,
-)
-def filter_sources_by_mode(data_type, coords_data):
-    """
-    Filtra fontes compatíveis com o modo selecionado e localização.
-
-    Modos e fontes compatíveis:
-    - historical: nasa_power, openmeteo_archive
-    - recent: nasa_power, openmeteo_archive, openmeteo_forecast
-    - forecast: openmeteo_forecast, met_norway, nws_forecast (EUA)
-    """
-    if not coords_data or not data_type:
-        return no_update, no_update, no_update, no_update
-
-    # Verificar se está nos EUA
-    lat = coords_data.get("lat", 0)
-    lon = coords_data.get("lon", 0)
-    in_usa = -125 <= lon <= -65 and 25 <= lat <= 50
-
-    # Definir fontes por modo
-    mode_sources = {
-        "historical": [
-            {"label": "🔀 Smart Fusion (Recommended)", "value": "fusion"},
-            {"label": "🛰️ NASA POWER", "value": "nasa_power"},
-            {
-                "label": "🌍 Open-Meteo Archive",
-                "value": "openmeteo_archive",
-            },
-        ],
-        "recent": [
-            {"label": "🔀 Smart Fusion (Recommended)", "value": "fusion"},
-            {
-                "label": "🌍 Open-Meteo Forecast",
-                "value": "openmeteo_forecast",
-            },
-            {"label": "🛰️ NASA POWER", "value": "nasa_power"},
-            {
-                "label": "🌍 Open-Meteo Archive",
-                "value": "openmeteo_archive",
-            },
-        ],
-        "forecast": [
-            {"label": "🔀 Smart Fusion (Recommended)", "value": "fusion"},
-            {
-                "label": "🌍 Open-Meteo Forecast",
-                "value": "openmeteo_forecast",
-            },
-            {"label": "🇳🇴 MET Norway", "value": "met_norway"},
-        ],
-    }
-
-    # Adicionar fontes específicas dos EUA no forecast
-    if in_usa and data_type == "forecast":
-        mode_sources["forecast"].extend(
-            [
-                {"label": "🇺🇸 NWS Forecast", "value": "nws_forecast"},
-                {"label": "🇺🇸 NWS Stations", "value": "nws_stations"},
-            ]
-        )
-
-    sources = mode_sources.get(data_type, [])
-
-    # Criar mensagem informativa
-    mode_labels = {
-        "historical": "📅 Histórico",
-        "recent": "📊 Recente",
-        "forecast": "🔮 Previsão",
-    }
-
-    info_alert = dbc.Alert(
-        [
-            html.I(className="bi bi-check-circle me-2"),
-            html.Strong(f"{mode_labels.get(data_type, '')} - "),
-            f"{len(sources)} fontes disponíveis.",
-        ],
-        color="success",
-        className="mb-0",
-    )
-
-    # Sempre selecionar fusion por padrão e HABILITAR o dropdown
-    return sources, "fusion", False, info_alert
+# ============================================================================
+# CALLBACKS REMOVIDOS - Fusão Automática
+# ============================================================================
+# O callback filter_sources_by_mode foi REMOVIDO.
+# A fusão é agora SEMPRE automática baseada no modo selecionado.
+# As fontes são determinadas pelo backend em get_available_sources_by_mode()
+# ============================================================================
 
 
 @callback(
@@ -1004,7 +845,6 @@ def render_conditional_form(data_type):
     Input("calculate-eto-btn", "n_clicks"),
     [
         State("navigation-coordinates", "data"),
-        State("climate-source-dropdown", "value"),
         State("data-type-radio", "value"),
         State("start-date-historical", "date"),
         State("end-date-historical", "date"),
@@ -1018,7 +858,6 @@ def render_conditional_form(data_type):
 def calculate_eto(
     n_clicks,
     coords_data,
-    selected_source,
     data_type,
     start_date_hist,
     end_date_hist,
@@ -1213,18 +1052,15 @@ def calculate_eto(
     try:
         logger.info("🔄 Sending request to backend...")
 
-        # Add selected source to payload
-        # Backend não aceita "fusion", mapear para "auto"
-        if selected_source == "fusion":
-            payload["sources"] = "auto"
-        else:
-            payload["sources"] = selected_source
+        # 🔀 FUSÃO AUTOMÁTICA: Não enviar "sources", backend decide automaticamente
+        # O backend irá selecionar as melhores fontes baseado no period_type
+        # Ver: climate_source_manager.get_available_sources_by_mode()
 
         # Adicionar session_id para identificação única do usuário
         payload["session_id"] = session_id
         payload["visitor_id"] = session_id  # Para compatibilidade
 
-        logger.info(f"📦 Final payload: {payload}")
+        logger.info(f"📦 Final payload (auto-fusion): {payload}")
 
         # Make POST request
         response = requests.post(
@@ -1322,6 +1158,7 @@ def calculate_eto(
         Output("progress-interval", "disabled", allow_duplicate=True),
         Output("current-task-id", "data", allow_duplicate=True),
         Output("calculation-success-status", "children"),
+        Output("eto-results-data", "data"),  # Store para dados de download
     ],
     Input("progress-interval", "n_intervals"),
     [
@@ -1337,7 +1174,7 @@ def update_progress(n_intervals, task_id, operation_mode):
     Para outros modos (DASHBOARD_CURRENT, DASHBOARD_FORECAST): Exibe dados normalmente.
     """
     if not task_id:
-        return None, no_update, True, None, no_update
+        return None, no_update, True, None, no_update, no_update
 
     try:
         import redis
@@ -1382,7 +1219,14 @@ def update_progress(n_intervals, task_id, operation_mode):
                 ],
                 className="p-3 bg-light rounded-3 border",
             )
-            return progress_indicator, no_update, False, task_id, no_update
+            return (
+                progress_indicator,
+                no_update,
+                False,
+                task_id,
+                no_update,
+                no_update,
+            )
 
         result = json.loads(result_data)
         status = result.get("status")
@@ -1498,7 +1342,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                     className="py-2 px-3 mb-0",
                 )
 
-                return None, success_content, True, None, sidebar_success
+                return None, success_content, True, None, sidebar_success, None
 
             # ================================================================
             # OUTROS MODOS (DASHBOARD_CURRENT, DASHBOARD_FORECAST):
@@ -1525,7 +1369,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                     ],
                     color="warning",
                 )
-                return None, error_card, True, None, no_update
+                return None, error_card, True, None, no_update, None
 
             # Create DataFrame with standardized column names
             df_records = []
@@ -1554,12 +1398,65 @@ def update_progress(n_intervals, task_id, operation_mode):
 
             # Create results with new tab system
             try:
+                # Preparar dados para download (armazenar no Store)
+                download_data = {
+                    "records": et0_data,
+                    "sources_used": sources_used,
+                    "mode": operation_mode,
+                    "days": days_calculated,
+                }
+
+                # Botões de download
+                download_buttons = html.Div(
+                    [
+                        html.Hr(className="my-3"),
+                        html.Div(
+                            [
+                                html.I(className="bi bi-download me-2"),
+                                html.Strong("Download dos Dados:"),
+                            ],
+                            className="mb-2",
+                        ),
+                        dbc.ButtonGroup(
+                            [
+                                dbc.Button(
+                                    [
+                                        html.I(
+                                            className="bi bi-filetype-csv me-2"
+                                        ),
+                                        "Download CSV",
+                                    ],
+                                    id="btn-download-csv",
+                                    color="success",
+                                    outline=True,
+                                    className="me-2",
+                                ),
+                                dbc.Button(
+                                    [
+                                        html.I(
+                                            className="bi bi-file-earmark-spreadsheet me-2"
+                                        ),
+                                        "Download Excel",
+                                    ],
+                                    id="btn-download-excel",
+                                    color="primary",
+                                    outline=True,
+                                ),
+                            ],
+                            className="w-100",
+                        ),
+                    ],
+                    className="mt-3 p-3 bg-light rounded",
+                )
+
                 results_content = html.Div(
                     [
                         # Tabs with results (success message moved to sidebar)
                         create_results_tabs(
                             df, sources=sources_used, lang="pt"
                         ),
+                        # Download buttons
+                        download_buttons,
                     ],
                     className="results-container",
                 )
@@ -1577,7 +1474,14 @@ def update_progress(n_intervals, task_id, operation_mode):
                 )
 
                 # Desabilitar interval e limpar task_id
-                return None, results_content, True, None, sidebar_success
+                return (
+                    None,
+                    results_content,
+                    True,
+                    None,
+                    sidebar_success,
+                    download_data,
+                )
 
             except Exception as e:
                 logger.error(f"Error creating results tabs: {e}")
@@ -1589,7 +1493,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                     ],
                     color="warning",
                 )
-                return None, error_card, True, None, no_update
+                return None, error_card, True, None, no_update, None
 
         elif status == "FAILURE":
             # Handle FAILURE status
@@ -1643,7 +1547,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                 ],
                 className="mt-3",
             )
-            return None, error_card, True, None, no_update
+            return None, error_card, True, None, no_update, None
 
         elif status == "PENDING" or status == "STARTED":
             # Task em execução - mostrar indicador elegante com percentual
@@ -1695,16 +1599,91 @@ def update_progress(n_intervals, task_id, operation_mode):
                 className="p-3 bg-light rounded-3 border",
             )
 
-            return progress_indicator, no_update, False, task_id, no_update
+            return (
+                progress_indicator,
+                no_update,
+                False,
+                task_id,
+                no_update,
+                no_update,
+            )
 
         else:
             # Status desconhecido - manter consultando
             logger.warning(f"⚠️ Status desconhecido: {status}")
-            return None, no_update, False, task_id, no_update
+            return None, no_update, False, task_id, no_update, no_update
 
     except Exception as e:
         logger.error(f"Erro ao atualizar progresso: {e}")
-        return None, no_update, False, task_id, no_update
+        return None, no_update, False, task_id, no_update, no_update
+
+
+# ============================================================================
+# CALLBACKS DE DOWNLOAD CSV E EXCEL
+# ============================================================================
+
+
+@callback(
+    Output("download-csv", "data"),
+    Input("btn-download-csv", "n_clicks"),
+    State("eto-results-data", "data"),
+    prevent_initial_call=True,
+)
+def download_csv(n_clicks, results_data):
+    """Gera download de arquivo CSV."""
+    if not n_clicks or not results_data:
+        return no_update
+
+    import pandas as pd
+    from datetime import datetime
+
+    records = results_data.get("records", [])
+    if not records:
+        return no_update
+
+    # Criar DataFrame
+    df = pd.DataFrame(records)
+
+    # Formatar nome do arquivo
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"EVAonline_ETo_{timestamp}.csv"
+
+    return dcc.send_data_frame(df.to_csv, filename, index=False)
+
+
+@callback(
+    Output("download-excel", "data"),
+    Input("btn-download-excel", "n_clicks"),
+    State("eto-results-data", "data"),
+    prevent_initial_call=True,
+)
+def download_excel(n_clicks, results_data):
+    """Gera download de arquivo Excel."""
+    if not n_clicks or not results_data:
+        return no_update
+
+    import pandas as pd
+    from datetime import datetime
+    import io
+
+    records = results_data.get("records", [])
+    if not records:
+        return no_update
+
+    # Criar DataFrame
+    df = pd.DataFrame(records)
+
+    # Formatar nome do arquivo
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"EVAonline_ETo_{timestamp}.xlsx"
+
+    # Criar buffer Excel
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="ETo_Data")
+    output.seek(0)
+
+    return dcc.send_bytes(output.getvalue(), filename)
 
 
 logger.info("✅ Página ETo carregada com sucesso")
