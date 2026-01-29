@@ -274,13 +274,13 @@ def calculate_eto_task(
                     # Determinar extensão do arquivo
                     file_ext = "xlsx" if file_format == "excel" else "csv"
 
-                    # Gerar arquivo no formato escolhido
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    # Gerar arquivo com nome simplificado:
+                    # EVAonline_<lat>_<lon>_<start>_<end>.<ext>
                     lat_str = f"{abs(lat):.4f}{'N' if lat >= 0 else 'S'}"
                     lon_str = f"{abs(lon):.4f}{'E' if lon >= 0 else 'W'}"
                     filename = (
-                        f"EVAonline_ETo_{user_identifier}_{lat_str}_"
-                        f"{lon_str}_{start_date}_{end_date}_{timestamp}.{file_ext}"
+                        f"EVAonline_{lat_str}_{lon_str}_"
+                        f"{start_date}_{end_date}.{file_ext}"
                     )
 
                     # Criar diretório temporário se não existir

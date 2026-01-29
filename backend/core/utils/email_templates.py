@@ -91,8 +91,8 @@ def create_processing_started_email(
                 </h2>
                 
                 <p style="color: #333; line-height: 1.6;">
-                    Caro(a) usuário(a), sua solicitação de dados de evapotranspiração foi 
-                    recebida e está sendo processada.
+                    Sua solicitação de dados de evapotranspiração de referência (ETo) foi 
+                    recebida e está sendo processada pelo <strong>EVAonline</strong>.
                 </p>
                 
                 <div style="background: #e8f5e9; border-left: 4px solid #4CAF50; 
@@ -105,21 +105,13 @@ def create_processing_started_email(
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                     <tr style="background: #f9f9f9;">
                         <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; width: 40%;">
-                            🆔 ID da Solicitação
-                        </td>
-                        <td style="padding: 12px; border: 1px solid #ddd; font-family: monospace;">
-                            {task_id[:8]}...
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">
                             📍 Localização
                         </td>
                         <td style="padding: 12px; border: 1px solid #ddd;">
                             Lat: {latitude:.4f}° | Lon: {longitude:.4f}°
                         </td>
                     </tr>
-                    <tr style="background: #f9f9f9;">
+                    <tr>
                         <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">
                             📅 Período Solicitado
                         </td>
@@ -127,7 +119,7 @@ def create_processing_started_email(
                             {start_date} a {end_date} ({days} dias)
                         </td>
                     </tr>
-                    <tr>
+                    <tr style="background: #f9f9f9;">
                         <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">
                             📎 Formato do Arquivo
                         </td>
@@ -135,12 +127,12 @@ def create_processing_started_email(
                             {format_label}
                         </td>
                     </tr>
-                    <tr style="background: #f9f9f9;">
+                    <tr>
                         <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">
                             ⏰ Data/Hora da Solicitação
                         </td>
                         <td style="padding: 12px; border: 1px solid #ddd;">
-                            {started_at.strftime('%d/%m/%Y às %H:%M:%S')}
+                            {started_at.strftime('%d/%m/%Y às %H:%M:%S')} (UTC-3)
                         </td>
                     </tr>
                 </table>
@@ -192,8 +184,17 @@ def create_data_ready_email(
     subject = "📊 EVAonline - Seus Dados Estão Prontos! | Download Disponível"
 
     format_label = "Excel (.xlsx)" if file_format == "excel" else "CSV (.csv)"
+
+    # Mapear nomes das fontes para nomes mais amigáveis
+    source_names = {
+        "nasa_power": "NASA POWER",
+        "openmeteo_archive": "Open-Meteo Archive",
+        "openmeteo_forecast": "Open-Meteo Forecast",
+        "met_norway": "MET Norway",
+    }
+    sources_friendly = [source_names.get(s, s) for s in sources_used]
     sources_str = (
-        ", ".join(sources_used) if sources_used else "Múltiplas fontes"
+        ", ".join(sources_friendly) if sources_friendly else "Múltiplas fontes"
     )
 
     # Estatísticas resumidas
@@ -250,7 +251,7 @@ def create_data_ready_email(
                 </h2>
                 
                 <p style="color: #333; line-height: 1.6;">
-                    Caro(a) usuário(a), o processamento dos seus dados de evapotranspiração 
+                    O processamento dos seus dados de evapotranspiração de referência (ETo) 
                     foi concluído com sucesso. O arquivo está anexado a este email.
                 </p>
                 
@@ -329,29 +330,42 @@ def create_data_ready_email(
                     </p>
                     <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 13px;">
                         <li><strong>date</strong> - Data da observação</li>
-                        <li><strong>tmax_c, tmin_c, tmed_c</strong> - Temperaturas (°C)</li>
-                        <li><strong>humidity_pct</strong> - Umidade relativa (%)</li>
-                        <li><strong>wind_ms</strong> - Velocidade do vento (m/s)</li>
-                        <li><strong>radiation_mj_m2</strong> - Radiação solar (MJ/m²)</li>
-                        <li><strong>precip_mm</strong> - Precipitação (mm)</li>
+                        <li><strong>tmax_c, tmin_c, tmed_c</strong> - Temperaturas máxima, mínima e média (°C)</li>
+                        <li><strong>humidity_pct</strong> - Umidade relativa média (%)</li>
+                        <li><strong>wind_ms</strong> - Velocidade do vento a 2m (m/s)</li>
+                        <li><strong>radiation_mj_m2</strong> - Radiação solar global (MJ/m²/dia)</li>
+                        <li><strong>precip_mm</strong> - Precipitação acumulada (mm)</li>
                         <li><strong>et0_mm_day</strong> - Evapotranspiração de referência (mm/dia)</li>
                     </ul>
                 </div>
                 
                 <div style="background: #fff8e1; border-left: 4px solid #ffc107; 
                             padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
-                    <p style="margin: 0; color: #f57c00;">
-                        <strong>📌 Metodologia:</strong> ETo calculado pelo método 
-                        FAO-56 Penman-Monteith, padrão internacional para cálculo 
-                        de evapotranspiração de referência.
+                    <p style="margin: 0 0 10px 0; color: #f57c00; font-weight: bold;">
+                        📌 Metodologia
+                    </p>
+                    <p style="margin: 0; color: #5d4037; font-size: 13px; line-height: 1.5;">
+                        A evapotranspiração de referência (ETo) foi calculada utilizando o método 
+                        <strong>FAO-56 Penman-Monteith</strong>, padrão internacional recomendado pela 
+                        Organização das Nações Unidas para Alimentação e Agricultura (FAO).<br><br>
+                        Os dados climáticos foram obtidos através da <strong>fusão inteligente (Smart Fusion)</strong> 
+                        de múltiplas bases de dados globais ({sources_str}), utilizando filtro de Kalman 
+                        para otimizar a qualidade e confiabilidade das estimativas.
                     </p>
                 </div>
                 
-                <p style="color: #666; font-size: 13px; margin-top: 30px;">
-                    Para citar este trabalho, utilize:<br>
-                    <em>"Dados de ETo obtidos via EVAonline - Sistema de Cálculo de 
-                    Evapotranspiração de Referência"</em>
-                </p>
+                <div style="background: #e8eaf6; border-left: 4px solid #3f51b5; 
+                            padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+                    <p style="margin: 0 0 10px 0; color: #283593; font-weight: bold;">
+                        📖 Como Citar
+                    </p>
+                    <p style="margin: 0; color: #37474f; font-size: 12px; line-height: 1.5; 
+                              font-family: 'Times New Roman', serif; font-style: italic;">
+                        Soares, S.A., et al. (2026). EVAonline: Web-based global reference 
+                        evapotranspiration estimate. <em>Computers and Electronics in Agriculture</em>. 
+                        Available at: https://github.com/silvianesoares/EVAONLINE
+                    </p>
+                </div>
             </div>
             
             {get_email_footer()}

@@ -973,6 +973,48 @@ def calculate_eto(
             end_date = parse_date_from_ui(end_date_hist)
             logger.info(f"📅 Historical: {start_date} → {end_date}")
 
+            # Validar datas
+            if not start_date or not end_date:
+                error_alert = dbc.Alert(
+                    [
+                        html.I(className="bi bi-exclamation-triangle me-2"),
+                        html.Strong("Erro: "),
+                        "Por favor, selecione as datas inicial e final.",
+                    ],
+                    color="warning",
+                )
+                return None, None, error_alert, None, True, None
+
+            # Validar que data inicial não é maior que data final
+            if start_date > end_date:
+                error_alert = dbc.Alert(
+                    [
+                        html.I(className="bi bi-calendar-x me-2"),
+                        html.Strong("Erro de período: "),
+                        "A data inicial não pode ser posterior à data final. ",
+                        f"Você selecionou: {start_date} até {end_date}.",
+                    ],
+                    color="danger",
+                )
+                return None, None, error_alert, None, True, None
+
+            # Validar que data não é anterior a 1990
+            from datetime import date as dt_date
+
+            min_date = dt_date(1990, 1, 1)
+            if start_date < min_date:
+                error_alert = dbc.Alert(
+                    [
+                        html.I(className="bi bi-database-x me-2"),
+                        html.Strong("Período não disponível: "),
+                        f"O EVAonline possui dados a partir de 01/01/1990. ",
+                        f"A data inicial selecionada ({start_date}) é anterior a este limite. ",
+                        "Por favor, selecione uma data a partir de 1990.",
+                    ],
+                    color="warning",
+                )
+                return None, None, error_alert, None, True, None
+
         elif ui_selection == "recent":
             # Parse period from dropdown
             period_days = int(days_current)
