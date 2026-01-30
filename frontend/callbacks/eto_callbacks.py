@@ -578,42 +578,39 @@ def render_conditional_form(data_type):
                     className="fw-bold mb-3",
                     style={"fontSize": "1.1rem"},
                 ),
-                dbc.Row(
+                # Data Inicial
+                html.Div(
                     [
-                        dbc.Col(
-                            [
-                                html.Label("Data Inicial:", className="mb-2"),
-                                dcc.DatePickerSingle(
-                                    id="start-date-historical",
-                                    min_date_allowed=datetime(1990, 1, 1),
-                                    max_date_allowed=datetime.now()
-                                    - timedelta(days=1),
-                                    initial_visible_month=datetime.now()
-                                    - timedelta(days=30),
-                                    date=datetime.now() - timedelta(days=30),
-                                    display_format="DD/MM/YYYY",
-                                    placeholder="Selecione a data",
-                                    className="w-100",
-                                ),
-                            ],
-                            md=6,
+                        html.Label("Data Inicial:", className="mb-2"),
+                        dcc.DatePickerSingle(
+                            id="start-date-historical",
+                            min_date_allowed=datetime(1990, 1, 1),
+                            max_date_allowed=datetime.now()
+                            - timedelta(days=1),
+                            initial_visible_month=datetime.now()
+                            - timedelta(days=30),
+                            date=datetime.now() - timedelta(days=30),
+                            display_format="DD/MM/YYYY",
+                            placeholder="Selecione a data",
+                            className="w-100",
                         ),
-                        dbc.Col(
-                            [
-                                html.Label("Data Final:", className="mb-2"),
-                                dcc.DatePickerSingle(
-                                    id="end-date-historical",
-                                    min_date_allowed=datetime(1990, 1, 1),
-                                    max_date_allowed=datetime.now()
-                                    - timedelta(days=1),
-                                    initial_visible_month=datetime.now(),
-                                    date=datetime.now() - timedelta(days=1),
-                                    display_format="DD/MM/YYYY",
-                                    placeholder="Selecione a data",
-                                    className="w-100",
-                                ),
-                            ],
-                            md=6,
+                    ],
+                    className="mb-3",
+                ),
+                # Data Final
+                html.Div(
+                    [
+                        html.Label("Data Final:", className="mb-2"),
+                        dcc.DatePickerSingle(
+                            id="end-date-historical",
+                            min_date_allowed=datetime(1990, 1, 1),
+                            max_date_allowed=datetime.now()
+                            - timedelta(days=1),
+                            initial_visible_month=datetime.now(),
+                            date=datetime.now() - timedelta(days=1),
+                            display_format="DD/MM/YYYY",
+                            placeholder="Selecione a data",
+                            className="w-100",
                         ),
                     ],
                     className="mb-3",

@@ -61,6 +61,39 @@ def create_sidebar_card():
             # Corpo da sidebar
             html.Div(
                 [
+                    # Seção 0: Localização Selecionada
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.I(
+                                        className="bi bi-geo-alt-fill me-2 text-danger"
+                                    ),
+                                    html.Span(
+                                        "Selected Location",
+                                        className="fw-semibold text-dark",
+                                    ),
+                                ],
+                                className="mb-2",
+                            ),
+                            # Card com coordenadas (atualizado dinamicamente)
+                            html.Div(
+                                id="sidebar-location-display",
+                                children=dbc.Alert(
+                                    [
+                                        html.I(
+                                            className="bi bi-hand-index-thumb me-2"
+                                        ),
+                                        "Click on the map to select a point",
+                                    ],
+                                    color="secondary",
+                                    className="mb-0 small py-2",
+                                ),
+                            ),
+                        ],
+                        className="mb-4 pb-3",
+                        style={"borderBottom": "1px solid #e9ecef"},
+                    ),
                     # Secao 1: Tipo de Dados
                     html.Div(
                         [
@@ -318,7 +351,7 @@ home_layout = dbc.Container(
                 ),
             ],
             align="start",
-            className="g-4",  # Gap entre colunas
+            className="g-3",  # Gap entre colunas
         ),
         # Linha de Resultados (abaixo do mapa)
         dbc.Row(
@@ -332,16 +365,18 @@ home_layout = dbc.Container(
         # =================================================================
         # STORES E COMPONENTES OCULTOS
         # =================================================================
-        dcc.Store(id="favorites-store", storage_type="local", data=[]),
-        dcc.Store(id="home-favorites-count", data=0),
-        dcc.Store(id="sidebar-state", storage_type="session", data=True),
-        dcc.Store(id="selected-location-data", data=None),
-        dcc.Store(id="current-location", data=None),
-        dcc.Store(id="map-click-data", data=None),
-        dcc.Store(id="parsed-coordinates", data=None),
-        dcc.Store(id="current-task-id"),
-        dcc.Store(id="current-operation-mode"),
-        dcc.Store(id="eto-results-data", data=None),  # Dados para download
+        dcc.Store(id="sidebar-state", storage_type="memory", data=True),
+        dcc.Store(
+            id="selected-location-data", storage_type="memory", data=None
+        ),
+        dcc.Store(id="current-location", storage_type="memory", data=None),
+        dcc.Store(id="map-click-data", storage_type="memory", data=None),
+        dcc.Store(id="parsed-coordinates", storage_type="memory", data=None),
+        dcc.Store(id="current-task-id", storage_type="memory", data=None),
+        dcc.Store(
+            id="current-operation-mode", storage_type="memory", data=None
+        ),
+        dcc.Store(id="eto-results-data", storage_type="memory", data=None),
         dcc.Download(id="download-csv"),
         dcc.Download(id="download-excel"),
         dcc.Interval(
@@ -357,18 +392,11 @@ home_layout = dbc.Container(
                 html.Div(id="location-input-container"),
                 html.Div(id="coord-validation-feedback"),
                 html.Div(id="selected-coords-display"),
-                html.Div(id="favorites-list-container"),
-                html.Div(id="empty-favorites-alert"),
-                html.Div(id="favorites-count-badge"),
                 dbc.RadioItems(
                     id="location-mode-radio",
                     value="map",
                 ),
-                dbc.Button(id="add-favorite-btn"),
-                dbc.Button(id="clear-favorites-button"),
-                dbc.Button(id="favorite-button", n_clicks=0),
                 dbc.RadioItems(id="file-format-historical", value="csv"),
-                dcc.Store(id="favorites-data", data=[]),
                 # Botões de download (renderizados dinamicamente nos resultados)
                 dbc.Button(id="btn-download-csv", n_clicks=0),
                 dbc.Button(id="btn-download-excel", n_clicks=0),
@@ -387,8 +415,8 @@ home_layout = dbc.Container(
             },
         ),
     ],
-    fluid=True,
-    className="px-4",
+    fluid=False,
+    className="py-3 px-3",
 )
 
 logger.info("Home page (unified) loaded successfully")

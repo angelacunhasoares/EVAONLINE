@@ -26,55 +26,92 @@ def _create_usage_section():
                         [
                             dbc.CardBody(
                                 [
-                                    html.H5("Guia Passo a Passo", className="mb-3"),
+                                    html.H5(
+                                        "Guia Passo a Passo", className="mb-3"
+                                    ),
                                     dbc.ListGroup(
                                         [
                                             dbc.ListGroupItem(
                                                 [
-                                                    html.Span("1.", className="fw-bold me-2"),
-                                                    html.Strong("Acesse o Mapa: "),
+                                                    html.Span(
+                                                        "1.",
+                                                        className="fw-bold me-2",
+                                                    ),
+                                                    html.Strong(
+                                                        "Acesse o Mapa: "
+                                                    ),
                                                     "Na página inicial, você verá um mapa mundial interativo",
                                                 ]
                                             ),
                                             dbc.ListGroupItem(
                                                 [
-                                                    html.Span("2.", className="fw-bold me-2"),
-                                                    html.Strong("Selecione uma Localização: "),
+                                                    html.Span(
+                                                        "2.",
+                                                        className="fw-bold me-2",
+                                                    ),
+                                                    html.Strong(
+                                                        "Selecione uma Localização: "
+                                                    ),
                                                     "Clique em qualquer ponto do mapa ou use o botão de localização automática (📍)",
                                                 ]
                                             ),
                                             dbc.ListGroupItem(
                                                 [
-                                                    html.Span("3.", className="fw-bold me-2"),
-                                                    html.Strong("Salve Favoritos (Opcional): "),
+                                                    html.Span(
+                                                        "3.",
+                                                        className="fw-bold me-2",
+                                                    ),
+                                                    html.Strong(
+                                                        "Salve Favoritos (Opcional): "
+                                                    ),
                                                     "Use o botão 'Salvar Favorito' para guardar locais de interesse (máx. 10)",
                                                 ]
                                             ),
                                             dbc.ListGroupItem(
                                                 [
-                                                    html.Span("4.", className="fw-bold me-2"),
-                                                    html.Strong("Calcule ETo: "),
+                                                    html.Span(
+                                                        "4.",
+                                                        className="fw-bold me-2",
+                                                    ),
+                                                    html.Strong(
+                                                        "Calcule ETo: "
+                                                    ),
                                                     "Clique em 'Calcular ETo' para ir para a página de cálculos",
                                                 ]
                                             ),
                                             dbc.ListGroupItem(
                                                 [
-                                                    html.Span("5.", className="fw-bold me-2"),
-                                                    html.Strong("Configure o Período: "),
+                                                    html.Span(
+                                                        "5.",
+                                                        className="fw-bold me-2",
+                                                    ),
+                                                    html.Strong(
+                                                        "Configure o Período: "
+                                                    ),
                                                     "Selecione as datas inicial e final para o cálculo",
                                                 ]
                                             ),
                                             dbc.ListGroupItem(
                                                 [
-                                                    html.Span("6.", className="fw-bold me-2"),
-                                                    html.Strong("Escolha a Fonte de Dados: "),
+                                                    html.Span(
+                                                        "6.",
+                                                        className="fw-bold me-2",
+                                                    ),
+                                                    html.Strong(
+                                                        "Escolha a Fonte de Dados: "
+                                                    ),
                                                     "Selecione entre Open-Meteo, NASA POWER ou dados locais",
                                                 ]
                                             ),
                                             dbc.ListGroupItem(
                                                 [
-                                                    html.Span("7.", className="fw-bold me-2"),
-                                                    html.Strong("Execute o Cálculo: "),
+                                                    html.Span(
+                                                        "7.",
+                                                        className="fw-bold me-2",
+                                                    ),
+                                                    html.Strong(
+                                                        "Execute o Cálculo: "
+                                                    ),
                                                     "Clique em 'Calcular ETo' e aguarde os resultados",
                                                 ]
                                             ),
@@ -82,7 +119,10 @@ def _create_usage_section():
                                         flush=True,
                                         className="mb-3",
                                     ),
-                                    html.H5("📝 Dicas Importantes", className="mt-4 mb-3"),
+                                    html.H5(
+                                        "📝 Dicas Importantes",
+                                        className="mt-4 mb-3",
+                                    ),
                                     dbc.Alert(
                                         [
                                             html.Strong("💡 Dica: "),
@@ -134,17 +174,25 @@ def _create_methodology_section():
                         [
                             dbc.CardBody(
                                 [
-                                    html.H5("Método Penman-Monteith FAO-56", className="mb-3"),
+                                    html.H5(
+                                        "Método Penman-Monteith FAO-56",
+                                        className="mb-3",
+                                    ),
                                     html.P(
                                         [
                                             "O EVAonline utiliza o ",
-                                            html.Strong("método Penman-Monteith padrão FAO-56"),
+                                            html.Strong(
+                                                "método Penman-Monteith padrão FAO-56"
+                                            ),
                                             ", recomendado pela Organização das Nações Unidas para Agricultura e Alimentação ",
                                             "como padrão internacional para cálculo da evapotranspiração de referência (ETo).",
                                         ],
                                         className="mb-3",
                                     ),
-                                    html.H6("📐 Fórmula Principal:", className="mt-4 mb-2"),
+                                    html.H6(
+                                        "📐 Fórmula Principal:",
+                                        className="mt-4 mb-2",
+                                    ),
                                     html.Div(
                                         [
                                             html.P(
@@ -153,7 +201,10 @@ def _create_methodology_section():
                                             )
                                         ]
                                     ),
-                                    html.H6("📊 Variáveis Utilizadas:", className="mt-4 mb-2"),
+                                    html.H6(
+                                        "📊 Variáveis Utilizadas:",
+                                        className="mt-4 mb-2",
+                                    ),
                                     dbc.Row(
                                         [
                                             dbc.Col(
@@ -162,19 +213,25 @@ def _create_methodology_section():
                                                         [
                                                             html.Li(
                                                                 [
-                                                                    html.Strong("Δ:"),
+                                                                    html.Strong(
+                                                                        "Δ:"
+                                                                    ),
                                                                     " Declividade da curva de pressão de vapor",
                                                                 ]
                                                             ),
                                                             html.Li(
                                                                 [
-                                                                    html.Strong("Rₙ:"),
+                                                                    html.Strong(
+                                                                        "Rₙ:"
+                                                                    ),
                                                                     " Radiação líquida à superfície",
                                                                 ]
                                                             ),
                                                             html.Li(
                                                                 [
-                                                                    html.Strong("G:"),
+                                                                    html.Strong(
+                                                                        "G:"
+                                                                    ),
                                                                     " Fluxo de calor no solo",
                                                                 ]
                                                             ),
@@ -189,25 +246,33 @@ def _create_methodology_section():
                                                         [
                                                             html.Li(
                                                                 [
-                                                                    html.Strong("γ:"),
+                                                                    html.Strong(
+                                                                        "γ:"
+                                                                    ),
                                                                     " Constante psicrométrica",
                                                                 ]
                                                             ),
                                                             html.Li(
                                                                 [
-                                                                    html.Strong("T:"),
+                                                                    html.Strong(
+                                                                        "T:"
+                                                                    ),
                                                                     " Temperatura média do ar",
                                                                 ]
                                                             ),
                                                             html.Li(
                                                                 [
-                                                                    html.Strong("u₂:"),
+                                                                    html.Strong(
+                                                                        "u₂:"
+                                                                    ),
                                                                     " Velocidade do vento a 2m",
                                                                 ]
                                                             ),
                                                             html.Li(
                                                                 [
-                                                                    html.Strong("eₛ - eₐ:"),
+                                                                    html.Strong(
+                                                                        "eₛ - eₐ:"
+                                                                    ),
                                                                     " Déficit de pressão de vapor",
                                                                 ]
                                                             ),
@@ -225,7 +290,9 @@ def _create_methodology_section():
                                     html.P(
                                         [
                                             "O sistema utiliza ",
-                                            html.Strong("Ensemble Kalman Filter (EnKF)"),
+                                            html.Strong(
+                                                "Ensemble Kalman Filter (EnKF)"
+                                            ),
                                             " para fusão de dados de múltiplas fontes climáticas, ",
                                             "proporcionando estimativas mais robustas e precisas de ETo.",
                                         ]
@@ -242,7 +309,9 @@ def _create_methodology_section():
     )
 
 
-def _create_data_source_card(title, source, source_url, description, license, coverage, resolution):
+def _create_data_source_card(
+    title, source, source_url, description, license, coverage, resolution
+):
     """Cria card padronizado para fonte de dados."""
     return dbc.Card(
         [
@@ -250,7 +319,10 @@ def _create_data_source_card(title, source, source_url, description, license, co
             dbc.CardBody(
                 [
                     html.P(
-                        [html.Strong("Fonte: "), html.A(source, href=source_url, target="_blank")]
+                        [
+                            html.Strong("Fonte: "),
+                            html.A(source, href=source_url, target="_blank"),
+                        ]
                     ),
                     html.P([html.Strong("Descrição: "), description]),
                     html.P([html.Strong("Licença: "), license]),
@@ -319,26 +391,34 @@ def _create_license_section():
             dbc.Col(
                 [
                     html.H2(
-                        "📄 Licença", id="licenca", className="mb-4", style={"color": "#2c3e50"}
+                        "📄 Licença",
+                        id="licenca",
+                        className="mb-4",
+                        style={"color": "#2c3e50"},
                     ),
                     dbc.Card(
                         [
                             dbc.CardBody(
                                 [
                                     html.H5(
-                                        "GNU Affero General Public License v3.0", className="mb-3"
+                                        "GNU Affero General Public License v3.0",
+                                        className="mb-3",
                                     ),
                                     html.P(
                                         [
                                             "Copyright © 2024 ",
-                                            html.Strong("Angela Cristina Cunha Soares"),
+                                            html.Strong(
+                                                "Angela Cristina Cunha Soares"
+                                            ),
                                             ", Patricia A. A. Marques, Carlos D. Maciel",
                                         ],
                                         className="mb-3",
                                     ),
                                     dbc.Alert(
                                         [
-                                            html.Strong("🚀 Software de Código Aberto"),
+                                            html.Strong(
+                                                "🚀 Software de Código Aberto"
+                                            ),
                                             html.Br(),
                                             "O EVAonline é licenciado sob a GNU Affero General Public License v3.0 (AGPL-3.0).",
                                         ],
@@ -372,7 +452,9 @@ def _create_license_section():
                                     ),
                                     html.A(
                                         [
-                                            html.I(className="fab fa-github me-2"),
+                                            html.I(
+                                                className="fab fa-github me-2"
+                                            ),
                                             "Licença completa no GitHub",
                                         ],
                                         href="https://github.com/angelacunhasoares/EVAonline_SoftwareX/blob/main/LICENSE",
@@ -398,7 +480,10 @@ def _create_citation_section():
             dbc.Col(
                 [
                     html.H2(
-                        "📖 Como Citar", id="citacao", className="mb-4", style={"color": "#2c3e50"}
+                        "📖 Como Citar",
+                        id="citacao",
+                        className="mb-4",
+                        style={"color": "#2c3e50"},
                     ),
                     dbc.Card(
                         [
@@ -456,7 +541,10 @@ def _create_contact_section():
             dbc.Col(
                 [
                     html.H2(
-                        "📧 Contato", id="contato", className="mb-4", style={"color": "#2c3e50"}
+                        "📧 Contato",
+                        id="contato",
+                        className="mb-4",
+                        style={"color": "#2c3e50"},
                     ),
                     dbc.Card(
                         [
@@ -470,7 +558,9 @@ def _create_contact_section():
                                         [
                                             html.Li(
                                                 [
-                                                    html.Strong("Ângela Cristina Cunha Soares: "),
+                                                    html.Strong(
+                                                        "Ângela Cristina Cunha Soares: "
+                                                    ),
                                                     html.A(
                                                         "angelacunhasoares@usp.br",
                                                         href="mailto:angelacunhasoares@usp.br",
@@ -479,7 +569,9 @@ def _create_contact_section():
                                             ),
                                             html.Li(
                                                 [
-                                                    html.Strong("Patricia A. A. Marques: "),
+                                                    html.Strong(
+                                                        "Patricia A. A. Marques: "
+                                                    ),
                                                     html.A(
                                                         "paamarques@usp.br",
                                                         href="mailto:paamarques@usp.br",
@@ -488,7 +580,9 @@ def _create_contact_section():
                                             ),
                                             html.Li(
                                                 [
-                                                    html.Strong("Carlos D. Maciel: "),
+                                                    html.Strong(
+                                                        "Carlos D. Maciel: "
+                                                    ),
                                                     html.A(
                                                         "carlos.maciel@unesp.br",
                                                         href="mailto:carlos.maciel@unesp.br",
@@ -500,7 +594,9 @@ def _create_contact_section():
                                     ),
                                     html.P(
                                         [
-                                            html.Strong("Repositório do GitHub: "),
+                                            html.Strong(
+                                                "Repositório do GitHub: "
+                                            ),
                                             html.A(
                                                 "EVAonline_SoftwareX",
                                                 href="https://github.com/angelacunhasoares/EVAonline_SoftwareX",
@@ -543,7 +639,10 @@ documentation_layout = html.Div(
                                 html.H1(
                                     "📚 Documentação EVAonline",
                                     className="text-center mb-3",
-                                    style={"color": "#2c3e50", "fontWeight": "bold"},
+                                    style={
+                                        "color": "#2c3e50",
+                                        "fontWeight": "bold",
+                                    },
                                 ),
                                 html.P(
                                     "Documentação completa do sistema de cálculo de evapotranspiração de referência",
@@ -560,23 +659,41 @@ documentation_layout = html.Div(
                     [
                         dbc.CardBody(
                             [
-                                html.H5("🔍 Navegação Rápida", className="mb-3"),
+                                html.H5(
+                                    "🔍 Navegação Rápida", className="mb-3"
+                                ),
                                 dbc.Nav(
                                     [
                                         dbc.NavLink(
-                                            "Como Usar", href="#como-usar", external_link=True
+                                            "Como Usar",
+                                            href="#como-usar",
+                                            external_link=True,
                                         ),
                                         dbc.NavLink(
-                                            "Metodologia", href="#metodologia", external_link=True
+                                            "Metodologia",
+                                            href="#metodologia",
+                                            external_link=True,
                                         ),
                                         dbc.NavLink(
                                             "Fontes de Dados",
                                             href="#fontes-dados",
                                             external_link=True,
                                         ),
-                                        dbc.NavLink("Licença", href="#licenca", external_link=True),
-                                        dbc.NavLink("Citação", href="#citacao", external_link=True),
-                                        dbc.NavLink("Contato", href="#contato", external_link=True),
+                                        dbc.NavLink(
+                                            "Licença",
+                                            href="#licenca",
+                                            external_link=True,
+                                        ),
+                                        dbc.NavLink(
+                                            "Citação",
+                                            href="#citacao",
+                                            external_link=True,
+                                        ),
+                                        dbc.NavLink(
+                                            "Contato",
+                                            href="#contato",
+                                            external_link=True,
+                                        ),
                                     ],
                                     pills=True,
                                     fill=True,
@@ -599,7 +716,7 @@ documentation_layout = html.Div(
                 # Seção: Contato
                 _create_contact_section(),
             ],
-            fluid=True,
+            fluid=False,
             className="py-4",
         )
     ]

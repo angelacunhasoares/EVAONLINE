@@ -8,7 +8,7 @@ import sys
 
 import dash_bootstrap_components as dbc
 import requests
-from dash import ALL, Input, Output, State, html, callback_context
+from dash import Input, Output, State, html, callback_context
 from dash.exceptions import PreventUpdate
 from geopy.geocoders import Nominatim
 
@@ -190,8 +190,8 @@ def register_home_callbacks(app):
             Output("navigation-coordinates", "data"),
             Output("marker-layer", "children"),
             Output("selected-coords-display", "children"),
-            Output("add-favorite-btn", "disabled"),
             Output("calculate-eto-btn", "disabled"),
+            Output("sidebar-location-display", "children"),
         ],
         Input("world-map", "clickData"),
         prevent_initial_call=True,
@@ -204,8 +204,18 @@ def register_home_callbacks(app):
             click_data: Dict com 'latlng' = [lat, lng] (lista de 2 números)
 
         Returns:
-            tuple: (click_data, location_data, nav_coords, marker, coords_display, btn_disabled, btn_disabled)
+            tuple: (click_data, location_data, nav_coords, marker, coords_display, btn_disabled, sidebar_location)
         """
+        # Display padrão para sidebar
+        default_sidebar_location = dbc.Alert(
+            [
+                html.I(className="bi bi-hand-index-thumb me-2"),
+                "Click on the map to select a point",
+            ],
+            color="secondary",
+            className="mb-0 small py-2",
+        )
+
         # DEBUG: Log sempre, mesmo se None
         logger.info(
             f"Callback disparado! click_data: "
@@ -218,7 +228,15 @@ def register_home_callbacks(app):
                 "Click on the map to select a location",
                 className="alert alert-info small",
             )
-            return None, None, None, [], debug_msg, True, True
+            return (
+                None,
+                None,
+                None,
+                [],
+                debug_msg,
+                True,
+                default_sidebar_location,
+            )
 
         try:
             # Verifica estrutura do click_data
@@ -228,7 +246,15 @@ def register_home_callbacks(app):
                     f"Error: Invalid structure - {click_data}",
                     className="alert alert-danger small",
                 )
-                return None, None, None, [], error_msg, True, True
+                return (
+                    None,
+                    None,
+                    None,
+                    [],
+                    error_msg,
+                    True,
+                    default_sidebar_location,
+                )
 
             latlng = click_data["latlng"]
 
@@ -246,7 +272,15 @@ def register_home_callbacks(app):
                     f"Error: Invalid latlng format - {latlng}",
                     className="alert alert-danger small",
                 )
-                return None, None, None, [], error_msg, True, True
+                return (
+                    None,
+                    None,
+                    None,
+                    [],
+                    error_msg,
+                    True,
+                    default_sidebar_location,
+                )
 
             logger.info(f"Click processed: LAT={lat:.6f}, LON={lon:.6f}")
 
@@ -273,14 +307,64 @@ def register_home_callbacks(app):
                 className="text-center p-2 bg-light rounded",
             )
 
+            # Criar display para o sidebar com coordenadas selecionadas
+            sidebar_location = html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.I(
+                                        className="bi bi-geo me-2 text-muted"
+                                    ),
+                                    html.Span(
+                                        "Latitude:",
+                                        className="text-muted small",
+                                    ),
+                                ],
+                                className="d-flex align-items-center",
+                            ),
+                            html.Span(
+                                f"{lat:.6f}°",
+                                className="fw-bold text-success",
+                            ),
+                        ],
+                        className="d-flex justify-content-between align-items-center mb-2",
+                    ),
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.I(
+                                        className="bi bi-geo me-2 text-muted"
+                                    ),
+                                    html.Span(
+                                        "Longitude:",
+                                        className="text-muted small",
+                                    ),
+                                ],
+                                className="d-flex align-items-center",
+                            ),
+                            html.Span(
+                                f"{lon:.6f}°",
+                                className="fw-bold text-success",
+                            ),
+                        ],
+                        className="d-flex justify-content-between align-items-center",
+                    ),
+                ],
+                className="bg-light rounded p-2 border",
+                style={"fontSize": "0.9rem"},
+            )
+
             return (
                 {"lat": lat, "lon": lon},  # map-click-data
                 location_data,  # selected-location-data
-                location_data,  # navigation-coordinates (NEW)
+                location_data,  # navigation-coordinates
                 [marker],  # marker-layer
                 coords_display,  # selected-coords-display
-                False,  # add-favorite-btn disabled
                 False,  # calculate-eto-btn disabled
+                sidebar_location,  # sidebar-location-display
             )
 
         except KeyError as e:
@@ -288,231 +372,30 @@ def register_home_callbacks(app):
             error_msg = html.Div(
                 f"KeyError: {e}", className="alert alert-danger small"
             )
-            return None, None, None, [], error_msg, True, True
+            return (
+                None,
+                None,
+                None,
+                [],
+                error_msg,
+                True,
+                default_sidebar_location,
+            )
         except Exception as e:
             logger.error(f"Erro geral: {e} - Stack: {sys.exc_info()}")
             error_msg = html.Div(
                 f"Unexpected error: {str(e)}",
                 className="alert alert-danger small",
             )
-            return None, None, None, [], error_msg, True, True
-
-    # ==========================================================================
-    # CALLBACKS DE FAVORITOS
-    # ==========================================================================
-
-    @app.callback(
-        [
-            Output("favorites-store", "data"),
-            Output("toast-container", "children"),
-        ],
-        Input("add-favorite-btn", "n_clicks"),
-        [
-            State("selected-location-data", "data"),
-            State("favorites-store", "data"),
-        ],
-        prevent_initial_call=True,
-    )
-    def add_to_favorites(n_clicks, location_data, current_favorites):
-        """Adiciona localização atual aos favoritos."""
-        if not location_data or not n_clicks:
-            return current_favorites, None
-
-        # Inicializar lista se None
-        if current_favorites is None:
-            current_favorites = []
-
-        # Verificar limite máximo (5 favoritos)
-        if len(current_favorites) >= 5:
-            logger.warning("Limite de 5 favoritos atingido")
-            toast = dbc.Toast(
-                [
-                    html.P(
-                        "Você já atingiu o limite máximo de 5 favoritos.",
-                        className="mb-0",
-                    ),
-                    html.P(
-                        "Remova um favorito para adicionar outro.",
-                        className="mb-0 small text-muted",
-                    ),
-                ],
-                header="Limite Atingido",
-                icon="warning",
-                is_open=True,
-                dismissable=True,
-                duration=4000,
-                style={"maxWidth": "350px"},
+            return (
+                None,
+                None,
+                None,
+                [],
+                error_msg,
+                True,
+                default_sidebar_location,
             )
-            return current_favorites, toast
-
-        lat = location_data.get("lat")
-        lon = location_data.get("lon")
-
-        # Verificar se já existe (evitar duplicatas)
-        for fav in current_favorites:
-            if (
-                abs(fav["lat"] - lat) < 0.0001
-                and abs(fav["lon"] - lon) < 0.0001
-            ):
-                logger.info(f"Localizacao ja existe: {lat}, {lon}")
-                toast = dbc.Toast(
-                    "Esta localização já está na lista de favoritos.",
-                    header="Favorito Existente",
-                    icon="info",
-                    is_open=True,
-                    dismissable=True,
-                    duration=3000,
-                    style={"maxWidth": "350px"},
-                )
-                return current_favorites, toast
-
-        # Adicionar novo favorito
-        new_favorite = {
-            "lat": lat,
-            "lon": lon,
-            "label": f"Lat: {lat:.4f}°, Lon: {lon:.4f}°",
-        }
-        current_favorites.append(new_favorite)
-
-        logger.info(f"Favorito adicionado: {new_favorite['label']}")
-
-        favorites_count = len(current_favorites)
-
-        # Toast de sucesso
-        toast = dbc.Toast(
-            [
-                html.P(
-                    f"Localização adicionada aos favoritos!",
-                    className="mb-0",
-                ),
-                html.Small(
-                    f"Total: {favorites_count}/5",
-                    className="text-muted",
-                ),
-            ],
-            header="Favorito Adicionado",
-            icon="success",
-            is_open=True,
-            dismissable=True,
-            duration=3000,
-            style={"maxWidth": "350px"},
-        )
-
-        return current_favorites, toast
-
-    @app.callback(
-        [
-            Output("favorites-list-container", "children"),
-            Output("empty-favorites-alert", "style"),
-            Output("clear-favorites-button", "disabled"),
-            Output("favorites-count-badge", "children"),
-        ],
-        Input("favorites-store", "data"),
-        prevent_initial_call=True,
-    )
-    def update_favorites_display(favorites):
-        """Atualiza a exibição da lista de favoritos."""
-        # Calcular contador atualizado
-        favorites_count = len(favorites) if favorites else 0
-        badge_text = f"{favorites_count}/5"
-
-        if not favorites or favorites_count == 0:
-            return [], {"display": "block"}, True, badge_text
-
-        # Criar lista de favoritos
-        favorites_items = []
-        for idx, fav in enumerate(favorites):
-            item = dbc.ListGroupItem(
-                [
-                    html.Div(
-                        [
-                            html.Div(
-                                [
-                                    html.I(
-                                        className=(
-                                            "bi bi-geo-alt-fill "
-                                            "me-2 text-primary"
-                                        )
-                                    ),
-                                    html.Strong(fav["label"]),
-                                ],
-                                className="flex-grow-1",
-                            ),
-                            html.Div(
-                                [
-                                    dbc.Button(
-                                        [html.I(className="bi bi-calculator")],
-                                        id={
-                                            "type": "calc-eto-favorite",
-                                            "index": idx,
-                                        },
-                                        color="success",
-                                        size="sm",
-                                        className="me-2",
-                                        title="Calcular ETo",
-                                    ),
-                                    dbc.Button(
-                                        [html.I(className="bi bi-trash")],
-                                        id={
-                                            "type": "remove-favorite",
-                                            "index": idx,
-                                        },
-                                        color="danger",
-                                        size="sm",
-                                        title="Remover",
-                                    ),
-                                ],
-                                className="d-flex gap-1",
-                            ),
-                        ],
-                        className=(
-                            "d-flex align-items-center "
-                            "justify-content-between"
-                        ),
-                    )
-                ],
-                className="mb-2",
-            )
-            favorites_items.append(item)
-
-        return (
-            dbc.ListGroup(favorites_items, flush=True),
-            {"display": "none"},
-            False,
-            badge_text,
-        )
-
-    @app.callback(
-        Output("favorites-store", "data", allow_duplicate=True),
-        Input("clear-favorites-button", "n_clicks"),
-        prevent_initial_call=True,
-    )
-    def clear_all_favorites(n_clicks):
-        """Limpa todos os favoritos."""
-        if n_clicks:
-            logger.info("Todos os favoritos foram removidos")
-            return []
-        return []
-
-    @app.callback(
-        Output("favorites-store", "data", allow_duplicate=True),
-        Input({"type": "remove-favorite", "index": ALL}, "n_clicks"),
-        State("favorites-store", "data"),
-        prevent_initial_call=True,
-    )
-    def remove_favorite(n_clicks_list, current_favorites):
-        """Remove um favorito específico da lista."""
-        if not current_favorites or not any(n_clicks_list):
-            return current_favorites
-
-        # Encontrar qual botão foi clicado
-        for idx, n_clicks in enumerate(n_clicks_list):
-            if n_clicks:
-                removed = current_favorites.pop(idx)
-                logger.info(f"Favorito removido: {removed['label']}")
-                break
-
-        return current_favorites
 
 
 def get_location_info(lat, lon):
@@ -576,13 +459,13 @@ def get_location_info(lat, lon):
 
 def create_selection_info_card(location_data):
     """
-    Cria card com coordenadas e botões de ação.
+    Cria card com coordenadas e botão de calcular ETo.
 
     Args:
         location_data (dict): Dados com 'lat' e 'lon'
 
     Returns:
-        dbc.Card: Card com coordenadas e botões
+        dbc.Card: Card com coordenadas e botão
     """
     lat = location_data.get("lat", 0)
     lon = location_data.get("lon", 0)
@@ -613,19 +496,9 @@ def create_selection_info_card(location_data):
                             ),
                         ]
                     ),
-                    # Botões de ação
+                    # Botão de calcular
                     html.Div(
                         [
-                            dbc.Button(
-                                [
-                                    html.I(className="bi bi-star me-2"),
-                                    "Adicionar Favorito",
-                                ],
-                                id="add-favorite-btn",
-                                color="warning",
-                                className="me-2",
-                                size="sm",
-                            ),
                             dbc.Button(
                                 [
                                     html.I(className="bi bi-calculator me-2"),
@@ -634,7 +507,6 @@ def create_selection_info_card(location_data):
                                 id="calculate-eto-btn",
                                 color="success",
                                 size="sm",
-                                # href será atualizado dinamicamente com coordenadas
                             ),
                         ],
                         className="d-flex gap-2",
@@ -804,55 +676,6 @@ def register_layer_control_callbacks(app):
             return coords
 
         logger.warning("Coordenadas invalidas")
-        raise PreventUpdate
-
-    @app.callback(
-        Output("navigation-coordinates", "data", allow_duplicate=True),
-        Input({"type": "calc-eto-favorite", "index": ALL}, "n_clicks"),
-        State("favorites-data", "data"),
-        prevent_initial_call=True,
-    )
-    def sync_coords_from_favorite(n_clicks_list, favorites_data):
-        """
-        Sincroniza coordenadas de um favorito para o Store.
-
-        NOTA: Na arquitetura unificada, apenas sincronizamos as coordenadas.
-        O usuario ainda precisa clicar no botao CALCULATE ETO para iniciar.
-
-        Args:
-            n_clicks_list: Lista de clicks nos botoes dos favoritos
-            favorites_data: Dados dos favoritos
-
-        Returns:
-            dict: Coordenadas para o Store
-        """
-        if not any(n_clicks_list) or not favorites_data:
-            raise PreventUpdate
-
-        # Encontrar qual botao foi clicado
-        ctx = callback_context
-        if not ctx.triggered:
-            raise PreventUpdate
-
-        # Extrair o indice do botao clicado
-        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        import json
-
-        button_dict = json.loads(button_id)
-        clicked_index = button_dict["index"]
-
-        # Buscar coordenadas do favorito
-        if clicked_index < len(favorites_data):
-            favorite = favorites_data[clicked_index]
-            lat = favorite.get("latitude")
-            lon = favorite.get("longitude")
-
-            if lat is not None and lon is not None:
-                coords = {"lat": lat, "lon": lon}
-                logger.info(f"Favorito clicado - coordenadas: {coords}")
-                return coords
-
-        logger.warning("Favorito sem coordenadas validas")
         raise PreventUpdate
 
     # =========================================================================

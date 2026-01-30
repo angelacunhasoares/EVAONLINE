@@ -97,6 +97,54 @@ footer.bg-white {
     filter: brightness(0.4);
 }
 
+/* ===== Navbar Academic Styles ===== */
+
+/* Link hover effect */
+.nav-link-academic:hover {
+    background-color: #e8f5e9 !important;
+    color: #1a5f2a !important;
+}
+
+/* Active link indicator */
+.nav-link-academic.active {
+    background-color: #e8f5e9 !important;
+    color: #1a5f2a !important;
+    border-bottom: 2px solid #1a5f2a;
+}
+
+/* Language button hover */
+#language-toggle:hover {
+    background-color: #145a24 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(26, 95, 42, 0.3) !important;
+}
+
+/* Navbar toggler button */
+#navbar-toggler:hover {
+    background-color: #e8f5e9 !important;
+    border-color: #1a5f2a !important;
+}
+
+/* Mobile menu styling */
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background-color: #ffffff;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-link-academic {
+        padding: 12px 16px !important;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .nav-link-academic:last-child {
+        border-bottom: none;
+    }
+}
+
 /* ===== Button Animations ===== */
 
 /* Pulse animation when button becomes enabled */
