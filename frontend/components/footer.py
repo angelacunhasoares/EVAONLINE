@@ -30,7 +30,7 @@ class FooterManager:
         """Desenvolvedores com emails."""
         return [
             {
-                "name": "Angela S. M. C. Soares",
+                "name": "Ângela S. M. C. Soares",
                 "email": "angelasilviane@alumni.usp.br",
                 "institution": "ESALQ/USP",
             },
@@ -98,14 +98,8 @@ def create_footer(lang: str = "pt") -> html.Footer:
 
         return html.Footer(
             [
-                # Linha divisória sutil acima do footer (estilo C4AI)
-                html.Hr(
-                    className="m-0",
-                    style={
-                        "borderTop": "1px solid #dee2e6",
-                        "opacity": "0.5",
-                    },
-                ),
+                # Linha divisória sutil acima do footer
+                html.Hr(className="m-0 footer-divider-top"),
                 dbc.Container(
                     [
                         # ===== Linha Única: 3 Colunas =====
@@ -116,8 +110,7 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                     [
                                         html.H6(
                                             texts["developers"],
-                                            className="mb-3 fw-bold text-center",
-                                            style={"color": "#2c3e50"},
+                                            className="mb-3 text-center footer-column-title",
                                         ),
                                         html.Ul(
                                             [
@@ -136,11 +129,7 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                             href=footer_manager.get_email_link(
                                                                 dev["email"]
                                                             ),
-                                                            className="text-muted small",
-                                                            style={
-                                                                "textDecoration": "none",
-                                                                "fontSize": "0.875rem",
-                                                            },
+                                                            className="footer-email-link small",
                                                         ),
                                                     ],
                                                     className="mb-3 list-unstyled",
@@ -158,8 +147,7 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                     [
                                         html.H6(
                                             texts["partners"],
-                                            className="mb-3 fw-bold text-center",
-                                            style={"color": "#2c3e50"},
+                                            className="mb-3 text-center footer-column-title",
                                         ),
                                         html.Div(
                                             [
@@ -169,27 +157,13 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                             partner
                                                         ),
                                                         alt=f"Logo {partner.upper()}",
-                                                        style={
-                                                            "height": "75px",  # Aumentado de 65px
-                                                            "maxWidth": "160px",  # Aumentado de 140px
-                                                            "margin": "8px",
-                                                            "display": "block",
-                                                            "objectFit": "contain",
-                                                            "opacity": "0.9",
-                                                            "transition": "opacity 0.3s ease",
-                                                        },
-                                                        className="logo-partner",
+                                                        className="footer-partner-logo logo-partner",
                                                     ),
                                                     href=url,
                                                     target="_blank",
                                                     rel="noopener noreferrer",
                                                     title=f"Visitar {partner.upper()}",
-                                                    style={
-                                                        "textDecoration": "none",
-                                                        ":hover .logo-partner": {
-                                                            "opacity": "1.0"
-                                                        },
-                                                    },
+                                                    className="footer-partner-link",
                                                 )
                                                 for partner, url in footer_manager.get_partner_data().items()
                                             ],
@@ -204,8 +178,7 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                     [
                                         html.H6(
                                             texts["links"],
-                                            className="mb-3 fw-bold text-center",
-                                            style={"color": "#2c3e50"},
+                                            className="mb-3 text-center footer-column-title",
                                         ),
                                         html.Div(
                                             [
@@ -214,19 +187,11 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                         html.Img(
                                                             src="/assets/images/github.svg",
                                                             alt="GitHub",
-                                                            style={
-                                                                "height": "40px",
-                                                                "width": "40px",
-                                                                "objectFit": "contain",
-                                                            },
-                                                            className="github-icon",
+                                                            className="footer-github-icon",
                                                         ),
                                                         html.Span(
                                                             "GitHub",
-                                                            className="d-block small mt-1",
-                                                            style={
-                                                                "color": "#6c757d"
-                                                            },
+                                                            className="d-block small mt-1 footer-icon-label",
                                                         ),
                                                     ],
                                                     href=(
@@ -237,31 +202,16 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                     target="_blank",
                                                     rel="noopener noreferrer",
                                                     title="Repositório GitHub",
-                                                    style={
-                                                        "textDecoration": "none",
-                                                        "display": "flex",
-                                                        "flexDirection": "column",
-                                                        "alignItems": "center",
-                                                        "margin": "0 10px",
-                                                    },
+                                                    className="footer-icon-link",
                                                 ),
                                                 html.A(
                                                     [
                                                         html.I(
-                                                            className=(
-                                                                "bi bi-file-earmark-text"
-                                                            ),
-                                                            style={
-                                                                "fontSize": "40px",
-                                                                "color": "#6c757d",
-                                                            },
+                                                            className="bi bi-file-earmark-text footer-icon",
                                                         ),
                                                         html.Span(
                                                             "Licença",
-                                                            className="d-block small mt-1",
-                                                            style={
-                                                                "color": "#6c757d"
-                                                            },
+                                                            className="d-block small mt-1 footer-icon-label",
                                                         ),
                                                     ],
                                                     href=(
@@ -273,44 +223,21 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                     target="_blank",
                                                     rel="noopener noreferrer",
                                                     title="Licença MIT",
-                                                    style={
-                                                        "textDecoration": "none",
-                                                        "display": "flex",
-                                                        "flexDirection": "column",
-                                                        "alignItems": "center",
-                                                        "margin": "0 10px",
-                                                    },
-                                                    className="license-link",
+                                                    className="footer-icon-link license-link",
                                                 ),
                                                 html.A(
                                                     [
                                                         html.I(
-                                                            className=(
-                                                                "bi bi-book"
-                                                            ),
-                                                            style={
-                                                                "fontSize": "40px",
-                                                                "color": "#6c757d",
-                                                            },
+                                                            className="bi bi-book footer-icon",
                                                         ),
                                                         html.Span(
                                                             "Documentação",
-                                                            className="d-block small mt-1",
-                                                            style={
-                                                                "color": "#6c757d"
-                                                            },
+                                                            className="d-block small mt-1 footer-icon-label",
                                                         ),
                                                     ],
                                                     href="/documentation",
                                                     title="Documentação",
-                                                    style={
-                                                        "textDecoration": "none",
-                                                        "display": "flex",
-                                                        "flexDirection": "column",
-                                                        "alignItems": "center",
-                                                        "margin": "0 10px",
-                                                    },
-                                                    className="docs-link",
+                                                    className="footer-icon-link docs-link",
                                                 ),
                                             ],
                                             className=(
@@ -332,8 +259,7 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                     html.Div(
                                         [
                                             html.I(
-                                                className="bi bi-people-fill me-2",
-                                                style={"color": "#6c757d"},
+                                                className="bi bi-people-fill me-2 footer-visitors",
                                             ),
                                             html.Span(
                                                 "Visitantes: ",
@@ -361,9 +287,7 @@ def create_footer(lang: str = "pt") -> html.Footer:
                             ],
                         ),
                         # Linha de Copyright
-                        html.Hr(
-                            className="my-2", style={"borderColor": "#dee2e6"}
-                        ),
+                        html.Hr(className="my-2 footer-divider-copyright"),
                         dbc.Row(
                             [
                                 dbc.Col(
@@ -377,10 +301,7 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                 href="https://github.com/angelassilviane/EVAONLINE/blob/main/LICENSE",
                                                 target="_blank",
                                                 rel="noopener noreferrer",
-                                                className="text-muted",
-                                                style={
-                                                    "textDecoration": "underline"
-                                                },
+                                                className="footer-license-link",
                                             ),
                                             ".",
                                         ],
@@ -392,21 +313,11 @@ def create_footer(lang: str = "pt") -> html.Footer:
                             className="mt-2",
                         ),
                     ],
-                    fluid=False,  # Usar container fixo
-                    style={
-                        "paddingLeft": "40px",
-                        "paddingRight": "40px",
-                        "maxWidth": "1400px",
-                    },
+                    fluid=False,
+                    className="footer-container",
                 ),
             ],
-            className="bg-white",
-            style={
-                "marginTop": "10px",  # Margem reduzida
-                "paddingTop": "0px",
-                "paddingBottom": "15px",
-                "overflowX": "hidden",
-            },
+            className="bg-white footer-professional",
         )
     except Exception as e:
         logger.error(f"❌ Erro ao criar footer: {e}")

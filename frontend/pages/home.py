@@ -27,13 +27,13 @@ def create_sidebar_card():
     """
     return html.Div(
         [
-            # Header com gradiente
+            # Header com gradiente azul acadêmico
             html.Div(
                 [
                     html.Div(
                         [
                             html.I(
-                                className="bi bi-droplet-half",
+                                className="bi bi-cloud-sun-fill",
                                 style={"fontSize": "1.8rem"},
                             ),
                         ],
@@ -52,11 +52,7 @@ def create_sidebar_card():
                         ],
                     ),
                 ],
-                className="d-flex align-items-center p-3 text-white",
-                style={
-                    "background": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    "borderRadius": "12px 12px 0 0",
-                },
+                className="d-flex align-items-center p-3 text-white card-header-academic",
             ),
             # Corpo da sidebar
             html.Div(
@@ -270,7 +266,7 @@ def create_map_card():
     """Cria card com o mapa mundial - estilo moderno."""
     return html.Div(
         [
-            # Header com gradiente verde
+            # Header com gradiente azul acadêmico (variação)
             html.Div(
                 [
                     html.Div(
@@ -295,11 +291,7 @@ def create_map_card():
                         ],
                     ),
                 ],
-                className="d-flex align-items-center p-3 text-white",
-                style={
-                    "background": "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
-                    "borderRadius": "12px 12px 0 0",
-                },
+                className="d-flex align-items-center p-3 text-white card-header-academic-alt",
             ),
             # Corpo do card
             html.Div(

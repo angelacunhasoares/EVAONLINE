@@ -1,6 +1,6 @@
 /* Custom CSS for EVAONLINE - ETO Calculator */
 
-/* ===== FORÇA REDUÇÃO DE ESPAÇO - PRIORIDADE MÁXIMA ===== */
+/* ===== FORÇA REDUÇÃO DE ESPAÇO ===== */
 
 /* CRÍTICO: Remove padding-bottom do page-content */
 #page-content {
@@ -99,17 +99,166 @@ footer.bg-white {
 
 /* ===== Navbar Academic Styles ===== */
 
-/* Link hover effect */
+/* Accent bar no topo - gradiente azul acadêmico inspirado ScienceDirect */
+.navbar-accent-bar {
+    height: 4px;
+    background: linear-gradient(90deg, #006699 0%, #0088aa 50%, #00a3cc 100%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1031;
+}
+
+/* Navbar container */
+.navbar-academic {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 0;
+    margin-top: 4px;
+    /* Espaço para accent bar */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Brand link */
+.navbar-brand-link {
+    text-decoration: none;
+}
+
+/* Brand container */
+.navbar-brand-container {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Brand header (icon + title) */
+.navbar-brand-header {
+    display: flex;
+    align-items: center;
+}
+
+/* Brand icon */
+.navbar-brand-icon {
+    font-size: 2.6rem;
+    color: #1a5f2a;
+}
+
+/* Brand title */
+.navbar-brand-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1a5f2a;
+    letter-spacing: -0.5px;
+}
+
+/* Brand subtitle */
+.navbar-brand-subtitle {
+    font-size: 1.00rem;
+    font-weight: 400;
+    color: #5a6c7d;
+    line-height: 1.2;
+    margin-top: 2px;
+    margin-left: 2px;
+}
+
+/* Navbar toggler button */
+#navbar-toggler {
+    border: 1px solid #1a5f2a;
+    color: #1a5f2a;
+    padding: 4px 10px;
+}
+
+#navbar-toggler:hover {
+    background-color: #e8f5e9 !important;
+    border-color: #1a5f2a !important;
+}
+
+#navbar-toggler i {
+    font-size: 1.5rem;
+}
+
+/* Navigation links */
+.nav-link-academic {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #2c3e50;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+/* Link hover effect - verde claro suave */
 .nav-link-academic:hover {
     background-color: #e8f5e9 !important;
     color: #1a5f2a !important;
+    transform: translateY(-1px);
 }
 
 /* Active link indicator */
 .nav-link-academic.active {
-    background-color: #e8f5e9 !important;
+    background-color: transparent !important;
     color: #1a5f2a !important;
-    border-bottom: 2px solid #1a5f2a;
+    border-bottom: 3px solid #1a5f2a;
+    border-radius: 0;
+    padding-bottom: 5px;
+}
+
+/* ===== Academic Card Styles (Gradiente Azul) ===== */
+
+/* Card header com gradiente azul acadêmico */
+.card-header-academic {
+    background: linear-gradient(135deg, #006699 0%, #0088aa 100%);
+    border-radius: 12px 12px 0 0;
+    color: white;
+}
+
+/* Card header alternativo (mesma cor, variação sutil) */
+.card-header-academic-alt {
+    background: linear-gradient(135deg, #007399 0%, #0099bb 100%);
+    border-radius: 12px 12px 0 0;
+    color: white;
+}
+
+/* Card container acadêmico */
+.card-academic {
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-academic:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+}
+
+/* GitHub link with icon */
+.nav-link-github {
+    display: flex;
+    align-items: center;
+}
+
+.nav-link-github i {
+    font-size: 1rem;
+}
+
+/* Language toggle button */
+#language-toggle {
+    background-color: #1a5f2a;
+    border-color: #1a5f2a;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 8px 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 20px;
+    min-width: 120px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(26, 95, 42, 0.2);
+    transition: all 0.2s ease;
 }
 
 /* Language button hover */
@@ -117,12 +266,6 @@ footer.bg-white {
     background-color: #145a24 !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(26, 95, 42, 0.3) !important;
-}
-
-/* Navbar toggler button */
-#navbar-toggler:hover {
-    background-color: #e8f5e9 !important;
-    border-color: #1a5f2a !important;
 }
 
 /* Mobile menu styling */
@@ -420,4 +563,137 @@ footer.bg-white {
     transition-property: background-color, border-color, box-shadow, transform;
     transition-duration: 0.2s;
     transition-timing-function: ease;
+}
+
+/* ===== Footer Professional Styles ===== */
+
+/* Footer container principal */
+.footer-professional {
+    margin-top: 10px;
+    padding-top: 0;
+    padding-bottom: 15px;
+    overflow-x: hidden;
+}
+
+/* Footer container interno */
+.footer-container {
+    padding-left: 40px;
+    padding-right: 40px;
+    max-width: 1400px;
+}
+
+/* Divisória superior do footer */
+.footer-divider-top {
+    border-top: 1px solid #dee2e6;
+    opacity: 0.5;
+}
+
+/* Títulos das colunas do footer - cor azul acadêmico #0088aa */
+.footer-column-title {
+    color: #0088aa !important;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+}
+
+/* Email links no footer */
+.footer-email-link {
+    text-decoration: none;
+    font-size: 0.875rem;
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.footer-email-link:hover {
+    color: #0088aa;
+    text-decoration: underline;
+}
+
+/* Logos dos parceiros */
+.footer-partner-logo {
+    height: 75px;
+    max-width: 160px;
+    margin: 8px;
+    display: block;
+    object-fit: contain;
+    opacity: 0.9;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.footer-partner-logo:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+/* Link de parceiro */
+.footer-partner-link {
+    text-decoration: none;
+}
+
+/* Links importantes - container de ícone */
+.footer-icon-link {
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 10px;
+    transition: transform 0.2s ease;
+}
+
+.footer-icon-link:hover {
+    transform: translateY(-3px);
+}
+
+/* Ícones do footer */
+.footer-icon {
+    font-size: 40px;
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.footer-icon-link:hover .footer-icon {
+    color: #0088aa;
+}
+
+/* GitHub icon no footer */
+.footer-github-icon {
+    height: 40px;
+    width: 40px;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.footer-icon-link:hover .footer-github-icon {
+    transform: scale(1.1);
+}
+
+/* Labels dos ícones */
+.footer-icon-label {
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.footer-icon-link:hover .footer-icon-label {
+    color: #0088aa;
+}
+
+/* Container de visitantes */
+.footer-visitors {
+    color: #6c757d;
+}
+
+/* Divisória de copyright */
+.footer-divider-copyright {
+    border-color: #dee2e6;
+}
+
+/* Copyright link */
+.footer-license-link {
+    text-decoration: underline;
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.footer-license-link:hover {
+    color: #0088aa;
 }
