@@ -22,7 +22,6 @@ class APIClient:
     - ETo calculations
     - Cache management
     - Climate data
-    - Favorites
     """
 
     def __init__(self, base_url: Optional[str] = None):
@@ -187,44 +186,6 @@ class APIClient:
         """
         return await self.post("/internal/cache/clear")
 
-    async def get_favorites(self) -> Dict[str, Any]:
-        """
-        Busca lista de favoritos do usuário.
-
-        Returns:
-            Lista de favoritos
-        """
-        return await self.get("/internal/eto/favorites/list")
-
-    async def add_favorite(
-        self, favorite_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Adiciona novo favorito.
-
-        Args:
-            favorite_data: Dados do favorito
-
-        Returns:
-            Favorito criado
-        """
-        return await self.post("/internal/eto/favorites/add", favorite_data)
-
-    # ⚠️ REMOVIDO: update_favorite() não existe no backend
-
-    async def delete_favorite(self, favorite_id: str) -> Dict[str, Any]:
-        """
-        Remove favorito.
-
-        Args:
-            favorite_id: ID do favorito
-
-        Returns:
-            Status da operação
-        """
-        fav_path = f"/internal/eto/favorites/remove/{favorite_id}"
-        return await self.delete(fav_path)
-
     # ===========================================
     # MÉTODOS PARA DADOS CLIMÁTICOS
     # ===========================================
@@ -328,17 +289,6 @@ async def fetch_climate_data(location_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     async with APIClient() as client:
         return await client.download_climate_data(location_data)
-
-
-async def fetch_favorites() -> Dict[str, Any]:
-    """
-    Função utilitária para buscar favoritos nos callbacks.
-
-    Returns:
-        Lista de favoritos
-    """
-    async with APIClient() as client:
-        return await client.get_favorites()
 
 
 # ===========================================

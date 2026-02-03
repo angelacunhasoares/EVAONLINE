@@ -305,40 +305,6 @@ footer.bg-white {
     }
 }
 
-/* Apply animation to enabled "Adicionar" button */
-.add-favorite-button:not(:disabled) {
-    animation: pulse-glow 1.5s ease-in-out 2;
-    transition: all 0.3s ease;
-}
-
-/* Improved disabled state visibility */
-.add-favorite-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    filter: grayscale(30%);
-}
-
-/* Hover effect on enabled button */
-.add-favorite-button:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
-}
-
-/* Active state (click) */
-.add-favorite-button:not(:disabled):active {
-    transform: translateY(0);
-}
-
-/* ===== Responsive adjustments ===== */
-
-/* Ensure consistent sizing on zoom */
-@media (min-width: 768px) {
-    .favorites-sidebar-card {
-        min-height: 680px;
-        max-height: 680px;
-    }
-}
-
 /* ===== Tooltip improvements ===== */
 
 /* Bootstrap tooltip customization */
