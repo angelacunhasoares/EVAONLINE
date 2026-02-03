@@ -46,7 +46,6 @@ found, ref_data = loader.get_reference_for_location(lat, lon, max_dist_km=200)
 - ✅ `api_variables` - Metadados das 6 APIs
 - ✅ `admin_users` - Administradores
 - ✅ `user_cache` - Cache de usuário
-- ✅ `user_favorites` - Favoritos
 - ✅ `visitor_stats` - Estatísticas de uso
 - ✅ `eto_results` - Resultados de cálculos ETo
 

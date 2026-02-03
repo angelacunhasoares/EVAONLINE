@@ -24,7 +24,7 @@ TABELAS REMOVIDAS:
 MANTIDAS (essenciais):
 - public.climate_data (dados multi-API)
 - public.api_variables (metadados APIs)
-- public.admin_users, user_cache, user_favorites, visitor_stats
+- public.admin_users, user_cache, visitor_stats
 - public.eto_results
 """
 
