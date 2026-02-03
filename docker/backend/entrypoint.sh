@@ -237,11 +237,32 @@ start_flower() {
     log "📊 Iniciando Flower Monitor..."
     wait_for_service "${REDIS_HOST:-redis}" "6379" "Redis"
 
-    exec celery -A backend.infrastructure.celery.celery_config:celery_app flower \
+    # Flower é executado como um programa standalone (não como subcomando do celery)
+    # Usar valor padrão para REDIS_PASSWORD
+    local redis_password="${REDIS_PASSWORD:-}"
+    local broker_url="redis://"
+    
+    # Adicionar senha ao broker se existir
+    if [ -n "$redis_password" ]; then
+        broker_url="redis://:${redis_password}@"
+    fi
+    
+    broker_url="${broker_url}${REDIS_HOST:-redis}:6379/0"
+
+    exec flower \
+        --broker="$broker_url" \
         --address=0.0.0.0 \
         --port=5555 \
-        --basic_auth="${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}" \
-        --url_prefix=flower
+        --basic_auth="${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}"
+}
+
+start_beat() {
+    log "⏰ Iniciando Celery Beat Scheduler..."
+    wait_for_service "${REDIS_HOST:-redis}" "6379" "Redis"
+
+    exec celery -A backend.infrastructure.celery.celery_config:celery_app beat \
+        --loglevel="$LOG_LEVEL" \
+        --scheduler=celery.beat:PersistentScheduler
 }
 
 start_migrate() {

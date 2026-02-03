@@ -210,6 +210,13 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    # ✅ Health check: verify Redis connectivity for worker
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "nc -z redis 6379"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - evaonline-network
 
@@ -269,6 +276,13 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    # ✅ Health check: verify Redis connectivity for beat scheduler
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "nc -z redis 6379"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - evaonline-network
 
@@ -307,6 +321,13 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    # ✅ Health check: verify Redis connectivity for worker
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "nc -z redis 6379"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - evaonline-network
     # 🔥 Escalável: pode ter múltiplas instâncias
@@ -342,16 +363,24 @@ services:
       - celery-worker
       - redis
     restart: unless-stopped
+    # ✅ Health check: verify Flower HTTP endpoint
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "nc -z localhost 5555"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - evaonline-network
 
   # =====================================================
   # Prometheus - Métricas (acesso direto)
-  # Tags: https://hub.docker.com/r/bitnami/prometheus
+  # Tags: https://hub.docker.com/r/prom/prometheus
   # =====================================================
   prometheus:
-    image: bitnami/prometheus:latest
+    image: prom/prometheus:latest
     container_name: evaonline-prometheus
+    user: root
     volumes:
       - ./docker/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus

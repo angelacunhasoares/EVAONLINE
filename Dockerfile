@@ -96,8 +96,9 @@ COPY --chown=evaonline:evaonline pytest.ini .
 # Copiar entrypoint (como root para definir permissões)
 USER root
 COPY --chown=root:root docker/backend/entrypoint.sh /entrypoint.sh
-RUN chmod 755 /entrypoint.sh && \
-    dos2unix /entrypoint.sh 2>/dev/null || sed -i 's/\r$//' /entrypoint.sh
+COPY --chown=root:root docker/backend/healthcheck.sh /healthcheck.sh
+RUN chmod 755 /entrypoint.sh /healthcheck.sh && \
+    dos2unix /entrypoint.sh /healthcheck.sh 2>/dev/null || sed -i 's/\r$//' /entrypoint.sh /healthcheck.sh
 
 # Arquivos que mudam com média frequência
 COPY --chown=evaonline:evaonline config/ ./config/
@@ -114,9 +115,9 @@ USER evaonline
 # Expor porta padrão da aplicação
 EXPOSE 8000
 
-# Health check para monitoramento de saúde do container
+# Health check adaptado ao tipo de serviço
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+    CMD /healthcheck.sh
 
 # Entrypoint para inicialização flexível
 ENTRYPOINT ["/entrypoint.sh"]
