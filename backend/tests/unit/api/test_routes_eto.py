@@ -126,27 +126,3 @@ class TestLocationInfoEndpoint:
 
         # Deve retornar dados da localização
         assert isinstance(data, dict)
-
-
-@pytest.mark.unit
-class TestFavoritesEndpoint:
-    """Testa endpoints de favoritos."""
-
-    def test_add_favorite_location(self, api_client):
-        """Testa adicionar localização favorita."""
-        request = {
-            "user_id": "test-user",
-            "name": "São Carlos",
-            "lat": -22.25,
-            "lng": -48.5,
-            "cidade": "São Carlos",
-            "estado": "SP",
-        }
-
-        response = api_client.post(
-            "/api/v1/internal/eto/favorites/add", json=request
-        )
-
-        # Endpoint deve aceitar request válido
-        # 422 se DB não disponível, 500 se erro interno
-        assert response.status_code in [200, 201, 422, 500]

@@ -10,7 +10,6 @@ from pydantic import BaseModel
 from loguru import logger
 
 from backend.database.connection import get_db
-from backend.database.models.user_favorites import UserFavorites
 
 # Importar 5 módulos de clima
 from backend.api.services.climate_validation import ClimateValidationService
@@ -42,7 +41,7 @@ eto_router = APIRouter(prefix="/internal/eto", tags=["ETo"])
 
 class EToCalculationRequest(BaseModel):
     """Request para cálculo ETo.
-    
+
     NOTA: Fusão de dados é SEMPRE automática.
     O sistema seleciona as melhores fontes baseado no period_type:
     - historical_email: NASA POWER + Open-Meteo Archive
@@ -54,7 +53,9 @@ class EToCalculationRequest(BaseModel):
     lng: float
     start_date: str
     end_date: str
-    period_type: Optional[str] = "dashboard_current"  # historical_email, dashboard_current, dashboard_forecast
+    period_type: Optional[str] = (
+        "dashboard_current"  # historical_email, dashboard_current, dashboard_forecast
+    )
     elevation: Optional[float] = None
     estado: Optional[str] = None
     cidade: Optional[str] = None
@@ -73,19 +74,8 @@ class LocationInfoRequest(BaseModel):
     lng: float
 
 
-class FavoriteRequest(BaseModel):
-    """Request para favoritos."""
-
-    user_id: str = "default"
-    name: str
-    lat: float
-    lng: float
-    cidade: Optional[str] = None
-    estado: Optional[str] = None
-
-
 # ============================================================================
-# ENDPOINTS ESSENCIAIS (5)
+# ENDPOINTS ESSENCIAIS (2) - Favoritos removidos
 # ============================================================================
 
 
@@ -175,7 +165,7 @@ async def calculate_eto(
         # Usar TODAS as fontes disponíveis para fusão Kalman
         selected_sources = compatible_sources
         enable_fusion = True  # Sempre fusão automática
-        
+
         logger.info(
             f"Fusão automática: {operation_mode.value} em "
             f"({request.lat}, {request.lng}) → Fontes: {selected_sources}"
@@ -274,132 +264,4 @@ async def get_location_info(request: LocationInfoRequest) -> Dict[str, Any]:
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to get location info: {str(e)}"
-        )
-
-
-@eto_router.post("/favorites/add")
-async def add_favorite(
-    request: FavoriteRequest,
-    db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
-) -> Dict[str, Any]:
-    """
-    Adicionar favorito.
-    """
-    try:
-        # Verificar duplicata
-        existing = (
-            db.query(UserFavorites)
-            .filter_by(
-                user_id=request.user_id, lat=request.lat, lng=request.lng
-            )
-            .first()
-        )
-
-        if existing:
-            return {
-                "status": "exists",
-                "message": "Favorito já existe",
-                "favorite_id": existing.id,
-            }
-
-        # Criar novo favorito
-        favorite = UserFavorites(
-            user_id=request.user_id,
-            name=request.name,
-            lat=request.lat,
-            lng=request.lng,
-            cidade=request.cidade,
-            estado=request.estado,
-        )
-        db.add(favorite)
-        db.commit()
-        db.refresh(favorite)
-
-        return {
-            "status": "success",
-            "message": "Favorito adicionado",
-            "favorite_id": favorite.id,
-        }
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=500, detail=f"Failed to add favorite: {str(e)}"
-        )
-
-
-@eto_router.get("/favorites/list")
-async def list_favorites(
-    user_id: str = "default",
-    db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
-) -> Dict[str, Any]:
-    """
-    Listar favoritos do usuário.
-    """
-    try:
-        favorites = (
-            db.query(UserFavorites)
-            .filter_by(user_id=user_id)
-            .order_by(UserFavorites.created_at.desc())
-            .all()
-        )
-
-        return {
-            "status": "success",
-            "total": len(favorites),
-            "favorites": [
-                {
-                    "id": f.id,
-                    "name": f.name,
-                    "lat": f.lat,
-                    "lng": f.lng,
-                    "cidade": f.cidade,
-                    "estado": f.estado,
-                    "created_at": f.created_at.isoformat(),
-                }
-                for f in favorites
-            ],
-        }
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to list favorites: {str(e)}"
-        )
-
-
-@eto_router.delete("/favorites/remove/{favorite_id}")
-async def remove_favorite(
-    favorite_id: int,
-    user_id: str = "default",
-    db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
-) -> Dict[str, Any]:
-    """
-    Remover favorito.
-    """
-    try:
-        favorite = (
-            db.query(UserFavorites)
-            .filter_by(id=favorite_id, user_id=user_id)
-            .first()
-        )
-
-        if not favorite:
-            raise HTTPException(
-                status_code=404, detail="Favorito não encontrado"
-            )
-
-        db.delete(favorite)
-        db.commit()
-
-        return {
-            "status": "success",
-            "message": "Favorito removido",
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=500, detail=f"Failed to remove favorite: {str(e)}"
         )

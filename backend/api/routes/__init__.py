@@ -16,7 +16,7 @@ api_router = APIRouter()
 # Health checks (3 endpoints)
 api_router.include_router(health_router)
 
-# ETo calculation + favorites (5 endpoints)
+# ETo calculation (2 endpoints)
 api_router.include_router(eto_router)
 
 # Climate sources discovery (1 endpoint)
