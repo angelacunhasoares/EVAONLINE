@@ -35,10 +35,7 @@ def register_all_callbacks(app):
             visitor_callbacks,
         )  # Importa para registrar automaticamente
 
-        # 🔄 Callbacks a serem reativados conforme necessário:
-        # from .favorites_callbacks import register_favorites_callbacks
-        # register_favorites_callbacks(app)
-
+        # Callbacks a serem reativados conforme necessário:
         # from .cache_callbacks import register_cache_callbacks
         # register_cache_callbacks(app)
 
