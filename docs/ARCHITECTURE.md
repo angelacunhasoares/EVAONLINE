@@ -893,7 +893,6 @@ graph TB
 ```mermaid
 erDiagram
     USERS ||--o{ ETO_CALCULATIONS : creates
-    USERS ||--o{ FAVORITE_LOCATIONS : saves
     USERS {
         uuid id PK
         string email
@@ -934,17 +933,6 @@ erDiagram
         string flag_type
         string severity
         string description
-    }
-    
-    FAVORITE_LOCATIONS {
-        uuid id PK
-        uuid user_id FK
-        string name
-        float latitude
-        float longitude
-        string city
-        string state
-        datetime created_at
     }
     
     VISITOR_STATS {
