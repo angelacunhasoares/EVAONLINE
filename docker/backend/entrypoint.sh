@@ -237,7 +237,8 @@ start_flower() {
     log "📊 Iniciando Flower Monitor..."
     wait_for_service "${REDIS_HOST:-redis}" "6379" "Redis"
 
-    # Flower é executado como um programa standalone (não como subcomando do celery)
+    # Flower é executado como subcomando do celery conforme documentação oficial
+    # https://flower.readthedocs.io/en/latest/config.html#command-line
     # Usar valor padrão para REDIS_PASSWORD
     local redis_password="${REDIS_PASSWORD:-}"
     local broker_url="redis://"
@@ -249,8 +250,9 @@ start_flower() {
     
     broker_url="${broker_url}${REDIS_HOST:-redis}:6379/0"
 
-    exec flower \
+    exec celery \
         --broker="$broker_url" \
+        flower \
         --address=0.0.0.0 \
         --port=5555 \
         --basic_auth="${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}"
