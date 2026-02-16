@@ -140,14 +140,14 @@ footer.bg-white {
 /* Brand icon */
 .navbar-brand-icon {
     font-size: 2.6rem;
-    color: #1a5f2a;
+    color: #006699;
 }
 
 /* Brand title */
 .navbar-brand-title {
     font-size: 2.5rem;
     font-weight: 700;
-    color: #1a5f2a;
+    color: #006699;
     letter-spacing: -0.5px;
 }
 
@@ -163,14 +163,14 @@ footer.bg-white {
 
 /* Navbar toggler button */
 #navbar-toggler {
-    border: 1px solid #1a5f2a;
-    color: #1a5f2a;
+    border: 1px solid #006699;
+    color: #006699;
     padding: 4px 10px;
 }
 
 #navbar-toggler:hover {
-    background-color: #e8f5e9 !important;
-    border-color: #1a5f2a !important;
+    background-color: #e8f4f8 !important;
+    border-color: #006699 !important;
 }
 
 #navbar-toggler i {
@@ -189,18 +189,18 @@ footer.bg-white {
     transition: all 0.2s ease;
 }
 
-/* Link hover effect - verde claro suave */
+/* Link hover effect - azul claro suave */
 .nav-link-academic:hover {
-    background-color: #e8f5e9 !important;
-    color: #1a5f2a !important;
+    background-color: #e8f4f8 !important;
+    color: #006699 !important;
     transform: translateY(-1px);
 }
 
 /* Active link indicator */
 .nav-link-academic.active {
     background-color: transparent !important;
-    color: #1a5f2a !important;
-    border-bottom: 3px solid #1a5f2a;
+    color: #006699 !important;
+    border-bottom: 3px solid #006699;
     border-radius: 0;
     padding-bottom: 5px;
 }
@@ -247,8 +247,8 @@ footer.bg-white {
 
 /* Language toggle button */
 #language-toggle {
-    background-color: #1a5f2a;
-    border-color: #1a5f2a;
+    background-color: #006699;
+    border-color: #006699;
     font-weight: 600;
     font-size: 0.85rem;
     padding: 8px 20px;
@@ -257,15 +257,15 @@ footer.bg-white {
     border-radius: 20px;
     min-width: 120px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(26, 95, 42, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 102, 153, 0.2);
     transition: all 0.2s ease;
 }
 
 /* Language button hover */
 #language-toggle:hover {
-    background-color: #145a24 !important;
+    background-color: #005580 !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(26, 95, 42, 0.3) !important;
+    box-shadow: 0 4px 8px rgba(0, 102, 153, 0.3) !important;
 }
 
 /* Mobile menu styling */

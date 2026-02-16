@@ -411,8 +411,9 @@ def render_location_input(mode, search):
 def update_fusion_info(data_type, coords_data):
     """
     Atualiza info de fusão automática baseado no modo selecionado.
+    Exibe cards visuais abaixo do mapa com info de período e fontes.
 
-    🔀 FUSÃO AUTOMÁTICA - Fontes por modo:
+    Fontes por modo:
     - historical: NASA POWER + Open-Meteo Archive
     - recent: NASA POWER + Open-Meteo Archive + Open-Meteo Forecast
     - forecast: Open-Meteo Forecast + MET Norway (+ NWS se EUA)
@@ -421,7 +422,7 @@ def update_fusion_info(data_type, coords_data):
         return dbc.Alert(
             [
                 html.I(className="bi bi-info-circle me-2"),
-                "Select a Data Type above to see the data sources.",
+                "Select a Data Type above to see the data " "sources.",
             ],
             color="info",
             className="mb-0 small",
@@ -434,60 +435,179 @@ def update_fusion_info(data_type, coords_data):
         lon = coords_data.get("lon", 0)
         in_usa = -125 <= lon <= -65 and 25 <= lat <= 50
 
-    # Definir fontes por modo
-    fusion_sources = {
+    # Configuração por modo
+    mode_config = {
         "historical": {
-            "icon": "📅",
-            "label": "Historical Mode",
+            "title": "Historical Data",
+            "description": (
+                "ETo calculated from satellite and reanalysis "
+                "data with multi-source Kalman fusion."
+            ),
+            "period_icon": "bi-hourglass-split",
+            "period": ("Custom range: 1990 \u2192 yesterday " "(max 90 days)"),
+            "source_icon": "bi-broadcast-pin",
             "sources": ["NASA POWER", "Open-Meteo Archive"],
-            "description": "Data fusion from satellite and reanalysis models (1990-present)",
+            "gradient": ("linear-gradient(135deg, #1976d2, #0d47a1)"),
+            "header_icon": "bi-hourglass-split",
+            "accent": "#0d47a1",
         },
         "recent": {
-            "icon": "📊",
-            "label": "Recent Mode",
+            "title": "Recent Data",
+            "description": (
+                "ETo from recent observations and forecasts "
+                "combined for optimal coverage."
+            ),
+            "period_icon": "bi-calendar-check",
+            "period": ("Last 7, 14, 21 or 30 days " "(EVAonline standard)"),
+            "source_icon": "bi-broadcast-pin",
             "sources": [
                 "NASA POWER",
                 "Open-Meteo Archive",
                 "Open-Meteo Forecast",
             ],
-            "description": "Combines historical and forecast data for the best recent coverage",
+            "gradient": ("linear-gradient(135deg, #2e7d32, #1b5e20)"),
+            "header_icon": "bi-clock-history",
+            "accent": "#1b5e20",
         },
         "forecast": {
-            "icon": "🔮",
-            "label": "Forecast Mode",
-            "sources": ["Open-Meteo Forecast", "MET Norway"]
-            + (["NWS Forecast"] if in_usa else []),
-            "description": "Multi-model ensemble forecast (6 days)"
-            + (" with NWS for USA" if in_usa else ""),
+            "title": "Forecast \u2014 5 days",
+            "description": (
+                "ETo predicted from multi-model ensemble " "weather forecasts."
+            ),
+            "period_icon": "bi-calendar-plus",
+            "period": ("Today \u2192 today + 5 days (fixed)"),
+            "source_icon": "bi-broadcast-pin",
+            "sources": (
+                ["Open-Meteo Forecast", "MET Norway"]
+                + (["NWS (USA)"] if in_usa else [])
+            ),
+            "gradient": ("linear-gradient(135deg, #7b1fa2, #4a148c)"),
+            "header_icon": "bi-cloud-sun-fill",
+            "accent": "#4a148c",
         },
     }
 
-    config = fusion_sources.get(data_type, fusion_sources["recent"])
+    config = mode_config.get(data_type, mode_config["recent"])
 
-    # Criar lista de fontes como badges
-    source_badges = [
-        dbc.Badge(src, color="light", text_color="dark", className="me-1 mb-1")
-        for src in config["sources"]
-    ]
-
-    return dbc.Card(
-        dbc.CardBody(
-            [
-                html.Div(
-                    [
-                        html.Span(config["icon"], className="me-2"),
-                        html.Strong(config["label"]),
-                    ],
-                    className="mb-2",
-                ),
-                html.Div(source_badges, className="mb-2"),
-                html.Small(config["description"], className="text-muted"),
-            ],
-            className="py-2 px-3",
-        ),
-        className="border-success",
-        style={"borderLeft": "3px solid var(--bs-success)"},
+    # === Card principal com gradiente ===
+    main_card = html.Div(
+        [
+            # Título com ícone
+            html.Div(
+                [
+                    html.I(
+                        className=(f"bi {config['header_icon']} me-2"),
+                        style={"fontSize": "1.3rem"},
+                    ),
+                    html.Strong(
+                        config["title"],
+                        style={"fontSize": "1.1rem"},
+                    ),
+                ],
+                className="mb-2 d-flex align-items-center",
+            ),
+            # Descrição
+            html.P(
+                config["description"],
+                className="mb-0",
+                style={
+                    "fontSize": "0.9rem",
+                    "opacity": "0.9",
+                    "lineHeight": "1.4",
+                },
+            ),
+        ],
+        style={
+            "background": config["gradient"],
+            "color": "white",
+            "borderRadius": "10px",
+            "padding": "16px 18px",
+            "boxShadow": "0 3px 12px rgba(0,0,0,0.15)",
+        },
     )
+
+    # === Detalhes: período e fontes ===
+    detail_row_style = {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "8px",
+    }
+    detail_icon_style = {
+        "fontSize": "0.95rem",
+        "color": "#6c757d",
+        "width": "18px",
+        "textAlign": "center",
+    }
+    detail_text_style = {
+        "fontSize": "0.85rem",
+        "color": "#495057",
+    }
+
+    details = html.Div(
+        [
+            # Período
+            html.Div(
+                [
+                    html.I(
+                        className=(f"bi {config['period_icon']}"),
+                        style=detail_icon_style,
+                    ),
+                    html.Span(
+                        [
+                            html.Span(
+                                "Period: ",
+                                style={
+                                    "color": "#6c757d",
+                                    "fontWeight": "normal",
+                                },
+                            ),
+                            html.Span(
+                                config["period"],
+                                style={"fontWeight": "500"},
+                            ),
+                        ],
+                        style=detail_text_style,
+                    ),
+                ],
+                style=detail_row_style,
+                className="mb-1",
+            ),
+            # Fontes
+            html.Div(
+                [
+                    html.I(
+                        className=(f"bi {config['source_icon']}"),
+                        style=detail_icon_style,
+                    ),
+                    html.Span(
+                        [
+                            html.Span(
+                                "Sources: ",
+                                style={
+                                    "color": "#6c757d",
+                                    "fontWeight": "normal",
+                                },
+                            ),
+                            html.Span(
+                                ", ".join(config["sources"]),
+                                style={
+                                    "fontWeight": "600",
+                                    "color": config["accent"],
+                                },
+                            ),
+                        ],
+                        style=detail_text_style,
+                    ),
+                ],
+                style=detail_row_style,
+            ),
+        ],
+        style={
+            "padding": "10px 6px 4px 6px",
+        },
+    )
+
+    return html.Div([main_card, details])
 
 
 # ============================================================================
@@ -633,11 +753,11 @@ def render_conditional_form(data_type):
                             required=True,
                         ),
                         dbc.FormFeedback(
-                            "Por favor, insira um e-mail valido",
+                            "Por favor, insira um e-mail válido",
                             type="invalid",
                         ),
                         html.Small(
-                            "Obrigatorio para envio de relatorio",
+                            "Obrigatório para envio de relatório",
                             className="text-info d-block mt-1",
                         ),
                     ],
@@ -662,7 +782,7 @@ def render_conditional_form(data_type):
                                     "value": "csv",
                                 },
                             ],
-                            value="csv",
+                            value=None,
                             inline=False,
                             className="mb-2",
                         ),
@@ -674,11 +794,11 @@ def render_conditional_form(data_type):
                     className="mb-3",
                 ),
                 html.Small(
-                    "Dados historicos: 01/01/1990 ate ontem",
+                    "Dados históricos: 01/01/1990 até ontem",
                     className="text-muted d-block",
                 ),
                 html.Small(
-                    "Limite: 90 dias por requisicao",
+                    "Limite: 90 dias por requisição",
                     className="text-warning d-block",
                 ),
                 # Hidden field for callback compatibility
@@ -737,14 +857,8 @@ def render_conditional_form(data_type):
                     className="mb-3",
                 ),
                 html.Small(
-                    "💡 Dados recentes: mínimo 7 dias, máximo 30 dias",
+                    "💡 Recent data: minimum 7 days, maximum 30 days",
                     className="text-muted",
-                ),
-                html.Br(),
-                html.Small(
-                    "📡 Fontes: Open-Meteo Forecast, NASA POWER, "
-                    "Open-Meteo Archive",
-                    className="text-info",
                 ),
                 # Hidden fields for callback compatibility
                 dbc.Input(
@@ -777,26 +891,15 @@ def render_conditional_form(data_type):
     else:  # forecast
         return html.Div(
             [
-                dbc.Alert(
+                html.Div(
                     [
-                        html.I(className="bi bi-info-circle me-2"),
-                        html.Strong("Previsão de 5 dias"),
-                        html.Br(),
-                        "Será calculado ETo para os próximos 5 dias com base "
-                        "em dados de previsão meteorológica.",
+                        html.I(className="bi bi-cloud-sun me-2 text-muted"),
+                        html.Small(
+                            "Automatic 5-day forecast — just click Calculate.",
+                            className="text-muted",
+                        ),
                     ],
-                    color="info",
                     className="mb-3",
-                ),
-                html.Small(
-                    "🔮 Período: hoje até hoje+5 dias (padrão EVAonline)",
-                    className="text-muted",
-                ),
-                html.Br(),
-                html.Small(
-                    "📡 Fontes: Open-Meteo Forecast, MET Norway, "
-                    "NWS Forecast (se USA)",
-                    className="text-info",
                 ),
                 # Hidden fields for callback compatibility
                 dbc.Input(
@@ -970,13 +1073,35 @@ def calculate_eto(
             end_date = parse_date_from_ui(end_date_hist)
             logger.info(f"📅 Historical: {start_date} → {end_date}")
 
-            # Validar datas
+            # Validar datas (DatePickerSingle retorna None para datas fora do range)
             if not start_date or not end_date:
                 error_alert = dbc.Alert(
                     [
-                        html.I(className="bi bi-exclamation-triangle me-2"),
-                        html.Strong("Erro: "),
-                        "Por favor, selecione as datas inicial e final.",
+                        html.I(className="bi bi-calendar-x me-2"),
+                        html.Strong("Datas inválidas ou fora do intervalo: "),
+                        html.Br(),
+                        "O modo histórico aceita datas entre ",
+                        html.Strong("01/01/1990"),
+                        " e ",
+                        html.Strong("ontem"),
+                        ". ",
+                        html.Br(),
+                        html.Small(
+                            "Verifique se as datas digitadas estão dentro deste intervalo.",
+                            className="mt-1 d-block",
+                        ),
+                    ],
+                    color="warning",
+                )
+                return None, None, error_alert, None, True, None
+
+            # Validar formato de arquivo
+            if not file_format_hist:
+                error_alert = dbc.Alert(
+                    [
+                        html.I(className="bi bi-file-earmark-x me-2"),
+                        html.Strong("Formato obrigatório: "),
+                        "Por favor, selecione o formato do arquivo (Excel ou CSV).",
                     ],
                     color="warning",
                 )
@@ -995,18 +1120,62 @@ def calculate_eto(
                 )
                 return None, None, error_alert, None, True, None
 
-            # Validar que data não é anterior a 1990
+            # Validar que datas não são anteriores a 1990
             from datetime import date as dt_date
 
             min_date = dt_date(1990, 1, 1)
-            if start_date < min_date:
+            today = dt_date.today()
+
+            if start_date < min_date or end_date < min_date:
+                invalid_date = (
+                    start_date if start_date < min_date else end_date
+                )
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-database-x me-2"),
                         html.Strong("Período não disponível: "),
-                        f"O EVAonline possui dados a partir de 01/01/1990. ",
-                        f"A data inicial selecionada ({start_date}) é anterior a este limite. ",
-                        "Por favor, selecione uma data a partir de 1990.",
+                        html.Br(),
+                        f"Os dados históricos do EVAonline estão disponíveis a partir de ",
+                        html.Strong("01/01/1990"),
+                        f". A data selecionada ({invalid_date.strftime('%d/%m/%Y')}) é anterior a este limite.",
+                        html.Br(),
+                        html.Small(
+                            "Ajuste as datas para o intervalo: 01/01/1990 até ontem.",
+                            className="text-muted mt-1 d-block",
+                        ),
+                    ],
+                    color="warning",
+                )
+                return None, None, error_alert, None, True, None
+
+            # Validar que datas não são futuras
+            if start_date > today or end_date > today:
+                error_alert = dbc.Alert(
+                    [
+                        html.I(className="bi bi-calendar-x me-2"),
+                        html.Strong("Data futura não permitida: "),
+                        html.Br(),
+                        "O modo histórico trabalha com dados passados. ",
+                        f"A data máxima permitida é ontem ({(today - dt_date.resolution).strftime('%d/%m/%Y')}).",
+                    ],
+                    color="warning",
+                )
+                return None, None, error_alert, None, True, None
+
+            # Validar que período não excede 90 dias
+            period_days_hist = (end_date - start_date).days + 1
+            if period_days_hist > 90:
+                error_alert = dbc.Alert(
+                    [
+                        html.I(className="bi bi-exclamation-triangle me-2"),
+                        html.Strong("Período excede o limite: "),
+                        html.Br(),
+                        f"Você selecionou {period_days_hist} dias ",
+                        f"({start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}). ",
+                        html.Br(),
+                        "O limite máximo por requisição é de ",
+                        html.Strong("90 dias"),
+                        ". Reduza o intervalo entre as datas.",
                     ],
                     color="warning",
                 )
@@ -1286,53 +1455,227 @@ def update_progress(n_intervals, task_id, operation_mode):
                 email_sent = task_result.get("email_sent", True)
 
                 if email_sent:
-                    success_content = dbc.Card(
+                    proc_time = task_result.get(
+                        "processing_time_seconds", "N/A"
+                    )
+                    success_content = html.Div(
                         [
-                            dbc.CardHeader(
-                                [
-                                    html.I(
-                                        className="bi bi-envelope-check me-2"
-                                    ),
-                                    html.Strong("📧 Dados Enviados por Email"),
-                                ],
-                                className="bg-success text-white",
-                            ),
-                            dbc.CardBody(
-                                [
-                                    dbc.Alert(
-                                        [
+                            # --- Header com gradiente azul acadêmico ---
+                            html.Div(
+                                html.Div(
+                                    [
+                                        html.Div(
                                             html.I(
-                                                className="bi bi-check-circle-fill me-2"
+                                                className="bi bi-envelope-check",
+                                                style={"fontSize": "2rem"},
                                             ),
-                                            html.Strong(
-                                                "Processamento concluído com sucesso!"
-                                            ),
-                                        ],
-                                        color="success",
+                                            style={
+                                                "width": "56px",
+                                                "height": "56px",
+                                                "borderRadius": "50%",
+                                                "background": "rgba(255,255,255,0.2)",
+                                                "display": "flex",
+                                                "alignItems": "center",
+                                                "justifyContent": "center",
+                                                "flexShrink": "0",
+                                            },
+                                        ),
+                                        html.Div(
+                                            [
+                                                html.H5(
+                                                    "Dados Enviados por Email",
+                                                    className="mb-0 fw-bold",
+                                                ),
+                                                html.Small(
+                                                    "Processamento histórico concluído",
+                                                    style={"opacity": "0.85"},
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                    className="d-flex align-items-center gap-3",
+                                ),
+                                style={
+                                    "background": "linear-gradient(135deg, #006699 0%, #0088aa 100%)",
+                                    "color": "white",
+                                    "padding": "20px 24px",
+                                    "borderRadius": "12px 12px 0 0",
+                                },
+                            ),
+                            # --- Corpo ---
+                            html.Div(
+                                [
+                                    # Badge de sucesso
+                                    html.Div(
+                                        html.Div(
+                                            [
+                                                html.I(
+                                                    className="bi bi-check-circle-fill me-2",
+                                                    style={
+                                                        "fontSize": "1.1rem"
+                                                    },
+                                                ),
+                                                html.Span(
+                                                    "Concluído com sucesso",
+                                                    className="fw-semibold",
+                                                ),
+                                            ],
+                                            className="d-inline-flex align-items-center",
+                                            style={
+                                                "background": "linear-gradient(135deg, #e8f5e9, #c8e6c9)",
+                                                "color": "#2e7d32",
+                                                "padding": "10px 20px",
+                                                "borderRadius": "8px",
+                                                "fontSize": "0.95rem",
+                                            },
+                                        ),
                                         className="mb-3",
                                     ),
-                                    html.P(
+                                    # Info items
+                                    html.Div(
                                         [
-                                            html.I(
-                                                className="bi bi-calendar-check me-2"
+                                            # Período processado
+                                            html.Div(
+                                                [
+                                                    html.Div(
+                                                        html.I(
+                                                            className="bi bi-calendar-check",
+                                                            style={
+                                                                "fontSize": "1.2rem",
+                                                                "color": "#006699",
+                                                            },
+                                                        ),
+                                                        style={
+                                                            "width": "40px",
+                                                            "height": "40px",
+                                                            "borderRadius": "8px",
+                                                            "background": "#e8f4f8",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                            "flexShrink": "0",
+                                                        },
+                                                    ),
+                                                    html.Div(
+                                                        [
+                                                            html.Div(
+                                                                "Período processado",
+                                                                className="text-muted",
+                                                                style={
+                                                                    "fontSize": "0.8rem"
+                                                                },
+                                                            ),
+                                                            html.Div(
+                                                                f"{days_calculated} dias",
+                                                                className="fw-semibold",
+                                                                style={
+                                                                    "fontSize": "0.95rem"
+                                                                },
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ],
+                                                className="d-flex align-items-center gap-3 mb-3",
                                             ),
-                                            f"Período processado: {days_calculated} dias",
-                                        ],
-                                        className="mb-2",
-                                    ),
-                                    html.P(
-                                        [
-                                            html.I(
-                                                className="bi bi-envelope me-2"
+                                            # Email enviado
+                                            html.Div(
+                                                [
+                                                    html.Div(
+                                                        html.I(
+                                                            className="bi bi-envelope-paper",
+                                                            style={
+                                                                "fontSize": "1.2rem",
+                                                                "color": "#006699",
+                                                            },
+                                                        ),
+                                                        style={
+                                                            "width": "40px",
+                                                            "height": "40px",
+                                                            "borderRadius": "8px",
+                                                            "background": "#e8f4f8",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                            "flexShrink": "0",
+                                                        },
+                                                    ),
+                                                    html.Div(
+                                                        [
+                                                            html.Div(
+                                                                "Envio por email",
+                                                                className="text-muted",
+                                                                style={
+                                                                    "fontSize": "0.8rem"
+                                                                },
+                                                            ),
+                                                            html.Div(
+                                                                "Dados enviados com sucesso",
+                                                                className="fw-semibold",
+                                                                style={
+                                                                    "fontSize": "0.95rem"
+                                                                },
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ],
+                                                className="d-flex align-items-center gap-3 mb-3",
                                             ),
-                                            "Os dados foram enviados para o email informado.",
+                                            # Tempo de processamento
+                                            html.Div(
+                                                [
+                                                    html.Div(
+                                                        html.I(
+                                                            className="bi bi-stopwatch",
+                                                            style={
+                                                                "fontSize": "1.2rem",
+                                                                "color": "#006699",
+                                                            },
+                                                        ),
+                                                        style={
+                                                            "width": "40px",
+                                                            "height": "40px",
+                                                            "borderRadius": "8px",
+                                                            "background": "#e8f4f8",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                            "flexShrink": "0",
+                                                        },
+                                                    ),
+                                                    html.Div(
+                                                        [
+                                                            html.Div(
+                                                                "Tempo de processamento",
+                                                                className="text-muted",
+                                                                style={
+                                                                    "fontSize": "0.8rem"
+                                                                },
+                                                            ),
+                                                            html.Div(
+                                                                f"{proc_time}s",
+                                                                className="fw-semibold",
+                                                                style={
+                                                                    "fontSize": "0.95rem"
+                                                                },
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ],
+                                                className="d-flex align-items-center gap-3",
+                                            ),
                                         ],
-                                        className="mb-2",
+                                        style={
+                                            "background": "#f8f9fa",
+                                            "borderRadius": "10px",
+                                            "padding": "16px 20px",
+                                        },
                                     ),
-                                    html.P(
+                                    # Aviso discreto
+                                    html.Div(
                                         [
                                             html.I(
-                                                className="bi bi-info-circle me-2"
+                                                className="bi bi-info-circle me-2",
+                                                style={"color": "#006699"},
                                             ),
                                             html.Small(
                                                 "Verifique sua caixa de entrada e spam. "
@@ -1340,22 +1683,21 @@ def update_progress(n_intervals, task_id, operation_mode):
                                                 className="text-muted",
                                             ),
                                         ],
-                                        className="mb-0",
+                                        className="d-flex align-items-start mt-3",
+                                        style={"fontSize": "0.85rem"},
                                     ),
-                                    html.Hr(),
-                                    html.P(
-                                        [
-                                            html.I(
-                                                className="bi bi-clock-history me-2"
-                                            ),
-                                            f"Tempo de processamento: {task_result.get('processing_time_seconds', 'N/A')}s",
-                                        ],
-                                        className="text-muted small mb-0",
-                                    ),
-                                ]
+                                ],
+                                style={"padding": "20px 24px"},
                             ),
                         ],
-                        className="mt-3 shadow",
+                        style={
+                            "borderRadius": "12px",
+                            "border": "1px solid #e0e0e0",
+                            "boxShadow": "0 4px 20px rgba(0, 0, 0, 0.08)",
+                            "overflow": "hidden",
+                            "marginTop": "1rem",
+                            "background": "white",
+                        },
                     )
                 else:
                     success_content = dbc.Alert(

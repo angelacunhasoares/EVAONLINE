@@ -112,11 +112,11 @@ def create_sidebar_card():
                                         "label": html.Div(
                                             [
                                                 html.I(
-                                                    className="bi bi-calendar-range me-2 text-info"
+                                                    className="bi bi-hourglass-split me-2 text-primary"
                                                 ),
                                                 html.Span("Historical"),
                                                 html.Small(
-                                                    " (1990-today)",
+                                                    " (1990 \u2192 yesterday)",
                                                     className="text-muted ms-1",
                                                 ),
                                             ],
@@ -132,7 +132,7 @@ def create_sidebar_card():
                                                 ),
                                                 html.Span("Recent"),
                                                 html.Small(
-                                                    " (7-30 days)",
+                                                    " (Last 7-30 days)",
                                                     className="text-muted ms-1",
                                                 ),
                                             ],
@@ -144,7 +144,8 @@ def create_sidebar_card():
                                         "label": html.Div(
                                             [
                                                 html.I(
-                                                    className="bi bi-cloud-sun me-2 text-warning"
+                                                    className="bi bi-cloud-sun-fill me-2",
+                                                    style={"color": "#7b1fa2"},
                                                 ),
                                                 html.Span("Forecast"),
                                                 html.Small(
@@ -166,42 +167,9 @@ def create_sidebar_card():
                         ],
                         className="mb-4",
                     ),
-                    # Secao 2: Info de Fusão Automática (somente leitura)
+                    # Componentes ocultos para manter compatibilidade
                     html.Div(
                         [
-                            html.Div(
-                                [
-                                    html.I(
-                                        className="bi bi-stars me-2 text-success"
-                                    ),
-                                    html.Span(
-                                        "Smart Fusion",
-                                        className="fw-semibold text-dark",
-                                    ),
-                                    dbc.Badge(
-                                        "Automatic",
-                                        color="success",
-                                        className="ms-2",
-                                        pill=True,
-                                    ),
-                                ],
-                                className="mb-2",
-                            ),
-                            # Info sobre fusão (atualizado dinamicamente)
-                            html.Div(
-                                id="fusion-info-card",
-                                children=dbc.Alert(
-                                    [
-                                        html.I(
-                                            className="bi bi-info-circle me-2"
-                                        ),
-                                        "Select a Data Type above to see the data sources that will be used.",
-                                    ],
-                                    color="info",
-                                    className="mb-0 small",
-                                ),
-                            ),
-                            # Componentes ocultos para manter compatibilidade
                             dcc.Store(
                                 id="climate-source-dropdown", data="auto"
                             ),
@@ -214,7 +182,7 @@ def create_sidebar_card():
                                 style={"display": "none"},
                             ),
                         ],
-                        className="mb-4 pb-3 border-bottom",
+                        style={"display": "none"},
                     ),
                     # Secao 3: Formulario Condicional
                     html.Div(
@@ -302,6 +270,21 @@ def create_map_card():
                     html.Div(
                         id="current-selection-info",
                         className="mt-2",
+                    ),
+                    # ========================================
+                    # INFO CARDS - Abaixo do mapa
+                    # ========================================
+                    html.Div(
+                        id="fusion-info-card",
+                        children=dbc.Alert(
+                            [
+                                html.I(className="bi bi-info-circle me-2"),
+                                "Select a Data Type above to see the data sources.",
+                            ],
+                            color="info",
+                            className="mb-0 small",
+                        ),
+                        className="mt-3",
                     ),
                 ],
                 className="p-2",
