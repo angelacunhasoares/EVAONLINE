@@ -24,8 +24,16 @@ class TestInputValidation:
 
     def test_coordinate_validation(self, api_client):
         """Testa validação de coordenadas maliciosas."""
-        response = api_client.get(
-            "/api/climate/data",
-            params={"lat": 999, "lon": -999},  # Coordenadas inválidas
+        # Test via the actual ETo calculate endpoint
+        response = api_client.post(
+            "/api/v1/internal/eto/calculate",
+            json={
+                "lat": 999,
+                "lng": -999,
+                "start_date": "2024-01-01",
+                "end_date": "2024-01-07",
+                "period_type": "historical_email",
+                "email": "test@example.com",
+            },
         )
-        assert response.status_code == 422  # Validation error
+        assert response.status_code in [400, 422]  # Validation error

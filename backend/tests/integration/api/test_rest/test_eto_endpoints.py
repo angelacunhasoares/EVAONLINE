@@ -12,7 +12,7 @@ import pytest
 class TestETOEndpoints:
     """Testa endpoints de ETO (integração)."""
 
-    def test_calculate_eto(self, api_client, sample_coordinates):
+    def test_calculate_eto(self, api_client):
         """Testa POST /api/eto/calculate."""
         # TODO: Implementar teste real
         assert True

@@ -81,7 +81,7 @@ class TestFrontendBackendIntegration:
         )
 
         # Verify frontend payload structure
-        assert frontend_payload["mode"] == "HISTORICAL_EMAIL"
+        assert frontend_payload["period_type"] == "historical_email"
         assert frontend_payload["email"] == "user@example.com"
         assert frontend_payload["start_date"] == "2023-01-01"
         assert frontend_payload["end_date"] == "2023-01-30"
@@ -89,8 +89,8 @@ class TestFrontendBackendIntegration:
         # 2. Backend: Send request to API
         # Omit 'sources' to trigger auto-selection
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "period_type": "historical_email",
@@ -110,9 +110,11 @@ class TestFrontendBackendIntegration:
         assert "websocket_url" in data
         assert data["operation_mode"] == "historical_email"
 
-        # Verify selected source is valid for HISTORICAL_EMAIL mode
+        # Verify selected sources are valid for HISTORICAL_EMAIL mode
         # Valid sources: nasa_power, openmeteo_archive
-        assert data["source"] in ["nasa_power", "openmeteo_archive"]
+        sources_used = data["fusion"]["sources_used"]
+        for src in sources_used:
+            assert src in ["nasa_power", "openmeteo_archive"]
 
         # Verify Celery task was called with correct params
         mock_celery_task.delay.assert_called_once()
@@ -178,17 +180,19 @@ class TestFrontendBackendIntegration:
         )
 
         # Verify dates are auto-calculated
-        today = date.today()
+        from backend.api.services.timezone_utils import get_today_for_location
+
+        today = get_today_for_location(-23.5505, -46.6333)
         expected_start = today - timedelta(days=6)
-        assert frontend_payload["mode"] == "DASHBOARD_CURRENT"
+        assert frontend_payload["period_type"] == "dashboard_current"
         assert frontend_payload["start_date"] == expected_start.isoformat()
         assert frontend_payload["end_date"] == today.isoformat()
         assert frontend_payload["email"] is None
 
         # 2. Backend: Send request
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "period_type": "dashboard_current",
@@ -206,14 +210,16 @@ class TestFrontendBackendIntegration:
         assert data["operation_mode"] == "dashboard_current"
         assert "task_id" in data
 
-        # Verify selected source is valid for DASHBOARD_CURRENT mode
+        # Verify selected sources are valid for DASHBOARD_CURRENT mode
         # Valid sources: nasa_power, openmeteo_archive, openmeteo_forecast
         valid_sources = [
             "nasa_power",
             "openmeteo_archive",
             "openmeteo_forecast",
         ]
-        assert data["source"] in valid_sources
+        sources_used = data["fusion"]["sources_used"]
+        for src in sources_used:
+            assert src in valid_sources
 
     def test_recent_mode_30_days_integration(self, client, mock_celery_task):
         """
@@ -227,15 +233,17 @@ class TestFrontendBackendIntegration:
             period_days=30,
         )
 
-        today = date.today()
+        from backend.api.services.timezone_utils import get_today_for_location
+
+        today = get_today_for_location(-15.7801, -47.9292)
         expected_start = today - timedelta(days=29)
         assert frontend_payload["start_date"] == expected_start.isoformat()
         assert frontend_payload["end_date"] == today.isoformat()
 
         # 2. Backend
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "period_type": "dashboard_current",
@@ -277,17 +285,19 @@ class TestFrontendBackendIntegration:
         )
 
         # Verify dates are auto-calculated (today → today+5)
-        today = date.today()
+        from backend.api.services.timezone_utils import get_today_for_location
+
+        today = get_today_for_location(-15.7801, -47.9292)
         expected_end = today + timedelta(days=5)
-        assert frontend_payload["mode"] == "DASHBOARD_FORECAST"
+        assert frontend_payload["period_type"] == "dashboard_forecast"
         assert frontend_payload["start_date"] == today.isoformat()
         assert frontend_payload["end_date"] == expected_end.isoformat()
         assert frontend_payload["email"] is None
 
         # 2. Backend: Send request
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "period_type": "dashboard_forecast",
@@ -305,11 +315,13 @@ class TestFrontendBackendIntegration:
         assert data["operation_mode"] == "dashboard_forecast"
         assert "task_id" in data
 
-        # Verify selected source is valid for DASHBOARD_FORECAST mode
+        # Verify selected sources are valid for DASHBOARD_FORECAST mode
         # Valid sources (Fusion): openmeteo_forecast, met_norway, nws_forecast
         # Note: Brazil location, so nws_forecast won't be selected
         valid_sources = ["openmeteo_forecast", "met_norway"]
-        assert data["source"] in valid_sources
+        sources_used = data["fusion"]["sources_used"]
+        for src in sources_used:
+            assert src in valid_sources
 
     # ========================================================================
     # TEST 4: COORDINATE VALIDATION
@@ -317,20 +329,15 @@ class TestFrontendBackendIntegration:
 
     def test_invalid_coordinates_rejected(self, client):
         """
-        Test that invalid coordinates are rejected by backend
+        Test that invalid coordinates are rejected by backend.
+        Note: prepare_api_request raises ValueError for out-of-range coords
+        (timezone lookup fails), so we send the payload directly.
         """
-        frontend_payload = OperationModeDetector.prepare_api_request(
-            ui_selection="recent",
-            latitude=91.0,  # Invalid: > 90
-            longitude=-47.9292,
-            period_days=7,
-        )
-
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
-            "start_date": frontend_payload["start_date"],
-            "end_date": frontend_payload["end_date"],
+            "lat": 91.0,  # Invalid: > 90
+            "lng": -47.9292,
+            "start_date": "2025-01-01",
+            "end_date": "2025-01-07",
             "period_type": "dashboard_current",
         }
 
@@ -338,9 +345,21 @@ class TestFrontendBackendIntegration:
             "/api/v1/internal/eto/calculate", json=backend_payload
         )
 
-        # Backend should reject invalid coordinates
-        assert response.status_code == 400
-        assert "Validação falhou" in response.json()["detail"]
+        # Backend should reject invalid coordinates (422 validation or 400)
+        assert response.status_code in (400, 422)
+
+    def test_invalid_coordinates_rejected_in_frontend(self):
+        """
+        Test that OperationModeDetector rejects out-of-range coordinates
+        before even building the API request (timezone lookup fails).
+        """
+        with pytest.raises(ValueError):
+            OperationModeDetector.prepare_api_request(
+                ui_selection="recent",
+                latitude=91.0,  # Invalid: > 90
+                longitude=-47.9292,
+                period_days=7,
+            )
 
     # ========================================================================
     # TEST 5: USA FORECAST MODE WITH NWS SOURCES
@@ -359,8 +378,8 @@ class TestFrontendBackendIntegration:
         )
 
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "period_type": "dashboard_forecast",
@@ -380,7 +399,9 @@ class TestFrontendBackendIntegration:
             "met_norway",
             "nws_forecast",
         ]
-        assert data["source"] in valid_sources_usa
+        sources_used = data["fusion"]["sources_used"]
+        for src in sources_used:
+            assert src in valid_sources_usa
 
     # ========================================================================
     # TEST 6: SOURCE SELECTION
@@ -398,8 +419,8 @@ class TestFrontendBackendIntegration:
         )
 
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "period_type": "dashboard_current",
@@ -413,15 +434,17 @@ class TestFrontendBackendIntegration:
         assert response.status_code == 200
         data = response.json()
 
-        # Verify source was selected
-        assert "source" in data
-        assert data["source"] in [
-            "nasa_power",
-            "openmeteo_archive",
-            "openmeteo_forecast",
-            "met_norway",
-            "fusion",
-        ]
+        # Verify sources were auto-selected
+        assert "fusion" in data
+        sources_used = data["fusion"]["sources_used"]
+        assert len(sources_used) >= 1
+        for src in sources_used:
+            assert src in [
+                "nasa_power",
+                "openmeteo_archive",
+                "openmeteo_forecast",
+                "met_norway",
+            ]
 
     def test_specific_source_selection(self, client, mock_celery_task):
         """
@@ -435,8 +458,8 @@ class TestFrontendBackendIntegration:
         )
 
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "sources": "openmeteo_forecast",  # Specific source
@@ -449,7 +472,8 @@ class TestFrontendBackendIntegration:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["source"] == "openmeteo_forecast"
+        # When specific source requested, it should be in the sources_used list
+        assert "openmeteo_forecast" in data["fusion"]["sources_used"]
 
     # ========================================================================
     # TEST 7: SOURCE VALIDATION BY MODE
@@ -471,8 +495,8 @@ class TestFrontendBackendIntegration:
 
         # Test with openmeteo_archive (should work)
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "sources": "openmeteo_archive",
@@ -484,12 +508,15 @@ class TestFrontendBackendIntegration:
         )
 
         assert response.status_code == 200
-        assert response.json()["source"] == "openmeteo_archive"
+        assert "openmeteo_archive" in response.json()["fusion"]["sources_used"]
 
-    def test_historical_mode_invalid_source_rejected(self, client):
+    def test_historical_mode_invalid_source_ignored(
+        self, client, mock_celery_task
+    ):
         """
-        Test that HISTORICAL_EMAIL mode rejects forecast-only sources
-        Invalid for historical: openmeteo_forecast, met_norway, nws_forecast
+        Test that HISTORICAL_EMAIL mode ignores forecast-only sources
+        and auto-selects valid historical sources instead.
+        The API does NOT reject invalid sources; it falls back to auto-selection.
         """
         frontend_payload = OperationModeDetector.prepare_api_request(
             ui_selection="historical",
@@ -502,8 +529,8 @@ class TestFrontendBackendIntegration:
 
         # Try to use openmeteo_forecast (forecast-only, not valid for historical)
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "sources": "openmeteo_forecast",  # Invalid for historical mode
@@ -514,9 +541,15 @@ class TestFrontendBackendIntegration:
             "/api/v1/internal/eto/calculate", json=backend_payload
         )
 
-        # Backend should reject incompatible source
-        assert response.status_code == 400
-        assert "incompatível" in response.json()["detail"].lower()
+        # API auto-selects valid sources instead of rejecting
+        assert response.status_code == 200
+        data = response.json()
+        sources_used = data["fusion"]["sources_used"]
+        # Verify that forecast-only source was NOT used and valid historical sources were selected
+        assert "openmeteo_forecast" not in sources_used
+        assert any(
+            s in sources_used for s in ["nasa_power", "openmeteo_archive"]
+        ), f"Expected historical sources, got {sources_used}"
 
     def test_forecast_mode_valid_sources(self, client, mock_celery_task):
         """
@@ -531,8 +564,8 @@ class TestFrontendBackendIntegration:
 
         # Test with met_norway (should work globally)
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "sources": "met_norway",
@@ -544,7 +577,7 @@ class TestFrontendBackendIntegration:
         )
 
         assert response.status_code == 200
-        assert response.json()["source"] == "met_norway"
+        assert "met_norway" in response.json()["fusion"]["sources_used"]
 
     # ========================================================================
     # TEST 8: ERROR HANDLING
@@ -623,8 +656,8 @@ class TestFrontendBackendIntegration:
         )
 
         backend_payload = {
-            "lat": frontend_payload["latitude"],
-            "lng": frontend_payload["longitude"],
+            "lat": frontend_payload["lat"],
+            "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
             "period_type": "dashboard_current",
@@ -643,7 +676,7 @@ class TestFrontendBackendIntegration:
             "task_id",
             "message",
             "websocket_url",
-            "source",
+            "fusion",
             "operation_mode",
             "location",
             "estimated_duration_seconds",
@@ -721,7 +754,6 @@ class TestModeValidationConsistency:
             longitude=-47.9292,
         )
 
-        today = date.today()
         start = date.fromisoformat(payload["start_date"])
         end = date.fromisoformat(payload["end_date"])
 

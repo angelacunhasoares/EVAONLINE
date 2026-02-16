@@ -2,35 +2,46 @@
 Unit Tests - Climate Data Endpoints
 
 Testa endpoints de dados climáticos.
+Note: The Dash frontend catches all unrecognized routes and returns HTML.
+Tests must check content-type to distinguish API responses from Dash HTML.
 """
 
 import pytest
 from datetime import datetime, timedelta
 
 
+def _is_api_response(response):
+    """Check if response is from the API (JSON) vs Dash frontend (HTML)."""
+    ct = response.headers.get("content-type", "")
+    return "application/json" in ct
+
+
 @pytest.mark.unit
 class TestClimateSourcesEndpoint:
-    """Testa GET /api/v1/climate/sources."""
+    """Testa GET /api/v1/climate/sources (may not exist)."""
 
     def test_list_available_sources(self, api_client):
         """Testa listagem de fontes de dados disponíveis."""
         response = api_client.get("/api/v1/climate/sources")
 
-        # Se endpoint existir
-        if response.status_code != 404:
-            assert response.status_code == 200
-            data = response.json()
+        if not _is_api_response(response):
+            pytest.skip(
+                "Endpoint /api/v1/climate/sources not implemented (returns Dash HTML)"
+            )
 
-            assert "sources" in data or isinstance(data, list)
+        assert response.status_code == 200
+        data = response.json()
+        assert "sources" in data or isinstance(data, list)
 
     def test_sources_include_nasa_power(self, api_client):
         """Testa que NASA POWER está na lista."""
         response = api_client.get("/api/v1/climate/sources")
 
+        if not _is_api_response(response):
+            pytest.skip("Endpoint /api/v1/climate/sources not implemented")
+
         if response.status_code == 200:
             data = response.json()
-
-            # Verificar se NASA POWER está disponível
             if isinstance(data, dict) and "sources" in data:
                 sources = data["sources"]
                 source_names = [s.get("name", "").lower() for s in sources]
@@ -39,7 +50,7 @@ class TestClimateSourcesEndpoint:
 
 @pytest.mark.unit
 class TestClimateDataValidation:
-    """Testa validação de parâmetros climáticos."""
+    """Testa validação de parâmetros climáticos via ETo endpoint."""
 
     @pytest.mark.parametrize(
         "lat,lon",
@@ -51,95 +62,91 @@ class TestClimateDataValidation:
         ],
     )
     def test_rejects_invalid_coordinates(self, api_client, lat, lon):
-        """Testa rejeição de coordenadas inválidas."""
-        # Tentar buscar dados com coordenadas inválidas
-        params = {
-            "latitude": lat,
-            "longitude": lon,
-            "start_date": "2025-07-01",
-            "end_date": "2025-07-31",
+        """Testa rejeição de coordenadas inválidas via ETo calculate."""
+        payload = {
+            "lat": lat,
+            "lng": lon,
+            "start_date": "2025-01-01",
+            "end_date": "2025-01-07",
+            "period_type": "dashboard_current",
         }
 
-        # Testar em qualquer endpoint de clima que exista
-        for endpoint in [
-            "/api/v1/climate/data",
-            "/api/v1/climate/daily",
-            "/api/v1/internal/climate/fetch",
-        ]:
-            response = api_client.get(endpoint, params=params)
+        response = api_client.post(
+            "/api/v1/internal/eto/calculate", json=payload
+        )
 
-            # Se endpoint existe, deve validar coordenadas
-            if response.status_code != 404:
-                assert response.status_code in [400, 422, 500]
-                break
+        # Backend should reject invalid coordinates (400 or 422)
+        assert response.status_code in [400, 422]
 
-    def test_rejects_future_dates(self, api_client):
-        """Testa que não permite datas no futuro."""
+    def test_rejects_future_dates_historical(self, api_client):
+        """Testa que não permite datas futuras no modo histórico."""
         tomorrow = datetime.now() + timedelta(days=30)
         future_date = tomorrow.strftime("%Y-%m-%d")
 
-        params = {
-            "latitude": -22.25,
-            "longitude": -48.5,
+        payload = {
+            "lat": -22.25,
+            "lng": -48.5,
             "start_date": future_date,
             "end_date": future_date,
+            "period_type": "historical_email",
+            "email": "test@example.com",
         }
 
-        # Testar endpoints de dados históricos
-        for endpoint in [
-            "/api/v1/climate/data",
-            "/api/v1/climate/daily",
-        ]:
-            response = api_client.get(endpoint, params=params)
+        response = api_client.post(
+            "/api/v1/internal/eto/calculate", json=payload
+        )
 
-            if response.status_code not in [404, 500]:
-                # Se endpoint existe e funciona, deve rejeitar futuro
-                # (ou aceitar se for forecast)
-                assert response.status_code in [200, 400, 422]
-                break
+        # Should reject future dates for historical mode
+        assert response.status_code in [400, 422]
 
     def test_validates_date_range_limit(self, api_client):
-        """Testa limite de intervalo de datas."""
-        params = {
-            "latitude": -22.25,
-            "longitude": -48.5,
-            "start_date": "2020-01-01",
-            "end_date": "2025-12-31",  # > 5 anos
+        """Testa limite de intervalo de datas (max 90 days historical)."""
+        payload = {
+            "lat": -22.25,
+            "lng": -48.5,
+            "start_date": "2023-01-01",
+            "end_date": "2023-12-31",  # > 90 days
+            "period_type": "historical_email",
+            "email": "test@example.com",
         }
 
-        for endpoint in [
-            "/api/v1/climate/data",
-            "/api/v1/climate/daily",
-        ]:
-            response = api_client.get(endpoint, params=params)
+        response = api_client.post(
+            "/api/v1/internal/eto/calculate", json=payload
+        )
 
-            # Se endpoint existe, pode ter limite
-            if response.status_code not in [404, 500]:
-                assert response.status_code in [200, 400, 422]
-                break
+        # Should reject > 90 day range for historical
+        assert response.status_code in [400, 422]
 
 
 @pytest.mark.unit
 class TestClimateSourceSelection:
-    """Testa seleção automática de fonte."""
+    """Testa seleção automática de fonte via ETo endpoint."""
 
     def test_auto_source_selection(self, api_client):
-        """Testa seleção automática de melhor fonte."""
-        params = {
-            "latitude": -22.25,
-            "longitude": -48.5,
-            "start_date": "2025-07-01",
-            "end_date": "2025-07-31",
-            "source": "auto",
-        }
+        """Testa que ETo endpoint auto-selects sources."""
+        from unittest.mock import patch, MagicMock
 
-        response = api_client.get("/api/v1/climate/data", params=params)
+        with patch(
+            "backend.infrastructure.celery.tasks.eto_calculation."
+            "calculate_eto_task.delay"
+        ) as mock_task:
+            mock_task.return_value = MagicMock(id="task-123")
 
-        # Se endpoint existir e funcionar
-        if response.status_code == 200:
-            data = response.json()
+            payload = {
+                "lat": -22.25,
+                "lng": -48.5,
+                "start_date": "2023-07-01",
+                "end_date": "2023-07-30",
+                "period_type": "historical_email",
+                "email": "test@example.com",
+            }
 
-            # Deve indicar fonte usada
-            assert (
-                "source" in data or "data_source" in data or "provider" in data
+            response = api_client.post(
+                "/api/v1/internal/eto/calculate", json=payload
             )
+
+            if response.status_code == 200:
+                data = response.json()
+                # Should include fusion info with selected sources
+                assert "fusion" in data
+                assert "sources_used" in data["fusion"]

@@ -14,6 +14,7 @@ from httpx import AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.types import JSON
 
 # Imports do projeto
 from backend.database.connection import Base, get_db
@@ -50,6 +51,18 @@ def test_db_engine():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+    # SQLite doesn't support PostgreSQL schemas like "public"
+    # Temporarily remove schema from all tables for test DB creation
+    for table in Base.metadata.tables.values():
+        table.schema = None
+    # SQLite doesn't support JSONB - replace with JSON
+    for table in Base.metadata.tables.values():
+        for col in table.columns:
+            if (
+                hasattr(col.type, "__class__")
+                and col.type.__class__.__name__ == "JSONB"
+            ):
+                col.type = JSON()
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)
@@ -96,6 +109,12 @@ def test_client(override_get_db) -> Generator[TestClient, None, None]:
     """Cliente de teste síncrono para a API"""
     with TestClient(app) as client:
         yield client
+
+
+@pytest.fixture(scope="function")
+def api_client(test_client) -> Generator[TestClient, None, None]:
+    """Alias for test_client (used by integration tests)"""
+    yield test_client
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -171,11 +190,13 @@ def sample_climate_data():
 def sample_eto_request():
     """Requisição ETO de exemplo"""
     return {
-        "latitude": -23.5505,
-        "longitude": -46.6333,
+        "lat": -23.5505,
+        "lng": -46.6333,
         "start_date": "2024-01-01",
         "end_date": "2024-01-31",
-        "altitude": 760,
+        "period_type": "historical_email",
+        "elevation": 760,
+        "email": "test@example.com",
     }
 
 

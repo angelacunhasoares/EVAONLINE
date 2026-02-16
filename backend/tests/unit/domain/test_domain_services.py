@@ -23,7 +23,7 @@ class TestETOCalculationService:
         measurements = {
             "T2M_MAX": 32.5,  # Temperatura máxima (°C)
             "T2M_MIN": 18.2,  # Temperatura mínima (°C)
-            "T2M_MEAN": 25.4,  # Temperatura média (°C)
+            "T2M": 25.4,  # Temperatura média (°C)
             "RH2M": 65.0,  # Umidade relativa (%)
             "WS2M": 2.5,  # Velocidade do vento (m/s)
             "PRECTOTCORR": 0.0,  # Precipitação (mm)
@@ -59,7 +59,7 @@ class TestETOCalculationService:
         measurements = {
             "T2M_MAX": 15.0,  # Menor que Tmin!
             "T2M_MIN": 25.0,
-            "T2M_MEAN": 20.0,
+            "T2M": 20.0,
             "RH2M": 65.0,
             "WS2M": 2.5,
             "PRECTOTCORR": 0.0,
@@ -90,7 +90,7 @@ class TestETOCalculationService:
         measurements = {
             "T2M_MAX": 32.5,
             "T2M_MIN": 18.2,
-            "T2M_MEAN": 25.4,
+            "T2M": 25.4,
             "RH2M": 65.0,
             "WS2M": 2.5,
             "PRECTOTCORR": 0.0,
@@ -121,7 +121,7 @@ class TestETOCalculationService:
         measurements = {
             "T2M_MAX": 32.5,
             "T2M_MIN": 18.2,
-            "T2M_MEAN": 25.4,
+            "T2M": 25.4,
             # "RH2M": 65.0,  # FALTANDO
             "WS2M": 2.5,
             "PRECTOTCORR": 0.0,
@@ -136,7 +136,7 @@ class TestETOCalculationService:
         result = service.calculate_et0(measurements)
         assert result is not None, "Service should not return None"
         assert "error" in result, "Should have error key"
-        assert "Variáveis obrigatórias ausentes" in result["error"]
+        assert "Variáveis ausentes" in result["error"]
         assert "RH2M" in result["error"], "Error should mention RH2M"
         assert result["et0_mm_day"] == 0, "ET0 should be 0 on error"
         assert result["quality"] == "low", "Quality should be low on error"
@@ -153,7 +153,7 @@ class TestETOCalculationService:
         measurements = {
             "T2M_MAX": 22.0,
             "T2M_MIN": 10.0,
-            "T2M_MEAN": 16.0,
+            "T2M": 16.0,
             "RH2M": 80.0,  # Mais úmido
             "WS2M": 1.5,  # Menos vento
             "PRECTOTCORR": 0.0,
@@ -183,7 +183,7 @@ class TestETOCalculationService:
         measurements = {
             "T2M_MAX": 25.0,
             "T2M_MIN": 12.0,
-            "T2M_MEAN": 18.5,
+            "T2M": 18.5,
             "RH2M": 60.0,
             "WS2M": 3.0,
             "PRECTOTCORR": 0.0,
