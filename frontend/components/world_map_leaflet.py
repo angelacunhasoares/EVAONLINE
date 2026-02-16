@@ -998,7 +998,7 @@ def create_custom_layer_control():
                                                 "value": "brasil",
                                             }
                                         ],
-                                        value=[],
+                                        value=["brasil"],  # Inicia marcado
                                         id="layer-brasil-toggle",
                                         style={
                                             "display": "inline-block",
