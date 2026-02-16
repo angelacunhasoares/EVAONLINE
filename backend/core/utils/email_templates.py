@@ -338,34 +338,6 @@ def create_data_ready_email(
                         <li><strong>et0_mm_day</strong> - Evapotranspiração de referência (mm/dia)</li>
                     </ul>
                 </div>
-                
-                <div style="background: #fff8e1; border-left: 4px solid #ffc107; 
-                            padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
-                    <p style="margin: 0 0 10px 0; color: #f57c00; font-weight: bold;">
-                        📌 Metodologia
-                    </p>
-                    <p style="margin: 0; color: #5d4037; font-size: 13px; line-height: 1.5;">
-                        A evapotranspiração de referência (ETo) foi calculada utilizando o método 
-                        <strong>FAO-56 Penman-Monteith</strong>, padrão internacional recomendado pela 
-                        Organização das Nações Unidas para Alimentação e Agricultura (FAO).<br><br>
-                        Os dados climáticos foram obtidos através da <strong>fusão inteligente (Smart Fusion)</strong> 
-                        de múltiplas bases de dados globais ({sources_str}), utilizando filtro de Kalman 
-                        para otimizar a qualidade e confiabilidade das estimativas.
-                    </p>
-                </div>
-                
-                <div style="background: #e8eaf6; border-left: 4px solid #3f51b5; 
-                            padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
-                    <p style="margin: 0 0 10px 0; color: #283593; font-weight: bold;">
-                        📖 Como Citar
-                    </p>
-                    <p style="margin: 0; color: #37474f; font-size: 12px; line-height: 1.5; 
-                              font-family: 'Times New Roman', serif; font-style: italic;">
-                        Soares, S.A., et al. (2026). EVAonline: Web-based global reference 
-                        evapotranspiration estimate. <em>Computers and Electronics in Agriculture</em>. 
-                        Available at: https://github.com/silvianesoares/EVAONLINE
-                    </p>
-                </div>
             </div>
             
             {get_email_footer()}
