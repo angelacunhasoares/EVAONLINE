@@ -400,16 +400,32 @@ def format_date_for_display(date_obj: date) -> str:
     return date_obj.strftime("%d/%m/%Y")
 
 
-def parse_date_from_ui(date_str: str) -> date:
+def parse_date_from_ui(date_input) -> Optional[date]:
     """
-    Parse data vinda da UI (formato ISO ou DD/MM/YYYY).
+    Parse data vinda da UI (formato ISO, DD/MM/YYYY, ou objeto date).
 
     Args:
-        date_str: String de data
+        date_input: String de data, objeto date/datetime, ou None
 
     Returns:
-        Objeto date
+        Objeto date ou None se não conseguir parsear
     """
+    if date_input is None:
+        return None
+
+    # Se já é um objeto date, retorna diretamente
+    if isinstance(date_input, date):
+        return date_input
+
+    # Se é datetime, extrai date
+    if isinstance(date_input, datetime):
+        return date_input.date()
+
+    # Converter para string se necessário
+    date_str = str(date_input).strip()
+    if not date_str:
+        return None
+
     # Tentar formato ISO primeiro (YYYY-MM-DD)
     try:
         return datetime.fromisoformat(date_str).date()
@@ -422,4 +438,4 @@ def parse_date_from_ui(date_str: str) -> date:
     except ValueError:
         pass
 
-    raise ValueError(f"Unable to parse date: {date_str}")
+    return None

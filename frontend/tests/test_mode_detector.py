@@ -213,9 +213,9 @@ class TestAPIRequestPreparation:
             email="user@example.com",
         )
 
-        assert payload["mode"] == "HISTORICAL_EMAIL"
-        assert payload["latitude"] == -15.7801
-        assert payload["longitude"] == -47.9292
+        assert payload["period_type"] == "historical_email"
+        assert payload["lat"] == -15.7801
+        assert payload["lng"] == -47.9292
         assert payload["start_date"] == "2023-01-01"
         assert payload["end_date"] == "2023-01-30"
         assert payload["email"] == "user@example.com"
@@ -245,11 +245,13 @@ class TestAPIRequestPreparation:
             period_days=7,
         )
 
-        assert payload["mode"] == "DASHBOARD_CURRENT"
+        assert payload["period_type"] == "dashboard_current"
         assert payload["email"] is None
 
         # Check dates are calculated correctly
-        today = date.today()
+        from frontend.utils.mode_detector import get_today_for_location
+
+        today = get_today_for_location(-15.7801, -47.9292)
         expected_start = today - timedelta(days=6)
         assert payload["start_date"] == expected_start.isoformat()
         assert payload["end_date"] == today.isoformat()
@@ -263,10 +265,12 @@ class TestAPIRequestPreparation:
             period_days=30,
         )
 
-        assert payload["mode"] == "DASHBOARD_CURRENT"
+        assert payload["period_type"] == "dashboard_current"
 
         # Check dates
-        today = date.today()
+        from frontend.utils.mode_detector import get_today_for_location
+
+        today = get_today_for_location(-23.5505, -46.6333)
         expected_start = today - timedelta(days=29)
         assert payload["start_date"] == expected_start.isoformat()
         assert payload["end_date"] == today.isoformat()
@@ -279,11 +283,13 @@ class TestAPIRequestPreparation:
             longitude=-47.9292,
         )
 
-        assert payload["mode"] == "DASHBOARD_FORECAST"
+        assert payload["period_type"] == "dashboard_forecast"
         assert payload["email"] is None
 
         # Check dates
-        today = date.today()
+        from frontend.utils.mode_detector import get_today_for_location
+
+        today = get_today_for_location(-15.7801, -47.9292)
         expected_end = today + timedelta(days=5)
         assert payload["start_date"] == today.isoformat()
         assert payload["end_date"] == expected_end.isoformat()
@@ -299,8 +305,8 @@ class TestAPIRequestPreparation:
             usa_forecast_source="fusion",  # Use fusion for now
         )
 
-        # Currently returns regular DASHBOARD_FORECAST
-        assert payload["mode"] == "DASHBOARD_FORECAST"
+        # Currently returns regular dashboard_forecast
+        assert payload["period_type"] == "dashboard_forecast"
         # TODO: Add DASHBOARD_FORECAST_STATIONS mode when stations supported
 
 
@@ -371,9 +377,20 @@ class TestHelperFunctions:
         assert parsed == date(2023, 3, 15)
 
     def test_parse_date_from_ui_invalid(self):
-        """Test parsing invalid date format raises ValueError"""
-        with pytest.raises(ValueError, match="Unable to parse date"):
-            parse_date_from_ui("invalid_date")
+        """Test parsing invalid date format returns None"""
+        result = parse_date_from_ui("invalid_date")
+        assert result is None
+
+    def test_parse_date_from_ui_none(self):
+        """Test parsing None returns None"""
+        result = parse_date_from_ui(None)
+        assert result is None
+
+    def test_parse_date_from_ui_date_object(self):
+        """Test parsing date object returns the same date"""
+        d = date(2023, 6, 15)
+        result = parse_date_from_ui(d)
+        assert result == d
 
 
 class TestModeInfo:
