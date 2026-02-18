@@ -680,6 +680,81 @@ footer.bg-white {
 }
 
 /* =================================================
+   RESULTS TABS - Mais visíveis
+   ================================================= */
+
+/* Container das tabs de resultados */
+.nav-tabs.results-tabs {
+    border-bottom: 3px solid #0088aa;
+    margin-bottom: 20px;
+}
+
+.nav-tabs.results-tabs .nav-link {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    border: 2px solid transparent;
+    border-bottom: none;
+    padding: 12px 24px;
+    margin-right: 4px;
+    background-color: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs.results-tabs .nav-link:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6 #dee2e6 transparent;
+    color: #0088aa;
+}
+
+.nav-tabs.results-tabs .nav-link.active {
+    background-color: #0088aa;
+    color: white;
+    border-color: #0088aa;
+    font-weight: 700;
+}
+
+.nav-tabs.results-tabs .nav-link.active:hover {
+    background-color: #006699;
+    color: white;
+}
+
+/* Ícones nas tabs */
+.nav-tabs.results-tabs .nav-link i,
+.nav-tabs.results-tabs .nav-link .bi {
+    margin-right: 8px;
+}
+
+/* Títulos da seção de resultados */
+.results-section-title {
+    color: #0088aa;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #0088aa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.results-section-title i {
+    font-size: 1.3rem;
+}
+
+/* Subtítulos das tabelas */
+.results-table-title {
+    color: #495057;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    padding-left: 10px;
+    border-left: 4px solid #0088aa;
+}
+
+/* =================================================
    RESPONSIVE BREAKPOINTS
    ================================================= */
 

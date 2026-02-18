@@ -48,22 +48,20 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                 # Title
                 html.H4(
                     [
-                        html.I(className="fas fa-table me-2"),
+                        html.I(className="bi bi-table me-2"),
                         "Resultados - Tabela de Dados",
                     ],
-                    className="mb-4 text-primary",
+                    className="results-section-title",
                 ),
                 # Climate data table
                 html.Div(
                     [
                         html.H5(
                             [
-                                html.I(
-                                    className="bi bi-table me-2 text-primary"
-                                ),
+                                html.I(className="bi bi-table me-2"),
                                 "Dados Climáticos Diários",
                             ],
-                            className="mb-3 pb-2 border-bottom border-primary",
+                            className="results-table-title",
                         ),
                         display_results_table(df, lang),
                     ],
@@ -74,12 +72,10 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                     [
                         html.H5(
                             [
-                                html.I(
-                                    className="bi bi-calculator me-2 text-success"
-                                ),
+                                html.I(className="bi bi-calculator me-2"),
                                 "Estatísticas Descritivas",
                             ],
-                            className="mb-3 pb-2 border-bottom border-success",
+                            className="results-table-title",
                         ),
                         display_descriptive_stats(df, lang),
                     ],
@@ -90,12 +86,10 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                     [
                         html.H5(
                             [
-                                html.I(
-                                    className="bi bi-droplet me-2 text-info"
-                                ),
+                                html.I(className="bi bi-droplet me-2"),
                                 "Resumo de ETo e Balanço Hídrico",
                             ],
-                            className="mb-3 pb-2 border-bottom border-info",
+                            className="results-table-title",
                         ),
                         display_eto_summary(df, lang),
                     ],
@@ -106,12 +100,10 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                     [
                         html.H5(
                             [
-                                html.I(
-                                    className="bi bi-graph-up me-2 text-warning"
-                                ),
+                                html.I(className="bi bi-graph-up me-2"),
                                 "Teste de Normalidade (Shapiro-Wilk)",
                             ],
-                            className="mb-3 pb-2 border-bottom border-warning",
+                            className="results-table-title",
                         ),
                         display_normality_test(df, lang),
                     ],
@@ -129,22 +121,20 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                 # Title
                 html.H4(
                     [
-                        html.I(className="fas fa-chart-line me-2"),
+                        html.I(className="bi bi-graph-up me-2"),
                         "Resultados - Análises Gráficas",
                     ],
-                    className="mb-4 text-primary",
+                    className="results-section-title",
                 ),
                 # Déficit Hídrico Section
                 html.Div(
                     [
                         html.H5(
                             [
-                                html.I(
-                                    className="bi bi-droplet-half me-2 text-danger"
-                                ),
+                                html.I(className="bi bi-droplet-half me-2"),
                                 "Déficit Hídrico",
                             ],
-                            className="mb-3 pb-2 border-bottom border-danger",
+                            className="results-table-title",
                         ),
                         create_deficit_chart_section(df, lang),
                     ],
@@ -156,11 +146,11 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                         html.H5(
                             [
                                 html.I(
-                                    className="bi bi-thermometer-half me-2 text-info"
+                                    className="bi bi-thermometer-half me-2"
                                 ),
                                 "Análises Climáticas",
                             ],
-                            className="mb-3 pb-2 border-bottom border-info",
+                            className="results-table-title",
                         ),
                         dbc.Row(
                             [
@@ -231,12 +221,10 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                     [
                         html.H5(
                             [
-                                html.I(
-                                    className="bi bi-grid-3x3 me-2 text-warning"
-                                ),
+                                html.I(className="bi bi-grid-3x3 me-2"),
                                 "Mapa de Calor - Correlações",
                             ],
-                            className="mb-3 pb-2 border-bottom border-warning",
+                            className="results-table-title",
                         ),
                         dbc.Row(
                             [
@@ -267,18 +255,16 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                 tab1_content,
                 label="📊 Tabela & Estatísticas",
                 tab_id="tab-table",
-                label_style={"fontSize": "1rem", "fontWeight": "500"},
             ),
             dbc.Tab(
                 tab2_content,
                 label="📈 Gráficos",
                 tab_id="tab-graphics",
-                label_style={"fontSize": "1rem", "fontWeight": "500"},
             ),
         ],
         id="results-tabs",
         active_tab="tab-table",
-        className="mb-3",
+        className="mb-3 nav-tabs results-tabs",
     )
 
     return tabs

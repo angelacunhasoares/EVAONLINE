@@ -2289,6 +2289,167 @@ def update_progress(n_intervals, task_id, operation_mode):
                     className="mt-3 p-3 bg-light rounded",
                 )
 
+                # 📡 Card da estação NWS (USA only)
+                nws_station_card = None
+                nws_station = task_result.get("nws_station")
+                if nws_station:
+                    obs = nws_station.get("latest_observation")
+                    obs_content = []
+                    if obs:
+                        obs_time = obs.get("timestamp", "")[:16].replace(
+                            "T", " "
+                        )
+                        temp = obs.get("temperature_c")
+                        humidity = obs.get("humidity_pct")
+                        wind = obs.get("wind_speed_2m_ms") or obs.get(
+                            "wind_speed_ms"
+                        )
+
+                        obs_content = [
+                            html.Div(
+                                [
+                                    html.I(className="bi bi-clock me-1"),
+                                    html.Small(
+                                        f"Última observação: {obs_time} UTC"
+                                    ),
+                                ],
+                                className="mb-2 text-muted",
+                            ),
+                            html.Div(
+                                [
+                                    html.Span(
+                                        [
+                                            html.I(
+                                                className="bi bi-thermometer-half me-1"
+                                            ),
+                                            f"{temp:.1f}°C" if temp else "N/A",
+                                        ],
+                                        className="me-3",
+                                    ),
+                                    html.Span(
+                                        [
+                                            html.I(
+                                                className="bi bi-droplet me-1"
+                                            ),
+                                            (
+                                                f"{humidity:.0f}%"
+                                                if humidity
+                                                else "N/A"
+                                            ),
+                                        ],
+                                        className="me-3",
+                                    ),
+                                    html.Span(
+                                        [
+                                            html.I(
+                                                className="bi bi-wind me-1"
+                                            ),
+                                            (
+                                                f"{wind:.1f} m/s"
+                                                if wind
+                                                else "N/A"
+                                            ),
+                                        ]
+                                    ),
+                                ],
+                                className="mb-0",
+                            ),
+                        ]
+
+                    nws_station_card = dbc.Card(
+                        [
+                            dbc.CardHeader(
+                                [
+                                    html.I(
+                                        className="bi bi-broadcast-pin me-2"
+                                    ),
+                                    html.Strong(
+                                        "📡 Estação Meteorológica Mais Próxima"
+                                    ),
+                                    dbc.Badge(
+                                        "USA",
+                                        color="primary",
+                                        className="ms-2",
+                                    ),
+                                ],
+                                className="bg-info bg-opacity-10",
+                            ),
+                            dbc.CardBody(
+                                [
+                                    html.Div(
+                                        [
+                                            html.H5(
+                                                [
+                                                    html.I(
+                                                        className="bi bi-building me-2"
+                                                    ),
+                                                    nws_station.get(
+                                                        "station_name",
+                                                        "Unknown",
+                                                    ),
+                                                    html.Small(
+                                                        f" ({nws_station.get('station_id', '')})",
+                                                        className="text-muted",
+                                                    ),
+                                                ],
+                                                className="mb-3",
+                                            ),
+                                            html.Div(
+                                                [
+                                                    html.Span(
+                                                        [
+                                                            html.I(
+                                                                className="bi bi-geo-alt me-1"
+                                                            ),
+                                                            html.Strong(
+                                                                "Distância: "
+                                                            ),
+                                                            f"{nws_station.get('distance_km', 0):.1f} km",
+                                                        ],
+                                                        className="me-3",
+                                                    ),
+                                                    html.Span(
+                                                        [
+                                                            html.I(
+                                                                className="bi bi-arrow-up me-1"
+                                                            ),
+                                                            html.Strong(
+                                                                "Elevação: "
+                                                            ),
+                                                            f"{nws_station.get('elevation_m', 'N/A')} m",
+                                                        ]
+                                                    ),
+                                                ],
+                                                className="mb-3",
+                                            ),
+                                            html.Hr(className="my-2"),
+                                            (
+                                                html.Div(obs_content)
+                                                if obs_content
+                                                else html.Em(
+                                                    "Observação não disponível no momento",
+                                                    className="text-muted",
+                                                )
+                                            ),
+                                        ]
+                                    ),
+                                    html.Hr(className="my-3"),
+                                    html.Small(
+                                        [
+                                            html.I(
+                                                className="bi bi-info-circle me-1"
+                                            ),
+                                            "Dados reais da estação NWS/NOAA. ",
+                                            "A ETo acima foi calculada usando fusão de múltiplas fontes.",
+                                        ],
+                                        className="text-muted",
+                                    ),
+                                ]
+                            ),
+                        ],
+                        className="mb-3 border-info",
+                    )
+
                 results_content = html.Div(
                     [
                         # Header with New Query button
@@ -2309,6 +2470,8 @@ def update_progress(n_intervals, task_id, operation_mode):
                             ],
                             className="d-flex justify-content-end",
                         ),
+                        # 📡 NWS Station Card (USA only)
+                        nws_station_card,
                         # Tabs with results (success message moved to sidebar)
                         create_results_tabs(
                             df, sources=sources_used, lang="pt"

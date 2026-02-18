@@ -132,8 +132,9 @@ celery_app.conf.update(
     # Rotas e filas
     task_default_queue="general",
     task_routes={
-        "backend.infrastructure.celery.tasks.eto_calculation."
-        "calculate_eto_task": {"queue": "eto"},
+        "backend.infrastructure.celery.tasks.calculate_eto_task": {
+            "queue": "eto"
+        },
         "backend.core.eto_calculation.*": {"queue": "eto_processing"},
         "backend.api.services.data_download.*": {"queue": "data_download"},
         "backend.api.services.openmeteo.*": {"queue": "elevation"},

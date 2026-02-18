@@ -190,6 +190,132 @@ def calculate_eto_task(
             )
         )
 
+        # ========== STEP 4.5: ESTAÇÃO NWS (USA only) ==========
+        # Se está nos EUA e modo recent/forecast, buscar estação mais próxima
+        nws_station_info = None
+        is_usa = "usa" in region.lower() if region else False
+        is_forecast_mode = mode and (
+            "forecast" in mode.lower() or "current" in mode.lower()
+        )
+
+        logger.info(
+            f"🔍 Region check: {region} | is_usa={is_usa} | mode={mode}"
+        )
+
+        if is_usa and is_forecast_mode:
+            logger.info(
+                "[75%] Buscando estação meteorológica NWS mais próxima..."
+            )
+            try:
+                import httpx as _httpx
+
+                NWS_BASE = "https://api.weather.gov"
+                NWS_HEADERS = {
+                    "User-Agent": "EVAonline (+https://github.com/silvianesoares/EVAONLINE)",
+                    "Accept": "application/geo+json",
+                }
+
+                # 1) Buscar grid point → estações próximas
+                grid_resp = _httpx.get(
+                    f"{NWS_BASE}/points/{lat:.4f},{lon:.4f}",
+                    headers=NWS_HEADERS,
+                    timeout=15,
+                )
+                grid_resp.raise_for_status()
+                grid_props = grid_resp.json()["properties"]
+                wfo = grid_props["gridId"]
+                grid_x = grid_props["gridX"]
+                grid_y = grid_props["gridY"]
+
+                # 2) Buscar estações do grid
+                stations_resp = _httpx.get(
+                    f"{NWS_BASE}/gridpoints/{wfo}/{grid_x},{grid_y}/stations?limit=3",
+                    headers=NWS_HEADERS,
+                    timeout=15,
+                )
+                stations_resp.raise_for_status()
+                features = stations_resp.json().get("features", [])
+
+                if features:
+                    first = features[0]
+                    props = first["properties"]
+                    geom = first["geometry"]["coordinates"]  # [lon, lat]
+                    st_lat, st_lon = geom[1], geom[0]
+
+                    # Calcular distância
+                    import geopy.distance
+
+                    dist_km = round(
+                        geopy.distance.distance(
+                            (lat, lon), (st_lat, st_lon)
+                        ).km,
+                        1,
+                    )
+
+                    station_id = props["stationIdentifier"]
+                    station_name = props.get("name", "Unknown")
+                    elev_data = props.get("elevation", {})
+                    elev_m = elev_data.get("value") if elev_data else None
+
+                    nws_station_info = {
+                        "station_id": station_id,
+                        "station_name": station_name,
+                        "latitude": st_lat,
+                        "longitude": st_lon,
+                        "elevation_m": elev_m,
+                        "distance_km": dist_km,
+                        "is_active": True,
+                        "timezone": grid_props.get("timeZone"),
+                        "data_source": "NWS/NOAA Weather Stations",
+                        "latest_observation": None,
+                    }
+
+                    # 3) Buscar última observação da estação
+                    try:
+                        obs_resp = _httpx.get(
+                            f"{NWS_BASE}/stations/{station_id}/observations/latest",
+                            headers=NWS_HEADERS,
+                            timeout=15,
+                        )
+                        if obs_resp.status_code == 200:
+                            obs_p = obs_resp.json()["properties"]
+                            ts = obs_p.get("timestamp", "")
+
+                            def _nws_val(d):
+                                if not d or d.get("value") is None:
+                                    return None
+                                return float(d["value"])
+
+                            temp_c = _nws_val(obs_p.get("temperature"))
+                            humidity = _nws_val(obs_p.get("relativeHumidity"))
+                            wind_kmh = _nws_val(obs_p.get("windSpeed"))
+                            wind_ms = (
+                                round(wind_kmh / 3.6, 1) if wind_kmh else None
+                            )
+
+                            nws_station_info["latest_observation"] = {
+                                "timestamp": ts,
+                                "temperature_c": temp_c,
+                                "humidity_pct": humidity,
+                                "wind_speed_ms": wind_ms,
+                                "wind_speed_2m_ms": (
+                                    round(wind_ms * 0.748, 1)
+                                    if wind_ms
+                                    else None
+                                ),
+                                "is_delayed": False,
+                            }
+                    except Exception as obs_err:
+                        logger.warning(f"⚠️ Obs error: {obs_err}")
+
+                    logger.info(
+                        f"📡 Estação NWS encontrada: {station_name} "
+                        f"({station_id}) - {dist_km} km"
+                    )
+
+            except Exception as nws_error:
+                logger.warning(f"⚠️ Erro ao buscar estação NWS: {nws_error}")
+
         # ========== STEP 5: SALVAR NO BANCO (80-90%) ==========
         logger.info("[80%] Salvando dados no banco...")
 
@@ -377,6 +503,7 @@ def calculate_eto_task(
             "processing_time_seconds": round(processing_time, 2),
             "mode": mode,
             "email_sent": email_sent,  # Indicar se email foi enviado
+            "nws_station": nws_station_info,  # 📡 Estação NWS (USA only)
         }
 
         logger.info(
