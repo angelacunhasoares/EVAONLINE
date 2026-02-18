@@ -554,25 +554,40 @@ footer.bg-white {
     opacity: 0.5;
 }
 
-/* Títulos das colunas do footer - cor azul acadêmico #0088aa */
+/* Títulos das colunas do footer - estilo profissional */
 .footer-column-title {
     color: #0088aa !important;
     font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 0.3px;
+    font-size: 1.15rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding-bottom: 10px;
+    margin-bottom: 15px !important;
+    border-bottom: 2px solid #0088aa;
+    display: inline-block;
 }
 
 /* Email links no footer */
 .footer-email-link {
     text-decoration: none;
     font-size: 0.875rem;
-    color: #6c757d;
+    color: #0088aa;
     transition: color 0.2s ease;
 }
 
 .footer-email-link:hover {
-    color: #0088aa;
+    color: #006688;
     text-decoration: underline;
+}
+
+/* Botão de copiar email */
+.footer-copy-btn {
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.footer-copy-btn:hover {
+    color: #0088aa;
 }
 
 /* Logos dos parceiros */
@@ -662,4 +677,88 @@ footer.bg-white {
 
 .footer-license-link:hover {
     color: #0088aa;
+}
+
+/* =================================================
+   RESPONSIVE BREAKPOINTS
+   ================================================= */
+
+/* Tablets (768px - 991px) */
+@media (max-width: 991.98px) {
+
+    /* Mapa altura reduzida */
+    .leaflet-container {
+        height: 450px !important;
+    }
+}
+
+/* Mobile landscape e tablets pequenos (576px - 767px) */
+@media (max-width: 767.98px) {
+
+    /* Mapa ainda menor */
+    .leaflet-container {
+        height: 350px !important;
+    }
+
+    /* Cards menores */
+    .card-header-academic,
+    .card-header-academic-alt {
+        padding: 12px 15px !important;
+    }
+
+    /* Títulos menores */
+    .card-header-academic h5,
+    .card-header-academic-alt h5 {
+        font-size: 1.1rem !important;
+    }
+
+    /* Footer mais compacto */
+    .footer-column-title {
+        font-size: 1rem;
+    }
+
+    /* Logos parceiros menores */
+    .footer-partner-logo {
+        height: 50px !important;
+    }
+}
+
+/* Mobile portrait (< 576px) */
+@media (max-width: 575.98px) {
+
+    /* Mapa mínimo */
+    .leaflet-container {
+        height: 280px !important;
+    }
+
+    /* Padding reduzido em containers */
+    .container-fluid,
+    .container {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    /* Botões de largura total */
+    .btn-calculate-eto {
+        font-size: 0.95rem !important;
+    }
+
+    /* Data Type radio buttons */
+    .form-check-label {
+        font-size: 0.9rem;
+    }
+
+    /* Footer em coluna única */
+    footer .row>.col-md-4 {
+        margin-bottom: 30px;
+    }
+
+    /* Navbar brand menor */
+    .navbar-brand img {
+        height: 28px !important;
+    }
+
+    .navbar-brand span {
+        font-size: 1.3rem !important;
+    }
 }

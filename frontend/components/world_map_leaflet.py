@@ -994,7 +994,18 @@ def create_custom_layer_control():
                                     dcc.Checklist(
                                         options=[
                                             {
-                                                "label": " 🇧🇷 Brasil - Estados",
+                                                "label": html.Span(
+                                                    [
+                                                        html.Span(
+                                                            "🇧🇷",
+                                                            style={
+                                                                "fontFamily": "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif",
+                                                                "fontSize": "1.1em",
+                                                            },
+                                                        ),
+                                                        " Brasil - Estados",
+                                                    ]
+                                                ),
                                                 "value": "brasil",
                                             }
                                         ],

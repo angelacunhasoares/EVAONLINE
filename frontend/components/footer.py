@@ -10,7 +10,7 @@ from functools import lru_cache
 from typing import Dict, List
 
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import dcc, html
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +76,9 @@ class FooterManager:
         return f"/assets/images/logo_{partner}{extension}"
 
     def get_email_link(self, email: str) -> str:
-        """Link mailto simples."""
-        return f"mailto:{email}"
+        """Link direto para Gmail Compose."""
+        # Gmail compose URL - abre diretamente no Gmail web
+        return f"https://mail.google.com/mail/?view=cm&to={email}"
 
 
 # Instância global
@@ -124,12 +125,32 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                             f"{dev['institution']}",
                                                             className="text-muted small d-block mb-1",
                                                         ),
-                                                        html.A(
-                                                            dev["email"],
-                                                            href=footer_manager.get_email_link(
-                                                                dev["email"]
-                                                            ),
-                                                            className="footer-email-link small",
+                                                        html.Div(
+                                                            [
+                                                                html.Span(
+                                                                    [
+                                                                        html.I(
+                                                                            className="bi bi-envelope me-1"
+                                                                        ),
+                                                                        dev[
+                                                                            "email"
+                                                                        ],
+                                                                    ],
+                                                                    className="footer-email-link small",
+                                                                ),
+                                                                dcc.Clipboard(
+                                                                    content=dev[
+                                                                        "email"
+                                                                    ],
+                                                                    title="Copiar email",
+                                                                    className="ms-2 footer-copy-btn",
+                                                                    style={
+                                                                        "cursor": "pointer",
+                                                                        "fontSize": "0.9rem",
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            className="d-flex align-items-center justify-content-center",
                                                         ),
                                                     ],
                                                     className="mb-3 list-unstyled",

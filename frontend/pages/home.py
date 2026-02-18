@@ -96,7 +96,7 @@ def create_sidebar_card():
                             html.Div(
                                 [
                                     html.I(
-                                        className="bi bi-database me-2 text-primary"
+                                        className="bi bi-sliders2 me-2 text-primary"
                                     ),
                                     html.Span(
                                         "Data Type",
@@ -276,15 +276,38 @@ def create_map_card():
                     # ========================================
                     html.Div(
                         id="fusion-info-card",
-                        children=dbc.Alert(
-                            [
-                                html.I(className="bi bi-info-circle me-2"),
-                                "Select a Data Type above to see the data sources.",
-                            ],
-                            color="info",
-                            className="mb-0 small",
-                        ),
+                        children=None,
                         className="mt-3",
+                    ),
+                    # ========================================
+                    # MATOPIBA REFERENCE
+                    # ========================================
+                    html.Div(
+                        [
+                            html.Small(
+                                [
+                                    html.Strong("MATOPIBA"),
+                                    ": Acrônimo das iniciais dos estados do ",
+                                    html.Strong("Ma"),
+                                    "ranhão, ",
+                                    html.Strong("To"),
+                                    "cantins, ",
+                                    html.Strong("Pi"),
+                                    "auí e ",
+                                    html.Strong("Ba"),
+                                    "hia. ",
+                                    html.A(
+                                        "Saiba mais (Embrapa)",
+                                        href="https://www.embrapa.br/territorial/busca-de-publicacoes/-/publicacao/1037313/proposta-de-delimitacao-territorial-do-matopiba",
+                                        target="_blank",
+                                        className="text-primary",
+                                    ),
+                                ],
+                                className="text-muted",
+                            ),
+                        ],
+                        className="mt-2 px-1",
+                        style={"fontSize": "0.8rem"},
                     ),
                 ],
                 className="p-2",
@@ -354,6 +377,9 @@ home_layout = dbc.Container(
         dcc.Store(id="eto-results-data", storage_type="memory", data=None),
         dcc.Download(id="download-csv"),
         dcc.Download(id="download-excel"),
+        # Hidden button placeholders for callback registration
+        html.Button(id="btn-new-query", style={"display": "none"}),
+        html.Button(id="btn-new-query-sidebar", style={"display": "none"}),
         dcc.Interval(
             id="progress-interval",
             interval=2000,
@@ -390,8 +416,8 @@ home_layout = dbc.Container(
             },
         ),
     ],
-    fluid=False,
-    className="py-3 px-3",
+    fluid="xxl",
+    className="py-3 px-lg-4 px-3",
 )
 
 logger.info("Home page (unified) loaded successfully")
