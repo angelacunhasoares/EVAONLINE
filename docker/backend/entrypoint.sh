@@ -211,6 +211,7 @@ start_worker() {
 
     exec celery -A backend.infrastructure.celery.celery_config:celery_app worker \
         --loglevel="$LOG_LEVEL" \
+        --queues=general,eto_processing,data_download,data_processing,elevation \
         --concurrency="${CELERY_WORKER_CONCURRENCY:-4}" \
         --prefetch-multiplier="${CELERY_WORKER_PREFETCH_MULTIPLIER:-4}" \
         --max-tasks-per-child=100

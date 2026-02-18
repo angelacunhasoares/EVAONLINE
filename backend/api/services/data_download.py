@@ -74,7 +74,7 @@ async def download_weather_data(
         start_date=data_inicial,
         end_date=data_final,
         allow_future=True,  # Allow forecast
-        max_future_days=5,  # Forecast: today + 5 days
+        max_future_days=6,  # Forecast: today + 6 days (timezone tolerance)
     )
     if not date_valid:
         msg = f"Invalid dates: {date_details.get('errors')}"

@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 # Importar OperationModeDetector
 from frontend.utils.mode_detector import (
     OperationModeDetector,
+    get_timezone_for_location,
     parse_date_from_ui,
 )
 
@@ -419,14 +420,7 @@ def update_fusion_info(data_type, coords_data):
     - forecast: Open-Meteo Forecast + MET Norway (+ NWS se EUA)
     """
     if not data_type:
-        return dbc.Alert(
-            [
-                html.I(className="bi bi-info-circle me-2"),
-                "Select a Data Type above to see the data " "sources.",
-            ],
-            color="info",
-            className="mb-0 small",
-        )
+        return None  # No card shown until user selects a data type
 
     # Verificar se está nos EUA
     in_usa = False
@@ -679,6 +673,107 @@ def update_source_description(data_type):
 # ============================================================================
 
 
+# ============================================================================
+# CALLBACK - HABILITAR BOTÃO CALCULAR
+# ============================================================================
+@callback(
+    Output("calculate-eto-btn", "disabled", allow_duplicate=True),
+    [
+        Input("navigation-coordinates", "data"),
+        Input("data-type-radio", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def enable_calculate_button(coords_data, data_type):
+    """
+    Habilita o botão Calculate ETO apenas quando:
+    1. Coordenadas estão selecionadas (clicou no mapa)
+    2. Data Type está selecionado (historical, recent ou forecast)
+    """
+    has_coords = (
+        coords_data is not None
+        and "lat" in coords_data
+        and "lon" in coords_data
+    )
+    has_data_type = data_type is not None and data_type in [
+        "historical",
+        "recent",
+        "forecast",
+    ]
+
+    # Retorna True (disabled) se qualquer condição não for atendida
+    # Retorna False (enabled) se ambas condições forem atendidas
+    return not (has_coords and has_data_type)
+
+
+# ============================================================================
+# CALLBACK - NOVA CONSULTA (RESET)
+# ============================================================================
+@callback(
+    [
+        Output("eto-results-container", "children", allow_duplicate=True),
+        Output("validation-alert", "children", allow_duplicate=True),
+        Output("operation-mode-indicator", "children", allow_duplicate=True),
+        Output("data-type-radio", "value"),
+        Output("selected-location-data", "data", allow_duplicate=True),
+        Output("navigation-coordinates", "data", allow_duplicate=True),
+        Output("marker-layer", "children", allow_duplicate=True),
+        Output("calculate-eto-btn", "disabled", allow_duplicate=True),
+        Output("selected-coords-display", "children", allow_duplicate=True),
+        Output("sidebar-location-display", "children", allow_duplicate=True),
+        Output("calculation-success-status", "children", allow_duplicate=True),
+        Output("fusion-info-card", "children", allow_duplicate=True),
+    ],
+    [
+        Input("btn-new-query", "n_clicks"),
+        Input("btn-new-query-sidebar", "n_clicks"),
+    ],
+    prevent_initial_call=True,
+)
+def reset_for_new_query(n_clicks_main, n_clicks_sidebar):
+    """
+    Reseta a interface para uma nova consulta quando o usuário
+    clica em 'Nova Consulta' ou 'Selecionar Outro Ponto'.
+    """
+    from dash.exceptions import PreventUpdate
+
+    # Check if any button was actually clicked
+    if not n_clicks_main and not n_clicks_sidebar:
+        raise PreventUpdate
+
+    # Default message for sidebar location
+    default_sidebar_location = dbc.Alert(
+        [
+            html.I(className="bi bi-hand-index-thumb me-2"),
+            "Clique no mapa para selecionar um ponto",
+        ],
+        color="secondary",
+        className="mb-0 small py-2",
+    )
+
+    # Default message for coords display
+    default_coords_display = html.Div(
+        "Clique no mapa para selecionar uma localização",
+        className="alert alert-info small",
+    )
+
+    # Return empty/reset values
+    return (
+        None,  # Clear results container
+        None,  # Clear validation alert
+        None,  # Clear mode indicator
+        None,  # Reset data-type-radio to no selection
+        None,  # Clear selected-location-data
+        None,  # Clear navigation-coordinates
+        [],  # Clear marker-layer
+        True,  # Disable calculate button
+        default_coords_display,  # Reset coords display
+        default_sidebar_location,  # Reset sidebar location
+        None,  # Clear calculation success status
+        None,  # Clear fusion info card
+    )
+
+
 @callback(
     Output("conditional-form", "children"),
     Input("data-type-radio", "value"),
@@ -701,7 +796,9 @@ def render_conditional_form(data_type):
                 # Data Inicial
                 html.Div(
                     [
-                        html.Label("Data Inicial:", className="mb-2"),
+                        html.Label(
+                            "Data Inicial (DD/MM/AAAA):", className="mb-2"
+                        ),
                         dcc.DatePickerSingle(
                             id="start-date-historical",
                             min_date_allowed=datetime(1990, 1, 1),
@@ -709,9 +806,9 @@ def render_conditional_form(data_type):
                             - timedelta(days=1),
                             initial_visible_month=datetime.now()
                             - timedelta(days=30),
-                            date=datetime.now() - timedelta(days=30),
+                            date=None,
                             display_format="DD/MM/YYYY",
-                            placeholder="Selecione a data",
+                            placeholder="DD/MM/AAAA",
                             className="w-100",
                         ),
                     ],
@@ -720,16 +817,18 @@ def render_conditional_form(data_type):
                 # Data Final
                 html.Div(
                     [
-                        html.Label("Data Final:", className="mb-2"),
+                        html.Label(
+                            "Data Final (DD/MM/AAAA):", className="mb-2"
+                        ),
                         dcc.DatePickerSingle(
                             id="end-date-historical",
                             min_date_allowed=datetime(1990, 1, 1),
                             max_date_allowed=datetime.now()
                             - timedelta(days=1),
                             initial_visible_month=datetime.now(),
-                            date=datetime.now() - timedelta(days=1),
+                            date=None,
                             display_format="DD/MM/YYYY",
-                            placeholder="Selecione a data",
+                            placeholder="DD/MM/AAAA",
                             className="w-100",
                         ),
                     ],
@@ -826,7 +925,7 @@ def render_conditional_form(data_type):
                     [
                         dbc.Col(
                             [
-                                html.Label("Últimos dias:", className="mb-2"),
+                                # html.Label("Últimos dias:", className="mb-2"),
                                 dbc.Select(
                                     id="days-current",
                                     options=[
@@ -847,7 +946,8 @@ def render_conditional_form(data_type):
                                             "value": "30",
                                         },
                                     ],
-                                    value="7",
+                                    value=None,
+                                    placeholder="Selecione o período",
                                     className="w-100",
                                 ),
                             ],
@@ -856,10 +956,7 @@ def render_conditional_form(data_type):
                     ],
                     className="mb-3",
                 ),
-                html.Small(
-                    "💡 Recent data: minimum 7 days, maximum 30 days",
-                    className="text-muted",
-                ),
+                html.Div(id="recent-period-feedback"),
                 # Hidden fields for callback compatibility
                 dbc.Input(
                     id="start-date-historical",
@@ -891,16 +988,6 @@ def render_conditional_form(data_type):
     else:  # forecast
         return html.Div(
             [
-                html.Div(
-                    [
-                        html.I(className="bi bi-cloud-sun me-2 text-muted"),
-                        html.Small(
-                            "Automatic 5-day forecast — just click Calculate.",
-                            className="text-muted",
-                        ),
-                    ],
-                    className="mb-3",
-                ),
                 # Hidden fields for callback compatibility
                 dbc.Input(
                     id="days-current",
@@ -1050,6 +1137,18 @@ def calculate_eto(
         ui_selection = data_type  # "historical", "recent", ou "forecast"
         logger.info(f"🎯 UI Selection: {ui_selection}")
 
+        # Validate data_type is selected
+        if not ui_selection:
+            error_alert = dbc.Alert(
+                [
+                    html.I(className="bi bi-hand-index me-2"),
+                    html.Strong("Tipo de dados não selecionado: "),
+                    "Selecione Historical, Recent ou Forecast antes de calcular.",
+                ],
+                color="warning",
+            )
+            return None, None, error_alert, None, True, None
+
         # Parse dates
         start_date = None
         end_date = None
@@ -1078,16 +1177,16 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-calendar-x me-2"),
-                        html.Strong("Datas inválidas ou fora do intervalo: "),
+                        html.Strong("Selecione as datas: "),
                         html.Br(),
-                        "O modo histórico aceita datas entre ",
-                        html.Strong("01/01/1990"),
-                        " e ",
-                        html.Strong("ontem"),
-                        ". ",
+                        "Por favor, selecione a ",
+                        html.Strong("Data Inicial"),
+                        " e a ",
+                        html.Strong("Data Final"),
+                        " para o modo histórico. ",
                         html.Br(),
                         html.Small(
-                            "Verifique se as datas digitadas estão dentro deste intervalo.",
+                            "Datas válidas: entre 01/01/1990 e ontem.",
                             className="mt-1 d-block",
                         ),
                     ],
@@ -1183,6 +1282,16 @@ def calculate_eto(
 
         elif ui_selection == "recent":
             # Parse period from dropdown
+            if not days_current:
+                error_alert = dbc.Alert(
+                    [
+                        html.I(className="bi bi-calendar-event me-2"),
+                        html.Strong("Período não selecionado: "),
+                        "Selecione o período",
+                    ],
+                    color="warning",
+                )
+                return None, None, error_alert, None, True, None
             period_days = int(days_current)
             logger.info(f"📅 Recent: last {period_days} days")
 
@@ -1213,19 +1322,126 @@ def calculate_eto(
         logger.info(f"✅ Mode detected: {backend_mode}")
         logger.info(f"📦 Payload: {payload}")
 
-        # Create mode indicator badge
-        mode_colors = {
-            "HISTORICAL_EMAIL": "primary",
-            "DASHBOARD_CURRENT": "success",
-            "DASHBOARD_FORECAST": "warning",
+        # Create user-friendly mode indicator card
+        mode_names = {
+            "historical": "Histórico",
+            "recent": "Recente",
+            "forecast": "Previsão",
         }
-        mode_indicator = dbc.Badge(
+        mode_icons = {
+            "historical": "bi-hourglass-split",
+            "recent": "bi-clock-history",
+            "forecast": "bi-cloud-sun-fill",
+        }
+        mode_colors = {
+            "historical": "#006699",  # Blue
+            "recent": "#28a745",  # Green
+            "forecast": "#fd7e14",  # Orange
+        }
+
+        # Build period description
+        if ui_selection == "historical":
+            period_text = f"{start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}"
+            period_days_calc = (end_date - start_date).days + 1
+            period_extra = f"({period_days_calc} dias)"
+        elif ui_selection == "recent":
+            period_text = f"Últimos {period_days} dias"
+            period_extra = "(dados recentes)"
+        else:  # forecast
+            from datetime import date as dt_date, timedelta
+
+            today = dt_date.today()
+            forecast_end = today + timedelta(days=5)
+            period_text = f"{today.strftime('%d/%m/%Y')} até {forecast_end.strftime('%d/%m/%Y')}"
+            period_extra = "(previsão 5 dias)"
+
+        # Get timezone for location
+        try:
+            location_tz = get_timezone_for_location(lat, lon)
+            tz_name = str(location_tz)
+            # Simplify timezone name for display
+            if tz_name.startswith("Etc/GMT"):
+                # Etc/GMT convention is inverted: Etc/GMT+9 = UTC-9
+                # Convert to more intuitive display
+                if "+" in tz_name:
+                    offset_val = tz_name.split("+")[1]
+                    tz_display = f"UTC-{offset_val}"
+                elif "-" in tz_name and tz_name != "Etc/GMT":
+                    offset_val = tz_name.split("-")[1]
+                    tz_display = f"UTC+{offset_val}"
+                else:
+                    tz_display = "UTC"
+            elif "/" in tz_name:
+                tz_display = tz_name.split("/")[-1].replace("_", " ")
+            else:
+                tz_display = tz_name
+        except Exception:
+            tz_display = "UTC"
+            tz_name = "UTC"
+
+        mode_indicator = html.Div(
             [
-                html.I(className="bi bi-info-circle me-1"),
-                f"Modo: {backend_mode}",
+                html.Div(
+                    [
+                        html.I(
+                            className=f"bi {mode_icons.get(ui_selection, 'bi-info-circle')} me-2"
+                        ),
+                        html.Strong(
+                            f"Modo: {mode_names.get(ui_selection, ui_selection)}"
+                        ),
+                    ],
+                    style={
+                        "display": "flex",
+                        "alignItems": "center",
+                        "marginBottom": "8px",
+                    },
+                ),
+                html.Div(
+                    [
+                        html.I(className="bi bi-geo-alt me-2 text-muted"),
+                        html.Span(
+                            f"Localização: {lat:.4f}°, {lon:.4f}°",
+                            className="text-muted",
+                        ),
+                    ],
+                    style={"marginBottom": "4px", "fontSize": "0.9rem"},
+                ),
+                html.Div(
+                    [
+                        html.I(className="bi bi-clock me-2 text-muted"),
+                        html.Span(
+                            f"Fuso horário: {tz_display}",
+                            className="text-muted",
+                        ),
+                        html.Small(
+                            f" ({tz_name})",
+                            className="text-secondary",
+                            style={"fontSize": "0.75rem"},
+                        ),
+                    ],
+                    style={"marginBottom": "4px", "fontSize": "0.9rem"},
+                ),
+                html.Div(
+                    [
+                        html.I(
+                            className="bi bi-calendar-range me-2 text-muted"
+                        ),
+                        html.Span(
+                            f"Período: {period_text} ", className="text-muted"
+                        ),
+                        html.Small(period_extra, className="text-secondary"),
+                    ],
+                    style={"fontSize": "0.9rem"},
+                ),
             ],
-            color=mode_colors.get(backend_mode, "secondary"),
-            className="mb-3 p-2",
+            style={
+                "background": f"linear-gradient(135deg, {mode_colors.get(ui_selection, '#6c757d')}15, {mode_colors.get(ui_selection, '#6c757d')}05)",
+                "border": f"1px solid {mode_colors.get(ui_selection, '#6c757d')}40",
+                "borderLeft": f"4px solid {mode_colors.get(ui_selection, '#6c757d')}",
+                "borderRadius": "8px",
+                "padding": "12px 16px",
+                "marginBottom": "12px",
+            },
         )
 
     except ValueError as e:
@@ -1367,6 +1583,9 @@ def calculate_eto(
         Output("current-task-id", "data", allow_duplicate=True),
         Output("calculation-success-status", "children"),
         Output("eto-results-data", "data"),  # Store para dados de download
+        Output(
+            "fusion-info-card", "children", allow_duplicate=True
+        ),  # Para modo histórico
     ],
     Input("progress-interval", "n_intervals"),
     [
@@ -1382,7 +1601,7 @@ def update_progress(n_intervals, task_id, operation_mode):
     Para outros modos (DASHBOARD_CURRENT, DASHBOARD_FORECAST): Exibe dados normalmente.
     """
     if not task_id:
-        return None, no_update, True, None, no_update, no_update
+        return None, no_update, True, None, no_update, no_update, no_update
 
     try:
         import redis
@@ -1442,6 +1661,103 @@ def update_progress(n_intervals, task_id, operation_mode):
 
         if status == "SUCCESS":
             task_result = result.get("result", {})
+
+            # Check if task returned an error in the result
+            task_error = task_result.get("error")
+            if task_error:
+                logger.error(
+                    f"❌ Task SUCCESS mas com erro no resultado: {task_error}"
+                )
+                error_content = html.Div(
+                    [
+                        dbc.Alert(
+                            [
+                                html.I(
+                                    className="bi bi-exclamation-triangle me-2",
+                                    style={"fontSize": "1.2rem"},
+                                ),
+                                html.Strong("Erro ao processar dados"),
+                            ],
+                            color="danger",
+                            className="mb-3",
+                        ),
+                        html.Div(
+                            [
+                                html.P(
+                                    [
+                                        html.I(
+                                            className="bi bi-info-circle me-2"
+                                        ),
+                                        html.Small(
+                                            str(task_error),
+                                            className="text-muted font-monospace",
+                                        ),
+                                    ],
+                                    className="mb-2",
+                                ),
+                                html.P(
+                                    [
+                                        html.I(
+                                            className="bi bi-lightbulb me-2 text-warning"
+                                        ),
+                                        html.Small(
+                                            "Isso pode ser um problema temporário. "
+                                            "Tente novamente ou selecione outro ponto.",
+                                            className="text-muted",
+                                        ),
+                                    ],
+                                    className="mb-0",
+                                ),
+                            ],
+                            className="px-2",
+                        ),
+                        html.Hr(),
+                        dbc.Button(
+                            [
+                                html.I(className="bi bi-geo-alt me-2"),
+                                "Selecionar Outro Ponto",
+                            ],
+                            id="btn-new-query",
+                            color="primary",
+                            className="w-100",
+                        ),
+                    ]
+                )
+                sidebar_error = html.Div(
+                    [
+                        dbc.Alert(
+                            [
+                                html.I(
+                                    className="bi bi-exclamation-triangle me-2"
+                                ),
+                                "Erro no processamento",
+                            ],
+                            color="danger",
+                            className="py-2 px-3 mb-2 small",
+                        ),
+                        dbc.Button(
+                            [
+                                html.I(className="bi bi-geo-alt me-2"),
+                                "Selecionar Outro Ponto",
+                            ],
+                            id="btn-new-query-sidebar",
+                            color="primary",
+                            outline=True,
+                            size="sm",
+                            className="w-100",
+                        ),
+                    ]
+                )
+                return (
+                    None,
+                    error_content,
+                    True,
+                    None,
+                    sidebar_error,
+                    None,
+                    no_update,
+                )
+
             days_calculated = len(task_result.get("et0_series", []))
             logger.info(
                 f"✅ Task SUCCESS - {days_calculated} days, mode: {operation_mode}"
@@ -1686,6 +2002,20 @@ def update_progress(n_intervals, task_id, operation_mode):
                                         className="d-flex align-items-start mt-3",
                                         style={"fontSize": "0.85rem"},
                                     ),
+                                    # Botão Nova Consulta
+                                    html.Div(
+                                        dbc.Button(
+                                            [
+                                                html.I(
+                                                    className="bi bi-arrow-repeat me-2"
+                                                ),
+                                                "Nova Consulta",
+                                            ],
+                                            id="btn-new-query",
+                                            color="primary",
+                                            className="w-100 mt-3",
+                                        ),
+                                    ),
                                 ],
                                 style={"padding": "20px 24px"},
                             ),
@@ -1713,17 +2043,45 @@ def update_progress(n_intervals, task_id, operation_mode):
                         className="mt-3",
                     )
 
-                # Success status for sidebar
-                sidebar_success = dbc.Alert(
+                # Success status for sidebar with New Query button
+                sidebar_success = html.Div(
                     [
-                        html.I(className="bi bi-check-circle-fill me-2"),
-                        html.Strong(f"✅ {days_calculated} dias processados"),
-                    ],
-                    color="success",
-                    className="py-2 px-3 mb-0",
+                        dbc.Alert(
+                            [
+                                html.I(
+                                    className="bi bi-check-circle-fill me-2"
+                                ),
+                                html.Strong(
+                                    f"✅ {days_calculated} dias processados"
+                                ),
+                            ],
+                            color="success",
+                            className="py-2 px-3 mb-2",
+                        ),
+                        dbc.Button(
+                            [
+                                html.I(className="bi bi-geo-alt me-2"),
+                                "Selecionar Outro Ponto",
+                            ],
+                            id="btn-new-query-sidebar",
+                            color="primary",
+                            outline=True,
+                            size="sm",
+                            className="w-100",
+                        ),
+                    ]
                 )
 
-                return None, success_content, True, None, sidebar_success, None
+                # Colocar resultado no fusion-info-card (coluna do mapa), não no eto-results-container
+                return (
+                    None,
+                    None,
+                    True,
+                    None,
+                    sidebar_success,
+                    None,
+                    success_content,
+                )
 
             # ================================================================
             # OUTROS MODOS (DASHBOARD_CURRENT, DASHBOARD_FORECAST):
@@ -1743,14 +2101,115 @@ def update_progress(n_intervals, task_id, operation_mode):
             logger.info(f"📈 Dados recebidos: {len(et0_data)} registros")
 
             if not et0_data:
-                error_card = dbc.Alert(
+                error_content = html.Div(
                     [
-                        html.I(className="bi bi-exclamation-triangle me-2"),
-                        "Nenhum dado retornado pelo backend.",
-                    ],
-                    color="warning",
+                        dbc.Alert(
+                            [
+                                html.I(
+                                    className="bi bi-water me-2",
+                                    style={"fontSize": "1.2rem"},
+                                ),
+                                html.Strong("Sem dados para esta localização"),
+                            ],
+                            color="info",
+                            className="mb-3",
+                        ),
+                        html.Div(
+                            [
+                                html.P(
+                                    [
+                                        html.I(
+                                            className="bi bi-info-circle me-2"
+                                        ),
+                                        "A evapotranspiração (ETo) é calculada apenas para ",
+                                        html.Strong("áreas terrestres"),
+                                        ".",
+                                    ],
+                                    className="mb-2",
+                                ),
+                                html.P(
+                                    [
+                                        "Possíveis causas:",
+                                    ],
+                                    className="mb-1 fw-semibold small",
+                                ),
+                                html.Ul(
+                                    [
+                                        html.Li(
+                                            "Ponto selecionado sobre oceano, lago ou área aquática",
+                                            className="small",
+                                        ),
+                                        html.Li(
+                                            "Região remota sem cobertura das fontes de dados",
+                                            className="small",
+                                        ),
+                                        html.Li(
+                                            "Fonte de dados temporariamente indisponível",
+                                            className="small",
+                                        ),
+                                    ],
+                                    className="mb-3 ps-3",
+                                ),
+                                html.P(
+                                    [
+                                        html.I(
+                                            className="bi bi-lightbulb me-2 text-warning"
+                                        ),
+                                        html.Small(
+                                            "Dica: Selecione um ponto sobre terra firme para obter dados de ETo.",
+                                            className="text-muted",
+                                        ),
+                                    ],
+                                    className="mb-0",
+                                ),
+                            ],
+                            className="px-2",
+                        ),
+                        html.Hr(),
+                        dbc.Button(
+                            [
+                                html.I(className="bi bi-geo-alt me-2"),
+                                "Selecionar Outro Ponto",
+                            ],
+                            id="btn-new-query",
+                            color="primary",
+                            className="w-100",
+                        ),
+                    ]
                 )
-                return None, error_card, True, None, no_update, None
+                # Sidebar with retry button
+                sidebar_error = html.Div(
+                    [
+                        dbc.Alert(
+                            [
+                                html.I(className="bi bi-water me-2"),
+                                "Sem dados (oceano/área remota)",
+                            ],
+                            color="info",
+                            className="py-2 px-3 mb-2 small",
+                        ),
+                        dbc.Button(
+                            [
+                                html.I(className="bi bi-geo-alt me-2"),
+                                "Selecionar Outro Ponto",
+                            ],
+                            id="btn-new-query-sidebar",
+                            color="primary",
+                            outline=True,
+                            size="sm",
+                            className="w-100",
+                        ),
+                    ]
+                )
+                return (
+                    None,
+                    error_content,
+                    True,
+                    None,
+                    sidebar_error,
+                    None,
+                    no_update,
+                )
 
             # Create DataFrame with standardized column names
             df_records = []
@@ -1832,6 +2291,24 @@ def update_progress(n_intervals, task_id, operation_mode):
 
                 results_content = html.Div(
                     [
+                        # Header with New Query button
+                        html.Div(
+                            [
+                                dbc.Button(
+                                    [
+                                        html.I(
+                                            className="bi bi-arrow-repeat me-2"
+                                        ),
+                                        "Nova Consulta",
+                                    ],
+                                    id="btn-new-query",
+                                    color="outline-primary",
+                                    size="sm",
+                                    className="mb-3",
+                                ),
+                            ],
+                            className="d-flex justify-content-end",
+                        ),
                         # Tabs with results (success message moved to sidebar)
                         create_results_tabs(
                             df, sources=sources_used, lang="pt"
@@ -1842,16 +2319,33 @@ def update_progress(n_intervals, task_id, operation_mode):
                     className="results-container",
                 )
 
-                # Success status for sidebar
-                sidebar_success = dbc.Alert(
+                # Success status for sidebar with New Query button
+                sidebar_success = html.Div(
                     [
-                        html.I(className="bi bi-check-circle-fill me-2"),
-                        html.Strong(
-                            f"✅ Sucesso! {days_calculated} dias calculados"
+                        dbc.Alert(
+                            [
+                                html.I(
+                                    className="bi bi-check-circle-fill me-2"
+                                ),
+                                html.Strong(
+                                    f"✅ Sucesso! {days_calculated} dias calculados"
+                                ),
+                            ],
+                            color="success",
+                            className="py-2 px-3 mb-2",
                         ),
-                    ],
-                    color="success",
-                    className="py-2 px-3 mb-0",
+                        dbc.Button(
+                            [
+                                html.I(className="bi bi-geo-alt me-2"),
+                                "Selecionar Outro Ponto",
+                            ],
+                            id="btn-new-query-sidebar",
+                            color="primary",
+                            outline=True,
+                            size="sm",
+                            className="w-100",
+                        ),
+                    ]
                 )
 
                 # Desabilitar interval e limpar task_id
@@ -1862,6 +2356,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                     None,
                     sidebar_success,
                     download_data,
+                    no_update,  # fusion-info-card (não usa no modo dashboard)
                 )
 
             except Exception as e:
@@ -1874,7 +2369,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                     ],
                     color="warning",
                 )
-                return None, error_card, True, None, no_update, None
+                return None, error_card, True, None, no_update, None, no_update
 
         elif status == "FAILURE":
             # Handle FAILURE status
@@ -1928,12 +2423,134 @@ def update_progress(n_intervals, task_id, operation_mode):
                 ],
                 className="mt-3",
             )
-            return None, error_card, True, None, no_update, None
+            return None, error_card, True, None, no_update, None, no_update
 
-        elif status == "PENDING" or status == "STARTED":
-            # Task em execução - mostrar indicador elegante com percentual
+        elif status == "PENDING" or status == "STARTED" or status == "RETRY":
+            # Task em execução ou tentando novamente
             elapsed = n_intervals * 2  # 2 segundos por intervalo
-            estimated_progress = min(95, 10 + (elapsed / 60) * 85)
+
+            # Timeout: se passou muito tempo em RETRY, mostrar erro
+            if status == "RETRY" and elapsed > 180:
+                # After 180 seconds of retrying, show error
+                # (retry countdown=60*(n+1), so need time for retries to execute)
+                logger.warning(
+                    f"⏱️ Task em RETRY por muito tempo ({elapsed}s), abortando"
+                )
+                error_content = html.Div(
+                    [
+                        dbc.Alert(
+                            [
+                                html.I(
+                                    className="bi bi-exclamation-triangle me-2",
+                                    style={"fontSize": "1.2rem"},
+                                ),
+                                html.Strong(
+                                    "Não foi possível obter dados para esta localização"
+                                ),
+                            ],
+                            color="warning",
+                            className="mb-3",
+                        ),
+                        html.Div(
+                            [
+                                html.P(
+                                    "Possíveis causas:",
+                                    className="mb-1 fw-semibold small",
+                                ),
+                                html.Ul(
+                                    [
+                                        html.Li(
+                                            "Ponto selecionado sobre oceano, lago ou área aquática",
+                                            className="small",
+                                        ),
+                                        html.Li(
+                                            "Fontes de dados climáticos temporariamente indisponíveis",
+                                            className="small",
+                                        ),
+                                        html.Li(
+                                            "Região remota sem cobertura suficiente",
+                                            className="small",
+                                        ),
+                                        html.Li(
+                                            "Servidor sobrecarregado — tente novamente em alguns minutos",
+                                            className="small",
+                                        ),
+                                    ],
+                                    className="mb-3 ps-3",
+                                ),
+                                html.P(
+                                    [
+                                        html.I(
+                                            className="bi bi-lightbulb me-2 text-warning"
+                                        ),
+                                        html.Small(
+                                            "Dica: Tente novamente ou selecione outro ponto.",
+                                            className="text-muted",
+                                        ),
+                                    ],
+                                    className="mb-0",
+                                ),
+                            ],
+                            className="px-2",
+                        ),
+                        html.Hr(),
+                        dbc.Button(
+                            [
+                                html.I(className="bi bi-geo-alt me-2"),
+                                "Selecionar Outro Ponto",
+                            ],
+                            id="btn-new-query",
+                            color="primary",
+                            className="w-100",
+                        ),
+                    ]
+                )
+                sidebar_error = html.Div(
+                    [
+                        dbc.Alert(
+                            [
+                                html.I(
+                                    className="bi bi-exclamation-triangle me-2"
+                                ),
+                                "Erro ao obter dados",
+                            ],
+                            color="warning",
+                            className="py-2 px-3 mb-2 small",
+                        ),
+                        dbc.Button(
+                            [
+                                html.I(className="bi bi-geo-alt me-2"),
+                                "Selecionar Outro Ponto",
+                            ],
+                            id="btn-new-query-sidebar",
+                            color="primary",
+                            outline=True,
+                            size="sm",
+                            className="w-100",
+                        ),
+                    ]
+                )
+                return (
+                    None,
+                    error_content,
+                    True,
+                    None,
+                    sidebar_error,
+                    None,
+                    no_update,
+                )
+
+            # Progress: use 180s for RETRY, 60s for normal
+            max_time = 180 if status == "RETRY" else 60
+            estimated_progress = min(95, 10 + (elapsed / max_time) * 85)
+
+            # Mensagem diferente para RETRY
+            if status == "RETRY":
+                progress_msg = "Tentando obter dados..."
+                time_remaining = f"Aguarde... ({elapsed}s)"
+            else:
+                progress_msg = "Baixando dados e calculando ETo..."
+                time_remaining = f"Tempo estimado: {max(1, 30 - elapsed)}s"
 
             progress_indicator = html.Div(
                 [
@@ -1941,7 +2558,11 @@ def update_progress(n_intervals, task_id, operation_mode):
                     html.Div(
                         [
                             dbc.Spinner(
-                                color="success",
+                                color=(
+                                    "success"
+                                    if status != "RETRY"
+                                    else "warning"
+                                ),
                                 type="border",
                                 size="sm",
                                 spinner_class_name="me-3",
@@ -1949,12 +2570,12 @@ def update_progress(n_intervals, task_id, operation_mode):
                             html.Div(
                                 [
                                     html.Span(
-                                        "Baixando dados e calculando ETo...",
+                                        progress_msg,
                                         className="fw-semibold text-dark",
                                     ),
                                     html.Br(),
                                     html.Small(
-                                        f"Tempo estimado: {max(1, 30 - elapsed)}s",
+                                        time_remaining,
                                         className="text-muted",
                                     ),
                                 ],
@@ -1972,7 +2593,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                     # Barra de progresso fina e elegante
                     dbc.Progress(
                         value=estimated_progress,
-                        color="success",
+                        color="success" if status != "RETRY" else "warning",
                         className="mb-0",
                         style={"height": "8px", "borderRadius": "4px"},
                     ),
@@ -1987,16 +2608,37 @@ def update_progress(n_intervals, task_id, operation_mode):
                 task_id,
                 no_update,
                 no_update,
+                no_update,  # fusion-info-card
             )
 
         else:
-            # Status desconhecido - manter consultando
+            # Status desconhecido - manter consultando por tempo limitado
+            elapsed = n_intervals * 2
+            if elapsed > 120:
+                logger.error(f"⏱️ Task timeout com status: {status}")
+                return (
+                    None,
+                    no_update,
+                    True,
+                    None,
+                    no_update,
+                    no_update,
+                    no_update,
+                )
             logger.warning(f"⚠️ Status desconhecido: {status}")
-            return None, no_update, False, task_id, no_update, no_update
+            return (
+                None,
+                no_update,
+                False,
+                task_id,
+                no_update,
+                no_update,
+                no_update,
+            )
 
     except Exception as e:
         logger.error(f"Erro ao atualizar progresso: {e}")
-        return None, no_update, False, task_id, no_update, no_update
+        return None, no_update, False, task_id, no_update, no_update, no_update
 
 
 # ============================================================================

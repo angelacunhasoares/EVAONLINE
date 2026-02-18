@@ -553,7 +553,8 @@ class ClimateValidationService:
         effective_allow_future = allow_future
 
         if mode == OperationMode.DASHBOARD_FORECAST.value:
-            max_future_days = 5
+            # +6 days to account for timezone differences (up to ~26h variance)
+            max_future_days = 6
             effective_allow_future = True  # Forecast ALWAYS allows future
         elif mode == OperationMode.DASHBOARD_CURRENT.value:
             max_future_days = 0
