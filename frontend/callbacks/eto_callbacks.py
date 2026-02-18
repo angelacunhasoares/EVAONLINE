@@ -16,8 +16,10 @@ Validações (api_limits.py):
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs
+
+import pytz
 
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html, no_update
@@ -28,6 +30,8 @@ logger = logging.getLogger(__name__)
 from frontend.utils.mode_detector import (
     OperationModeDetector,
     get_timezone_for_location,
+    get_today_for_location,
+    is_land_point,
     parse_date_from_ui,
 )
 
@@ -1039,6 +1043,7 @@ def render_conditional_form(data_type):
         State("file-format-historical", "value"),
         State("days-current", "value"),
         State("app-session-id", "data"),
+        State("manual-elevation", "data"),
     ],
     prevent_initial_call=True,
 )
@@ -1052,6 +1057,7 @@ def calculate_eto(
     file_format_hist,
     days_current,
     session_id,
+    manual_elevation=None,
 ):
     """
     Calcula ETo com detecção automática de modo operacional.
@@ -1126,6 +1132,38 @@ def calculate_eto(
                 "Falha ao processar coordenadas.",
             ],
             color="danger",
+        )
+        return None, None, error_alert, None, True, None
+
+    # Pre-check: Is this a land point?
+    if not is_land_point(lat, lon):
+        logger.warning(f"🌊 Ocean point detected: ({lat}, {lon})")
+        error_alert = dbc.Alert(
+            [
+                html.I(
+                    className="bi bi-water me-2",
+                    style={"fontSize": "1.3rem"},
+                ),
+                html.Strong("Ponto sobre o oceano"),
+                html.Br(),
+                html.Span(
+                    [
+                        "As coordenadas selecionadas (",
+                        html.Code(f"{lat:.4f}°, {lon:.4f}°"),
+                        ") estão sobre o oceano ou corpo d'água. ",
+                        "A evapotranspiração (ETo) é calculada apenas para ",
+                        html.Strong("áreas terrestres"),
+                        ".",
+                    ]
+                ),
+                html.Br(),
+                html.Small(
+                    "💡 Dica: Clique em um ponto sobre terra firme no mapa.",
+                    className="text-muted mt-1 d-block",
+                ),
+            ],
+            color="info",
+            className="mt-2",
         )
         return None, None, error_alert, None, True, None
 
@@ -1314,6 +1352,11 @@ def calculate_eto(
             payload["file_format"] = file_format_hist
             logger.info(f"📎 File format: {file_format_hist}")
 
+        # Passar elevação manual se fornecida pelo usuário
+        if manual_elevation is not None:
+            payload["elevation"] = float(manual_elevation)
+            logger.info(f"📐 Manual elevation: {manual_elevation}m")
+
         # Detect mode for visual indicator
         backend_mode, mode_config = OperationModeDetector.detect_mode(
             ui_selection, start_date, end_date, period_days
@@ -1348,11 +1391,11 @@ def calculate_eto(
             period_text = f"Últimos {period_days} dias"
             period_extra = "(dados recentes)"
         else:  # forecast
-            from datetime import date as dt_date, timedelta
+            from datetime import timedelta
 
-            today = dt_date.today()
-            forecast_end = today + timedelta(days=5)
-            period_text = f"{today.strftime('%d/%m/%Y')} até {forecast_end.strftime('%d/%m/%Y')}"
+            location_today = get_today_for_location(lat, lon)
+            forecast_end = location_today + timedelta(days=5)
+            period_text = f"{location_today.strftime('%d/%m/%Y')} até {forecast_end.strftime('%d/%m/%Y')}"
             period_extra = "(previsão 5 dias)"
 
         # Get timezone for location
@@ -2289,6 +2332,25 @@ def update_progress(n_intervals, task_id, operation_mode):
                     className="mt-3 p-3 bg-light rounded",
                 )
 
+                # 🌊 Ocean warning banner (if backend detected no elevation data)
+                ocean_warning_banner = None
+                if task_result.get("ocean_warning"):
+                    ocean_warning_banner = dbc.Alert(
+                        [
+                            html.I(
+                                className="bi bi-exclamation-triangle me-2",
+                                style={"fontSize": "1.1rem"},
+                            ),
+                            html.Strong("Atenção: "),
+                            "O serviço de elevação (SRTM/ASTER) não retornou "
+                            "dados para este ponto. Ele pode estar sobre "
+                            "um corpo d'água ou área sem cobertura. "
+                            "A elevação foi assumida como 0 m (nível do mar).",
+                        ],
+                        color="warning",
+                        className="mb-3",
+                    )
+
                 # 📡 Card da estação NWS (USA only)
                 nws_station_card = None
                 nws_station = task_result.get("nws_station")
@@ -2296,24 +2358,71 @@ def update_progress(n_intervals, task_id, operation_mode):
                     obs = nws_station.get("latest_observation")
                     obs_content = []
                     if obs:
-                        obs_time = obs.get("timestamp", "")[:16].replace(
-                            "T", " "
-                        )
+                        # Convert UTC timestamp to station local time
+                        obs_ts_raw = obs.get("timestamp", "")
+                        station_tz_name = nws_station.get("timezone", "")
+                        obs_time_display = ""
+                        obs_relative = ""
+                        try:
+                            # Parse ISO timestamp
+                            obs_dt = datetime.fromisoformat(
+                                obs_ts_raw.replace("Z", "+00:00")
+                            )
+                            if not obs_dt.tzinfo:
+                                obs_dt = obs_dt.replace(tzinfo=timezone.utc)
+                            # Convert to station local timezone
+                            if station_tz_name:
+                                local_tz = pytz.timezone(station_tz_name)
+                                obs_local = obs_dt.astimezone(local_tz)
+                                tz_abbr = obs_local.strftime("%Z")
+                                obs_time_display = (
+                                    f"{obs_local.strftime('%d/%m/%Y %H:%M')} "
+                                    f"({tz_abbr})"
+                                )
+                            else:
+                                obs_time_display = (
+                                    obs_ts_raw[:16].replace("T", " ") + " UTC"
+                                )
+                            # Calculate relative time
+                            now_utc = datetime.now(timezone.utc)
+                            delta = now_utc - obs_dt
+                            minutes_ago = int(delta.total_seconds() / 60)
+                            if minutes_ago < 1:
+                                obs_relative = "agora"
+                            elif minutes_ago < 60:
+                                obs_relative = f"há {minutes_ago} min"
+                            elif minutes_ago < 1440:
+                                hours = minutes_ago // 60
+                                obs_relative = (
+                                    f"há {hours}h{minutes_ago % 60:02d}min"
+                                )
+                            else:
+                                days = minutes_ago // 1440
+                                obs_relative = f"há {days} dia(s)"
+                        except Exception:
+                            obs_time_display = (
+                                obs_ts_raw[:16].replace("T", " ") + " UTC"
+                            )
+
                         temp = obs.get("temperature_c")
                         humidity = obs.get("humidity_pct")
                         wind = obs.get("wind_speed_2m_ms") or obs.get(
                             "wind_speed_ms"
                         )
 
+                        # Build observation time label
+                        time_label = f"Última leitura: {obs_time_display}"
+                        if obs_relative:
+                            time_label += f" — {obs_relative}"
+
                         obs_content = [
                             html.Div(
                                 [
                                     html.I(className="bi bi-clock me-1"),
-                                    html.Small(
-                                        f"Última observação: {obs_time} UTC"
-                                    ),
+                                    html.Small(time_label),
                                 ],
                                 className="mb-2 text-muted",
+                                title="Horário da leitura mais recente dos sensores desta estação. Os dados abaixo correspondem a esse momento.",
                             ),
                             html.Div(
                                 [
@@ -2407,6 +2516,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                                             f"{nws_station.get('distance_km', 0):.1f} km",
                                                         ],
                                                         className="me-3",
+                                                        title="Distância entre o ponto selecionado e a estação meteorológica",
                                                     ),
                                                     html.Span(
                                                         [
@@ -2439,8 +2549,14 @@ def update_progress(n_intervals, task_id, operation_mode):
                                             html.I(
                                                 className="bi bi-info-circle me-1"
                                             ),
-                                            "Dados reais da estação NWS/NOAA. ",
-                                            "A ETo acima foi calculada usando fusão de múltiplas fontes.",
+                                            "Dados reais da estação NWS/NOAA. Página oficial: ",
+                                            html.A(
+                                                "weather.gov",
+                                                href="https://www.weather.gov/",
+                                                target="_blank",
+                                                rel="noopener noreferrer",
+                                                className="text-info",
+                                            ),
                                         ],
                                         className="text-muted",
                                     ),
@@ -2470,6 +2586,8 @@ def update_progress(n_intervals, task_id, operation_mode):
                             ],
                             className="d-flex justify-content-end",
                         ),
+                        # 🌊 Ocean Warning (if elevation unavailable)
+                        ocean_warning_banner,
                         # 📡 NWS Station Card (USA only)
                         nws_station_card,
                         # Tabs with results (success message moved to sidebar)

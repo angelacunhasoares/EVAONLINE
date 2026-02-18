@@ -190,6 +190,17 @@ def calculate_eto_task(
             )
         )
 
+        # ========== STEP 4.4: VERIFICAR SINAL DE OCEANO ==========
+        # Se SRTM/ASTER retornaram null (source=padrão, no_data=True),
+        # o ponto pode estar sobre oceano/corpo d'água
+        elev_info = result.get("elevation", {})
+        if isinstance(elev_info, dict) and elev_info.get("no_data"):
+            logger.warning(
+                f"🌊 Elevação indisponível via SRTM/ASTER para ({lat}, {lon}) "
+                f"- possível ponto sobre oceano/corpo d'água"
+            )
+            result["ocean_warning"] = True
+
         # ========== STEP 4.5: ESTAÇÃO NWS (USA only) ==========
         # Se está nos EUA e modo recent/forecast, buscar estação mais próxima
         nws_station_info = None

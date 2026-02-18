@@ -86,6 +86,132 @@ def create_sidebar_card():
                                     className="mb-0 small py-2",
                                 ),
                             ),
+                            # Campos de entrada manual (lat, lon, altitude)
+                            html.Div(
+                                [
+                                    # Toggle para mostrar/ocultar campos
+                                    dbc.Button(
+                                        [
+                                            html.I(
+                                                className="bi bi-pencil-square me-1"
+                                            ),
+                                            "Manual Input",
+                                        ],
+                                        id="toggle-manual-coords",
+                                        color="link",
+                                        size="sm",
+                                        className="p-0 mt-2 text-decoration-none",
+                                    ),
+                                    dbc.Collapse(
+                                        html.Div(
+                                            [
+                                                # Latitude
+                                                dbc.InputGroup(
+                                                    [
+                                                        dbc.InputGroupText(
+                                                            "Lat",
+                                                            className="bg-white",
+                                                            style={
+                                                                "fontSize": "0.8rem",
+                                                                "minWidth": "42px",
+                                                            },
+                                                        ),
+                                                        dbc.Input(
+                                                            id="manual-lat",
+                                                            type="number",
+                                                            placeholder="-22.7235",
+                                                            min=-90,
+                                                            max=90,
+                                                            step=0.0001,
+                                                            style={
+                                                                "fontSize": "0.85rem"
+                                                            },
+                                                        ),
+                                                    ],
+                                                    size="sm",
+                                                    className="mb-1",
+                                                ),
+                                                # Longitude
+                                                dbc.InputGroup(
+                                                    [
+                                                        dbc.InputGroupText(
+                                                            "Lon",
+                                                            className="bg-white",
+                                                            style={
+                                                                "fontSize": "0.8rem",
+                                                                "minWidth": "42px",
+                                                            },
+                                                        ),
+                                                        dbc.Input(
+                                                            id="manual-lon",
+                                                            type="number",
+                                                            placeholder="-47.6492",
+                                                            min=-180,
+                                                            max=180,
+                                                            step=0.0001,
+                                                            style={
+                                                                "fontSize": "0.85rem"
+                                                            },
+                                                        ),
+                                                    ],
+                                                    size="sm",
+                                                    className="mb-1",
+                                                ),
+                                                # Altitude
+                                                dbc.InputGroup(
+                                                    [
+                                                        dbc.InputGroupText(
+                                                            "Alt",
+                                                            className="bg-white",
+                                                            style={
+                                                                "fontSize": "0.8rem",
+                                                                "minWidth": "42px",
+                                                            },
+                                                        ),
+                                                        dbc.Input(
+                                                            id="manual-alt",
+                                                            type="number",
+                                                            placeholder="546 (m)",
+                                                            min=-500,
+                                                            max=9000,
+                                                            step=1,
+                                                            style={
+                                                                "fontSize": "0.85rem"
+                                                            },
+                                                        ),
+                                                    ],
+                                                    size="sm",
+                                                    className="mb-1",
+                                                ),
+                                                # Botão aplicar
+                                                dbc.Button(
+                                                    [
+                                                        html.I(
+                                                            className="bi bi-check2-circle me-1"
+                                                        ),
+                                                        "Apply",
+                                                    ],
+                                                    id="apply-manual-coords",
+                                                    color="success",
+                                                    size="sm",
+                                                    className="w-100 mt-1",
+                                                    outline=True,
+                                                ),
+                                                html.Small(
+                                                    "Altitude is optional (auto-detected via SRTM)",
+                                                    className="text-muted d-block mt-1",
+                                                    style={
+                                                        "fontSize": "0.7rem"
+                                                    },
+                                                ),
+                                            ],
+                                            className="mt-2",
+                                        ),
+                                        id="collapse-manual-coords",
+                                        is_open=False,
+                                    ),
+                                ],
+                            ),
                         ],
                         className="mb-4 pb-3",
                         style={"borderBottom": "1px solid #e9ecef"},
@@ -375,6 +501,7 @@ home_layout = dbc.Container(
             id="current-operation-mode", storage_type="memory", data=None
         ),
         dcc.Store(id="eto-results-data", storage_type="memory", data=None),
+        dcc.Store(id="manual-elevation", storage_type="memory", data=None),
         dcc.Download(id="download-csv"),
         dcc.Download(id="download-excel"),
         # Hidden button placeholders for callback registration

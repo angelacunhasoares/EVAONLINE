@@ -425,7 +425,11 @@ class EToProcessingService:
 
     async def _get_best_elevation(self, lat, lon, user_elev, use_precise):
         if user_elev is not None:
-            return user_elev, {"value": user_elev, "source": "usuário"}
+            return user_elev, {
+                "value": user_elev,
+                "source": "usuário",
+                "no_data": False,
+            }
 
         if use_precise:
             try:
@@ -436,11 +440,17 @@ class EToProcessingService:
                     return result.elevation, {
                         "value": result.elevation,
                         "source": "OpenTopo",
+                        "no_data": False,
                     }
             except Exception as e:
                 logger.warning(f"Falha OpenTopo: {e}")
 
-        return 0.0, {"value": 0.0, "source": "padrão"}
+        # Fallback: SRTM/ASTER retornaram null → possível oceano/corpo d'água
+        logger.warning(
+            f"⚠️ Sem dados de elevação para ({lat}, {lon}) - "
+            f"possível oceano ou corpo d'água"
+        )
+        return 0.0, {"value": 0.0, "source": "padrão", "no_data": True}
 
     def _calculate_raw_eto(self, df, lat, lon, elevation, factors):
         """Calcula ETo linha por linha usando FAO-56"""

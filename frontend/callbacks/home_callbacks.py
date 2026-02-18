@@ -12,6 +12,7 @@ from dash import Input, Output, State, html, callback_context
 from dash.exceptions import PreventUpdate
 from geopy.geocoders import Nominatim
 
+from frontend.utils.mode_detector import get_timezone_for_location
 from ..components.world_map_leaflet import (
     create_map_marker,
 )
@@ -415,11 +416,17 @@ def get_location_info(lat, lon):
         )
 
         if not location:
+            # Detect timezone even without geocoding result
+            try:
+                tz = get_timezone_for_location(lat, lon)
+                tz_name = str(tz)
+            except Exception:
+                tz_name = "UTC"
             return {
                 "city": "Local desconhecido",
                 "country": "",
                 "state": "",
-                "timezone": "UTC",
+                "timezone": tz_name,
                 "display_name": f"Lat: {lat:.4f}, Lon: {lon:.4f}",
             }
 
@@ -438,21 +445,34 @@ def get_location_info(lat, lon):
         country = address.get("country", "")
         state = address.get("state", "")
 
+        # Detect timezone for location
+        try:
+            tz = get_timezone_for_location(lat, lon)
+            tz_name = str(tz)
+        except Exception:
+            tz_name = "UTC"
+
         return {
             "city": city,
             "country": country,
             "state": state,
-            "timezone": "UTC",  # TODO: Calcular timezone real
+            "timezone": tz_name,
             "display_name": location.address,
         }
 
     except Exception as e:
         logger.error(f"Erro no reverse geocoding: {e}")
+        # Still try to detect timezone
+        try:
+            tz = get_timezone_for_location(lat, lon)
+            tz_name = str(tz)
+        except Exception:
+            tz_name = "UTC"
         return {
             "city": "Erro ao obter localização",
             "country": "",
             "state": "",
-            "timezone": "UTC",
+            "timezone": tz_name,
             "display_name": f"Lat: {lat:.4f}, Lon: {lon:.4f}",
         }
 
@@ -718,5 +738,204 @@ def register_layer_control_callbacks(app):
 
         logger.info(f"Sidebar toggled: {'open' if new_state else 'closed'}")
         return new_state, style, new_state
+
+    # =========================================================================
+    # TOGGLE MANUAL INPUT COLLAPSE
+    # =========================================================================
+    @app.callback(
+        Output("collapse-manual-coords", "is_open"),
+        Input("toggle-manual-coords", "n_clicks"),
+        State("collapse-manual-coords", "is_open"),
+        prevent_initial_call=True,
+    )
+    def toggle_manual_input(n_clicks, is_open):
+        """Toggle the manual coordinate input fields."""
+        if not n_clicks:
+            raise PreventUpdate
+        return not is_open
+
+    # =========================================================================
+    # AUTO-POPULATE MANUAL FIELDS ON MAP CLICK
+    # =========================================================================
+    @app.callback(
+        [
+            Output("manual-lat", "value"),
+            Output("manual-lon", "value"),
+            Output("manual-alt", "value"),
+        ],
+        Input("selected-location-data", "data"),
+        prevent_initial_call=True,
+    )
+    def populate_manual_fields(location_data):
+        """Auto-fill lat/lon fields when user clicks the map."""
+        if not location_data:
+            raise PreventUpdate
+        lat = location_data.get("lat")
+        lon = location_data.get("lon")
+        if lat is None or lon is None:
+            raise PreventUpdate
+        # Round to 4 decimal places for cleaner display
+        return round(lat, 4), round(lon, 4), None
+
+    # =========================================================================
+    # APPLY MANUAL COORDINATES
+    # =========================================================================
+    @app.callback(
+        [
+            Output("map-click-data", "data", allow_duplicate=True),
+            Output("selected-location-data", "data", allow_duplicate=True),
+            Output("navigation-coordinates", "data", allow_duplicate=True),
+            Output("marker-layer", "children", allow_duplicate=True),
+            Output(
+                "selected-coords-display",
+                "children",
+                allow_duplicate=True,
+            ),
+            Output("calculate-eto-btn", "disabled", allow_duplicate=True),
+            Output(
+                "sidebar-location-display",
+                "children",
+                allow_duplicate=True,
+            ),
+            Output("manual-elevation", "data"),
+        ],
+        Input("apply-manual-coords", "n_clicks"),
+        [
+            State("manual-lat", "value"),
+            State("manual-lon", "value"),
+            State("manual-alt", "value"),
+        ],
+        prevent_initial_call=True,
+    )
+    def apply_manual_coords(n_clicks, lat, lon, alt):
+        """
+        Apply manually entered coordinates (and optional altitude).
+        Updates the same outputs as handle_map_click so the rest
+        of the pipeline works seamlessly.
+        """
+        if not n_clicks:
+            raise PreventUpdate
+
+        # Validate inputs
+        if lat is None or lon is None:
+            raise PreventUpdate
+        if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+            raise PreventUpdate
+
+        logger.info(f"Manual coords applied: lat={lat}, lon={lon}, alt={alt}")
+
+        location_data = {"lat": lat, "lon": lon}
+
+        # Marker on map
+        marker = create_map_marker(
+            lat, lon, label=f"Lat: {lat:.4f}, Lon: {lon:.4f}"
+        )
+
+        # Coords display (compact)
+        coords_display = html.Div(
+            [
+                html.Strong("Selected:"),
+                html.Br(),
+                html.Small(f"Lat: {lat:.6f}"),
+                html.Br(),
+                html.Small(f"Lon: {lon:.6f}"),
+            ],
+            className="text-center p-2 bg-light rounded",
+        )
+
+        # Sidebar display
+        alt_row = []
+        if alt is not None:
+            alt_row = [
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.I(
+                                    className="bi bi-arrow-up me-2 text-muted"
+                                ),
+                                html.Span(
+                                    "Altitude:",
+                                    className="text-muted small",
+                                ),
+                            ],
+                            className="d-flex align-items-center",
+                        ),
+                        html.Span(
+                            f"{alt:.0f} m",
+                            className="fw-bold text-info",
+                        ),
+                    ],
+                    className="d-flex justify-content-between align-items-center mt-2",
+                ),
+            ]
+
+        sidebar_loc = html.Div(
+            [
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.I(className="bi bi-geo me-2 text-muted"),
+                                html.Span(
+                                    "Latitude:",
+                                    className="text-muted small",
+                                ),
+                            ],
+                            className="d-flex align-items-center",
+                        ),
+                        html.Span(
+                            f"{lat:.6f}°",
+                            className="fw-bold text-success",
+                        ),
+                    ],
+                    className="d-flex justify-content-between align-items-center mb-2",
+                ),
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.I(className="bi bi-geo me-2 text-muted"),
+                                html.Span(
+                                    "Longitude:",
+                                    className="text-muted small",
+                                ),
+                            ],
+                            className="d-flex align-items-center",
+                        ),
+                        html.Span(
+                            f"{lon:.6f}°",
+                            className="fw-bold text-success",
+                        ),
+                    ],
+                    className="d-flex justify-content-between align-items-center",
+                ),
+                *alt_row,
+                html.Div(
+                    [
+                        html.I(className="bi bi-pencil me-1"),
+                        html.Small(
+                            "Manual input",
+                            className="text-info",
+                        ),
+                    ],
+                    className="mt-1",
+                    style={"fontSize": "0.75rem"},
+                ),
+            ],
+            className="bg-light rounded p-2 border",
+            style={"fontSize": "0.9rem"},
+        )
+
+        return (
+            location_data,  # map-click-data
+            location_data,  # selected-location-data
+            location_data,  # navigation-coordinates
+            [marker],  # marker-layer
+            coords_display,  # selected-coords-display
+            True,  # calculate-eto-btn (disabled; wait for data_type)
+            sidebar_loc,  # sidebar-location-display
+            alt,  # manual-elevation Store
+        )
 
     logger.info("Callbacks de controle de camadas e sidebar registrados")

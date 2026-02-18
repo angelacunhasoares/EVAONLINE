@@ -8,6 +8,7 @@ Mapeia interface do usuário → modos do backend:
 """
 
 from datetime import date, datetime, timedelta
+from functools import lru_cache
 from typing import Tuple, Optional
 import logging
 import pytz
@@ -89,6 +90,119 @@ def get_today_local() -> date:
     Use get_today_for_location() quando tiver coordenadas.
     """
     return datetime.now(pytz.timezone("America/Sao_Paulo")).date()
+
+
+def is_land_point(lat: float, lng: float) -> bool:
+    """
+    Verifica se um ponto está em terra firme (detecção em 3 camadas).
+    Resultados são cacheados (LRU, 512 entradas) para evitar
+    chamadas repetidas à API OpenTopoData.
+
+    Camada 1 - timezonefinderL (instantâneo, offline):
+        Retorna timezone IANA para terra, None para oceano.
+        Rápido mas impreciso: polígonos simplificados estendem-se
+        sobre o oceano perto de ilhas (ex: Marquesas, Hawaii).
+
+    Camada 2 - OpenTopoData ETOPO1 (batimetria global, ~1-3s):
+        ETOPO1 tem cobertura global incluindo profundidade do oceano.
+        elevation < 0 → oceano/mar (batimetria)
+        elevation >= 0 → terra ou nível do mar
+        Resolve falsos positivos do timezonefinderL em áreas costeiras.
+
+    Camada 3 - OpenTopoData SRTM/ASTER (datasets terrestres, ~1-3s):
+        Usada quando camada 1 diz "oceano" (timezone=None).
+        SRTM/ASTER retornam null para oceano.
+        Se retorna elevação válida → é terra (timezonefinderL errou).
+        Captura ilhas sem timezone IANA no dataset simplificado.
+
+    Args:
+        lat: Latitude
+        lng: Longitude
+
+    Returns:
+        True se o ponto está em terra, False se oceano
+    """
+    # Arredondar para 4 casas (~11m) para eficiência do cache
+    return _is_land_cached(round(lat, 4), round(lng, 4))
+
+
+@lru_cache(maxsize=512)
+def _is_land_cached(lat: float, lng: float) -> bool:
+    """Implementação cacheada da detecção terra/oceano."""
+    import os
+    import httpx
+
+    base_url = os.getenv("OPENTOPO_URL", "https://api.opentopodata.org/v1")
+
+    # === Camada 1: timezonefinderL (offline, < 1ms) ===
+    tf = _get_timezone_finder()
+    tz_name = tf.timezone_at(lat=lat, lng=lng)
+
+    if tz_name is not None:
+        # timezonefinderL diz "terra", mas pode ser falso positivo
+        # perto de ilhas/costa. Verificar com ETOPO1 (batimetria).
+        # === Camada 2: ETOPO1 para confirmar (negativo = oceano) ===
+        try:
+            resp = httpx.get(
+                f"{base_url}/etopo1",
+                params={"locations": f"{lat},{lng}"},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("status") == "OK":
+                    results = data.get("results", [])
+                    if results:
+                        elev = results[0].get("elevation")
+                        if elev is not None and elev < 0:
+                            logger.warning(
+                                f"🌊 ETOPO1 detectou OCEANO em "
+                                f"({lat}, {lng}): {elev}m "
+                                f"(timezonefinderL dizia '{tz_name}')"
+                            )
+                            return False
+            # ETOPO1 diz terra (elev >= 0) ou falhou → confiar
+            logger.debug(
+                f"✅ Terra confirmada em ({lat}, {lng}) " f"timezone={tz_name}"
+            )
+            return True
+        except Exception as e:
+            logger.warning(
+                f"⚠️ ETOPO1 check falhou: {e}. "
+                f"Confiando no timezonefinderL ({tz_name})"
+            )
+            return True
+
+    # === timezonefinderL diz "oceano" (timezone=None) ===
+    # === Camada 3: SRTM/ASTER para ilhas sem timezone ===
+    try:
+        resp = httpx.get(
+            f"{base_url}/srtm30m,aster30m",
+            params={"locations": f"{lat},{lng}"},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("status") == "OK":
+                results = data.get("results", [])
+                if results and results[0].get("elevation") is not None:
+                    elev = results[0]["elevation"]
+                    if elev > 0:
+                        logger.info(
+                            f"🏝️ SRTM detectou TERRA em ({lat}, {lng}) "
+                            f"elevação={elev}m "
+                            f"(timezonefinderL não reconheceu)"
+                        )
+                        return True
+
+        logger.info(f"🌊 Todas as camadas confirmam OCEANO em ({lat}, {lng})")
+    except Exception as e:
+        logger.warning(
+            f"⚠️ Verificação SRTM falhou: {e}. "
+            f"Confiando apenas no timezonefinderL."
+        )
+
+    return False
 
 
 class OperationModeDetector:
@@ -183,6 +297,8 @@ class OperationModeDetector:
         mode: str,
         start_date: date,
         end_date: date,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
     ) -> Tuple[bool, str]:
         """
         Valida se as datas são válidas para o modo.
@@ -191,6 +307,8 @@ class OperationModeDetector:
             mode: Modo backend ("HISTORICAL_EMAIL", "DASHBOARD_CURRENT", etc)
             start_date: Data inicial
             end_date: Data final
+            lat: Latitude (optional, para timezone correto)
+            lng: Longitude (optional, para timezone correto)
 
         Returns:
             Tuple (is_valid: bool, message: str)
@@ -199,7 +317,11 @@ class OperationModeDetector:
             return False, f"Invalid mode: {mode}"
 
         config = cls.BACKEND_MODES[mode]
-        today = get_today_local()
+        # Use location-based timezone when coordinates available
+        if lat is not None and lng is not None:
+            today = get_today_for_location(lat, lng)
+        else:
+            today = get_today_local()
         period_days = (end_date - start_date).days + 1
 
         if mode == "HISTORICAL_EMAIL":
@@ -345,9 +467,13 @@ class OperationModeDetector:
         else:
             raise ValueError(f"Unknown UI selection: {ui_selection}")
 
-        # Validar datas
+        # Validar datas (usando timezone da localização)
         is_valid, message = cls.validate_dates(
-            backend_mode, request_start, request_end
+            backend_mode,
+            request_start,
+            request_end,
+            lat=latitude,
+            lng=longitude,
         )
         if not is_valid:
             raise ValueError(
