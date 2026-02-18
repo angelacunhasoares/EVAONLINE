@@ -45,9 +45,27 @@ def get_timezone_for_location(lat: float, lng: float) -> pytz.BaseTzInfo:
         logger.debug(f"🌍 Timezone detectado para ({lat}, {lng}): {tz_name}")
         return pytz.timezone(tz_name)
 
-    # Fallback para UTC se não conseguir detectar
-    logger.warning(f"⚠️ Timezone não detectado para ({lat}, {lng}), usando UTC")
-    return pytz.UTC
+    # Fallback: estimate timezone from longitude (for ocean/remote areas)
+    # Each 15° of longitude = 1 hour offset from UTC
+    utc_offset_hours = round(lng / 15)
+    utc_offset_hours = max(
+        -12, min(14, utc_offset_hours)
+    )  # Clamp to valid range
+
+    # Create timezone name like "Etc/GMT-9" (note: Etc/GMT signs are inverted)
+    # UTC+9 is Etc/GMT-9
+    if utc_offset_hours >= 0:
+        tz_name = (
+            f"Etc/GMT-{utc_offset_hours}" if utc_offset_hours > 0 else "UTC"
+        )
+    else:
+        tz_name = f"Etc/GMT+{abs(utc_offset_hours)}"
+
+    logger.warning(
+        f"⚠️ Timezone não detectado para ({lat}, {lng}), "
+        f"usando estimativa baseada na longitude: {tz_name} (UTC{'+' if utc_offset_hours >= 0 else ''}{utc_offset_hours})"
+    )
+    return pytz.timezone(tz_name)
 
 
 def get_today_for_location(lat: float, lng: float) -> date:

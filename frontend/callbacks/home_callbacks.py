@@ -363,7 +363,7 @@ def register_home_callbacks(app):
                 location_data,  # navigation-coordinates
                 [marker],  # marker-layer
                 coords_display,  # selected-coords-display
-                False,  # calculate-eto-btn disabled
+                True,  # calculate-eto-btn disabled - wait for data_type selection
                 sidebar_location,  # sidebar-location-display
             )
 
