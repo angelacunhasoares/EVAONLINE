@@ -104,7 +104,7 @@ def create_world_map():
         children=map_children,
         style={
             "width": "100%",
-            "height": "600px",  # Aumentado de 400px para 600px
+            "height": "800px",  # Reduzido para melhor proporção sem margens
             "borderRadius": "8px",
         },
         # ✅ Configurações para evitar duplicação do mapa mundial

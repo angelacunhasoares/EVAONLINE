@@ -1,16 +1,194 @@
 /* Custom CSS for EVAONLINE - ETO Calculator */
 
+/* ===== BASE TYPOGRAPHY & RESPONSIVE FONT SCALING ===== */
+/* Fontes grandes e legíveis - similar ao C4AI (26px desktop) */
+
+html {
+    font-size: 22px !important;
+    /* Base grande */
+}
+
+body {
+    font-size: 1rem !important;
+    line-height: 1.7 !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Escala responsiva de fontes - valores grandes */
+@media (min-width: 576px) {
+    html {
+        font-size: 22px !important;
+    }
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 24px !important;
+    }
+}
+
+@media (min-width: 992px) {
+    html {
+        font-size: 24px !important;
+    }
+}
+
+@media (min-width: 1200px) {
+    html {
+        font-size: 26px !important;
+    }
+}
+
+@media (min-width: 1400px) {
+    html {
+        font-size: 26px !important;
+    }
+}
+
+/* Headings mais proporcionais */
+h1,
+.h1 {
+    font-size: 2.2rem !important;
+    font-weight: 600;
+}
+
+h2,
+.h2 {
+    font-size: 1.9rem !important;
+    font-weight: 600;
+}
+
+h3,
+.h3 {
+    font-size: 1.6rem !important;
+    font-weight: 500;
+}
+
+h4,
+.h4 {
+    font-size: 1.35rem !important;
+    font-weight: 500;
+}
+
+h5,
+.h5 {
+    font-size: 1.2rem !important;
+    font-weight: 500;
+}
+
+h6,
+.h6 {
+    font-size: 1.1rem !important;
+    font-weight: 500;
+}
+
+/* Parágrafos e textos */
+p,
+li,
+td,
+th,
+label,
+span:not(.badge):not(.navbar-brand-title),
+a:not(.navbar-brand-link) {
+    font-size: 1rem !important;
+}
+
+/* Texto small mantém proporção */
+.small,
+small {
+    font-size: 0.9rem !important;
+}
+
+/* Cards com texto legível */
+.card-body {
+    font-size: 1rem !important;
+}
+
+.card-title {
+    font-size: 1.25rem !important;
+    font-weight: 600;
+}
+
+.card-text {
+    font-size: 1rem !important;
+}
+
+/* Botões maiores e mais legíveis */
+.btn {
+    font-size: 1rem !important;
+    padding: 0.7rem 1.3rem !important;
+}
+
+.btn-sm {
+    font-size: 0.95rem !important;
+    padding: 0.5rem 0.9rem !important;
+}
+
+.btn-lg {
+    font-size: 1.15rem !important;
+    padding: 0.8rem 1.5rem !important;
+}
+
+/* Form controls */
+.form-control,
+.form-select {
+    font-size: 1rem !important;
+}
+
+/* Form check labels (radio/checkbox) */
+.form-check-label {
+    font-size: 1rem !important;
+}
+
+/* Badges */
+.badge {
+    font-size: 0.85rem !important;
+}
+
+/* ===== UTILITY TEXT CLASSES ===== */
+/* Classes para substituir estilos inline nos arquivos Python */
+
+/* Texto padrão */
+.text-base {
+    font-size: 1rem !important;
+}
+
+/* Texto ligeiramente menor */
+.text-sm {
+    font-size: 0.95rem !important;
+}
+
+/* Texto para inputs */
+.input-text {
+    font-size: 1rem !important;
+}
+
+/* Labels de input group */
+.input-group-label {
+    font-size: 0.95rem !important;
+}
+
+/* Texto de ajuda */
+.help-text {
+    font-size: 0.9rem !important;
+}
+
+/* Ícones em headers */
+.header-icon {
+    font-size: 1.5rem !important;
+}
+
+/* Ícones menores */
+.icon-sm {
+    font-size: 1.2rem !important;
+}
+
 /* ===== FORÇA REDUÇÃO DE ESPAÇO ===== */
 
 /* CRÍTICO: Remove padding-bottom do page-content */
 #page-content {
     padding-bottom: 0 !important;
-}
-
-/* Força zero spacing em TUDO */
-* {
-    margin-block-end: 0 !important;
-    margin-block-start: 0 !important;
 }
 
 /* Dash app content sem espaçamento */
@@ -19,13 +197,6 @@
 #_pages_plugin_content {
     margin: 0 !important;
     padding: 0 !important;
-}
-
-/* DIV principal da página home */
-body>div,
-body>div>div {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
 }
 
 /* Container com classes pb-0 px-2 */
@@ -40,6 +211,37 @@ body,
 html {
     margin: 0 !important;
     padding: 0 !important;
+}
+
+/* ===== Largura Responsiva do Container ===== */
+/* Aumenta largura máxima do Bootstrap container para melhor uso do espaço */
+
+/* Telas médias-grandes (lg): aumenta de 960px para 95% */
+@media (min-width: 992px) {
+    .container {
+        max-width: 95% !important;
+    }
+}
+
+/* Telas grandes (xl): limita em 1400px */
+@media (min-width: 1200px) {
+    .container {
+        max-width: min(95%, 1400px) !important;
+    }
+}
+
+/* Telas extra-grandes (xxl): limita em 1600px */
+@media (min-width: 1400px) {
+    .container {
+        max-width: min(95%, 1600px) !important;
+    }
+}
+
+/* Monitores ultra-wide: limita em 1800px */
+@media (min-width: 1800px) {
+    .container {
+        max-width: min(95%, 1800px) !important;
+    }
 }
 
 /* Container principal sem padding/margin inferior */
@@ -114,7 +316,7 @@ footer.bg-white {
 .navbar-academic {
     background-color: #ffffff;
     border-bottom: 1px solid #e0e0e0;
-    padding: 10px 0;
+    padding: 5px 0;
     margin-top: 4px;
     /* Espaço para accent bar */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -139,25 +341,27 @@ footer.bg-white {
 
 /* Brand icon */
 .navbar-brand-icon {
-    font-size: 2.6rem;
+    font-size: 2.8rem;
     color: #006699;
 }
 
 /* Brand title */
 .navbar-brand-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #006699;
+    font-size: 2.2rem !important;
+    font-weight: 700 !important;
+    color: #006699 !important;
     letter-spacing: -0.5px;
+    display: inline-block !important;
+    line-height: 1 !important;
 }
 
 /* Brand subtitle */
 .navbar-brand-subtitle {
-    font-size: 1.00rem;
+    font-size: 0.85rem;
     font-weight: 400;
     color: #5a6c7d;
-    line-height: 1.2;
-    margin-top: 2px;
+    line-height: 1.1;
+    margin-top: 0;
     margin-left: 2px;
 }
 
@@ -180,11 +384,11 @@ footer.bg-white {
 /* Navigation links */
 .nav-link-academic {
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: #2c3e50;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 8px 16px;
+    padding: 10px 18px;
     border-radius: 4px;
     transition: all 0.2s ease;
 }
@@ -250,12 +454,12 @@ footer.bg-white {
     background-color: #006699;
     border-color: #006699;
     font-weight: 600;
-    font-size: 0.85rem;
-    padding: 8px 20px;
+    font-size: 0.95rem;
+    padding: 10px 22px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-radius: 20px;
-    min-width: 120px;
+    min-width: 130px;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 102, 153, 0.2);
     transition: all 0.2s ease;
@@ -276,15 +480,61 @@ footer.bg-white {
         border-radius: 8px;
         margin-top: 10px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+    }
+
+    .navbar-collapse.show {
+        display: block !important;
     }
 
     .nav-link-academic {
         padding: 12px 16px !important;
         border-bottom: 1px solid #f0f0f0;
+        display: block;
+        width: 100%;
     }
 
     .nav-link-academic:last-child {
         border-bottom: none;
+    }
+
+    /* Navbar container relativo para o menu dropdown */
+    .navbar .container {
+        position: relative;
+    }
+
+    /* Brand menor em tablet/mobile */
+    .navbar-brand-title {
+        font-size: 1.8rem !important;
+    }
+
+    .navbar-brand-subtitle {
+        font-size: 0.75rem !important;
+        display: none;
+    }
+
+    /* Toggle button mais visível */
+    #navbar-toggler {
+        display: flex !important;
+        padding: 8px 12px;
+        border: 2px solid #006699;
+    }
+
+    /* Language toggle menor */
+    #language-toggle {
+        width: 100%;
+        margin-top: 10px;
+        margin-left: 0 !important;
+    }
+
+    /* Nav items em coluna */
+    .navbar-collapse .navbar-nav {
+        flex-direction: column;
+        align-items: stretch !important;
     }
 }
 
@@ -801,6 +1051,11 @@ footer.bg-white {
 /* Mobile portrait (< 576px) */
 @media (max-width: 575.98px) {
 
+    /* Fonte base menor para mobile */
+    html {
+        font-size: 15px !important;
+    }
+
     /* Mapa mínimo */
     .leaflet-container {
         height: 280px !important;
@@ -809,8 +1064,35 @@ footer.bg-white {
     /* Padding reduzido em containers */
     .container-fluid,
     .container {
-        padding-left: 10px !important;
-        padding-right: 10px !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    /* Navbar brand em mobile */
+    .navbar-brand-title {
+        font-size: 1.5rem !important;
+    }
+
+    .navbar-brand-subtitle {
+        display: none !important;
+    }
+
+    .navbar-brand-icon {
+        font-size: 1.8rem !important;
+    }
+
+    /* Toggle button compacto */
+    #navbar-toggler {
+        padding: 6px 10px !important;
+    }
+
+    #navbar-toggler i {
+        font-size: 1.2rem !important;
+    }
+
+    /* Cards sem sombra pesada */
+    .card-academic {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
     }
 
     /* Botões de largura total */
@@ -825,15 +1107,6 @@ footer.bg-white {
 
     /* Footer em coluna única */
     footer .row>.col-md-4 {
-        margin-bottom: 30px;
-    }
-
-    /* Navbar brand menor */
-    .navbar-brand img {
-        height: 28px !important;
-    }
-
-    .navbar-brand span {
-        font-size: 1.3rem !important;
+        margin-bottom: 20px;
     }
 }

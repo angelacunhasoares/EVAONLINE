@@ -1732,9 +1732,8 @@ documentation_layout = html.Div(
                     className="text-center text-muted small mb-4",
                 ),
             ],
-            fluid="xl",
-            className="py-4 px-3 px-md-4 px-lg-5",
-            style={"maxWidth": "1400px"},
+            fluid=False,
+            className="py-4",
         )
     ],
     style={"backgroundColor": "#f8f9fa", "minHeight": "100vh"},

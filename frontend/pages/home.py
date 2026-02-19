@@ -110,10 +110,9 @@ def create_sidebar_card():
                                                     [
                                                         dbc.InputGroupText(
                                                             "Lat",
-                                                            className="bg-white",
+                                                            className="bg-white input-group-label",
                                                             style={
-                                                                "fontSize": "0.8rem",
-                                                                "minWidth": "42px",
+                                                                "minWidth": "42px"
                                                             },
                                                         ),
                                                         dbc.Input(
@@ -123,9 +122,7 @@ def create_sidebar_card():
                                                             min=-90,
                                                             max=90,
                                                             step=0.0001,
-                                                            style={
-                                                                "fontSize": "0.85rem"
-                                                            },
+                                                            className="input-text",
                                                         ),
                                                     ],
                                                     size="sm",
@@ -136,10 +133,9 @@ def create_sidebar_card():
                                                     [
                                                         dbc.InputGroupText(
                                                             "Lon",
-                                                            className="bg-white",
+                                                            className="bg-white input-group-label",
                                                             style={
-                                                                "fontSize": "0.8rem",
-                                                                "minWidth": "42px",
+                                                                "minWidth": "42px"
                                                             },
                                                         ),
                                                         dbc.Input(
@@ -149,9 +145,7 @@ def create_sidebar_card():
                                                             min=-180,
                                                             max=180,
                                                             step=0.0001,
-                                                            style={
-                                                                "fontSize": "0.85rem"
-                                                            },
+                                                            className="input-text",
                                                         ),
                                                     ],
                                                     size="sm",
@@ -162,10 +156,9 @@ def create_sidebar_card():
                                                     [
                                                         dbc.InputGroupText(
                                                             "Alt",
-                                                            className="bg-white",
+                                                            className="bg-white input-group-label",
                                                             style={
-                                                                "fontSize": "0.8rem",
-                                                                "minWidth": "42px",
+                                                                "minWidth": "42px"
                                                             },
                                                         ),
                                                         dbc.Input(
@@ -175,9 +168,7 @@ def create_sidebar_card():
                                                             min=-500,
                                                             max=9000,
                                                             step=1,
-                                                            style={
-                                                                "fontSize": "0.85rem"
-                                                            },
+                                                            className="input-text",
                                                         ),
                                                     ],
                                                     size="sm",
@@ -199,10 +190,7 @@ def create_sidebar_card():
                                                 ),
                                                 html.Small(
                                                     "Altitude is optional (auto-detected via SRTM)",
-                                                    className="text-muted d-block mt-1",
-                                                    style={
-                                                        "fontSize": "0.7rem"
-                                                    },
+                                                    className="text-muted d-block mt-1 help-text",
                                                 ),
                                             ],
                                             className="mt-2",
@@ -432,8 +420,7 @@ def create_map_card():
                                 className="text-muted",
                             ),
                         ],
-                        className="mt-2 px-1",
-                        style={"fontSize": "0.8rem"},
+                        className="mt-2 px-1 text-sm",
                     ),
                 ],
                 className="p-2",
@@ -543,8 +530,8 @@ home_layout = dbc.Container(
             },
         ),
     ],
-    fluid="xxl",
-    className="py-3 px-lg-4 px-3",
+    fluid=False,
+    className="py-3",
 )
 
 logger.info("Home page (unified) loaded successfully")

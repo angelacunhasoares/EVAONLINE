@@ -920,11 +920,11 @@ def register_layer_control_callbacks(app):
                         ),
                     ],
                     className="mt-1",
-                    style={"fontSize": "0.75rem"},
+                    style={"fontSize": "0.95rem"},
                 ),
             ],
             className="bg-light rounded p-2 border",
-            style={"fontSize": "0.9rem"},
+            style={"fontSize": "1rem"},
         )
 
         return (

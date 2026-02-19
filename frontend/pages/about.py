@@ -24,7 +24,10 @@ about_layout = html.Div(
                                         html.H1(
                                             "Sobre o EVAonline",
                                             className="text-center mb-3",
-                                            style={"color": "#2c3e50", "fontWeight": "bold"},
+                                            style={
+                                                "color": "#2c3e50",
+                                                "fontWeight": "bold",
+                                            },
                                         ),
                                         html.P(
                                             "Sistema para cálculo de evapotranspiração de referência",
@@ -37,14 +40,21 @@ about_layout = html.Div(
                                 dbc.Card(
                                     [
                                         dbc.CardHeader(
-                                            [html.H5("📋 Sobre o Projeto", className="mb-0")]
+                                            [
+                                                html.H5(
+                                                    "📋 Sobre o Projeto",
+                                                    className="mb-0",
+                                                )
+                                            ]
                                         ),
                                         dbc.CardBody(
                                             [
                                                 html.P(
                                                     [
                                                         "O ",
-                                                        html.Strong("EVAonline"),
+                                                        html.Strong(
+                                                            "EVAonline"
+                                                        ),
                                                         " é um sistema desenvolvido para auxiliar no cálculo da evapotranspiração ",
                                                         "de referência (ETo) utilizando dados meteorológicos de múltiplas fontes ",
                                                         "com fusão por Ensemble Kalman Filter (EnKF).",
@@ -79,43 +89,64 @@ about_layout = html.Div(
                                                     [
                                                         dbc.ListGroupItem(
                                                             [
-                                                                html.Span("🌍", className="me-2"),
+                                                                html.Span(
+                                                                    "🌍",
+                                                                    className="me-2",
+                                                                ),
                                                                 "Mapa mundial interativo para seleção de localizações",
                                                             ]
                                                         ),
                                                         dbc.ListGroupItem(
                                                             [
-                                                                html.Span("📊", className="me-2"),
+                                                                html.Span(
+                                                                    "📊",
+                                                                    className="me-2",
+                                                                ),
                                                                 "Cálculo de ETo com múltiplas fontes de dados climáticos",
                                                             ]
                                                         ),
                                                         dbc.ListGroupItem(
                                                             [
-                                                                html.Span("🔍", className="me-2"),
+                                                                html.Span(
+                                                                    "🔍",
+                                                                    className="me-2",
+                                                                ),
                                                                 "Fusão de dados via Ensemble Kalman Filter (EnKF)",
                                                             ]
                                                         ),
                                                         dbc.ListGroupItem(
                                                             [
-                                                                html.Span("📈", className="me-2"),
+                                                                html.Span(
+                                                                    "📈",
+                                                                    className="me-2",
+                                                                ),
                                                                 "Visualização de resultados e histórico",
                                                             ]
                                                         ),
                                                         dbc.ListGroupItem(
                                                             [
-                                                                html.Span("💾", className="me-2"),
+                                                                html.Span(
+                                                                    "💾",
+                                                                    className="me-2",
+                                                                ),
                                                                 "Exportação de dados em múltiplos formatos",
                                                             ]
                                                         ),
                                                         dbc.ListGroupItem(
                                                             [
-                                                                html.Span("⭐", className="me-2"),
+                                                                html.Span(
+                                                                    "⭐",
+                                                                    className="me-2",
+                                                                ),
                                                                 "Sistema de favoritos para locais de interesse",
                                                             ]
                                                         ),
                                                         dbc.ListGroupItem(
                                                             [
-                                                                html.Span("🕐", className="me-2"),
+                                                                html.Span(
+                                                                    "🕐",
+                                                                    className="me-2",
+                                                                ),
                                                                 "Detecção automática de fuso horário",
                                                             ]
                                                         ),
@@ -131,7 +162,12 @@ about_layout = html.Div(
                                 dbc.Card(
                                     [
                                         dbc.CardHeader(
-                                            [html.H5("🛠️ Informações Técnicas", className="mb-0")]
+                                            [
+                                                html.H5(
+                                                    "🛠️ Informações Técnicas",
+                                                    className="mb-0",
+                                                )
+                                            ]
                                         ),
                                         dbc.CardBody(
                                             [
@@ -200,31 +236,44 @@ about_layout = html.Div(
                                 dbc.Card(
                                     [
                                         dbc.CardHeader(
-                                            [html.H5("🔬 Metodologia Científica", className="mb-0")]
+                                            [
+                                                html.H5(
+                                                    "🔬 Metodologia Científica",
+                                                    className="mb-0",
+                                                )
+                                            ]
                                         ),
                                         dbc.CardBody(
                                             [
                                                 html.P(
                                                     [
-                                                        html.Strong("Método de Cálculo: "),
+                                                        html.Strong(
+                                                            "Método de Cálculo: "
+                                                        ),
                                                         "Penman-Monteith padrão FAO-56",
                                                     ]
                                                 ),
                                                 html.P(
                                                     [
-                                                        html.Strong("Fusão de Dados: "),
+                                                        html.Strong(
+                                                            "Fusão de Dados: "
+                                                        ),
                                                         "Ensemble Kalman Filter (EnKF) para integração de múltiplas fontes",
                                                     ]
                                                 ),
                                                 html.P(
                                                     [
-                                                        html.Strong("Fontes de Dados: "),
+                                                        html.Strong(
+                                                            "Fontes de Dados: "
+                                                        ),
                                                         "Open-Meteo, NASA POWER, estações meteorológicas locais",
                                                     ]
                                                 ),
                                                 html.P(
                                                     [
-                                                        html.Strong("Precisão: "),
+                                                        html.Strong(
+                                                            "Precisão: "
+                                                        ),
                                                         "Calibração baseada em dados históricos e validação cruzada",
                                                     ]
                                                 ),
@@ -237,16 +286,25 @@ about_layout = html.Div(
                                 dbc.Card(
                                     [
                                         dbc.CardHeader(
-                                            [html.H5("👥 Desenvolvimento", className="mb-0")]
+                                            [
+                                                html.H5(
+                                                    "👥 Desenvolvimento",
+                                                    className="mb-0",
+                                                )
+                                            ]
                                         ),
                                         dbc.CardBody(
                                             [
                                                 html.P(
                                                     [
                                                         "Desenvolvido por ",
-                                                        html.Strong("Angela Cristina Cunha Soares"),
+                                                        html.Strong(
+                                                            "Angela Cristina Cunha Soares"
+                                                        ),
                                                         " como parte de projeto de pesquisa na ",
-                                                        html.Strong("ESALQ/USP."),
+                                                        html.Strong(
+                                                            "ESALQ/USP."
+                                                        ),
                                                     ]
                                                 ),
                                                 html.P(
@@ -269,19 +327,25 @@ about_layout = html.Div(
                                                     [
                                                         html.Li(
                                                             [
-                                                                html.Strong("Email: "),
+                                                                html.Strong(
+                                                                    "Email: "
+                                                                ),
                                                                 "angelacunhasoares@usp.br",
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
-                                                                html.Strong("Instituição: "),
+                                                                html.Strong(
+                                                                    "Instituição: "
+                                                                ),
                                                                 "ESALQ/USP - Escola Superior de Agricultura Luiz de Queiroz",
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
-                                                                html.Strong("Localização: "),
+                                                                html.Strong(
+                                                                    "Localização: "
+                                                                ),
                                                                 "Piracicaba, São Paulo, Brasil",
                                                             ]
                                                         ),
@@ -299,7 +363,7 @@ about_layout = html.Div(
                     ]
                 )
             ],
-            fluid=True,
+            fluid=False,
             className="py-4",
         )
     ]

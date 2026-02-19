@@ -1,4 +1,4 @@
-"""
+﻿"""
 Callbacks para página ETo.
 
 Integração com 6 fontes climáticas do backend:
@@ -531,13 +531,13 @@ def update_fusion_info(data_type, coords_data):
         "gap": "8px",
     }
     detail_icon_style = {
-        "fontSize": "0.95rem",
+        "fontSize": "1rem",
         "color": "#6c757d",
         "width": "18px",
         "textAlign": "center",
     }
     detail_text_style = {
-        "fontSize": "0.85rem",
+        "fontSize": "1rem",
         "color": "#495057",
     }
 
@@ -1459,10 +1459,10 @@ def calculate_eto(
                         html.Small(
                             f" ({tz_name})",
                             className="text-secondary",
-                            style={"fontSize": "0.75rem"},
+                            style={"fontSize": "0.95rem"},
                         ),
                     ],
-                    style={"marginBottom": "4px", "fontSize": "0.9rem"},
+                    style={"marginBottom": "4px", "fontSize": "1rem"},
                 ),
                 html.Div(
                     [
@@ -1921,7 +1921,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                                                 "Período processado",
                                                                 className="text-muted",
                                                                 style={
-                                                                    "fontSize": "0.8rem"
+                                                                    "fontSize": "1rem"
                                                                 },
                                                             ),
                                                             html.Div(
@@ -1964,7 +1964,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                                                 "Envio por email",
                                                                 className="text-muted",
                                                                 style={
-                                                                    "fontSize": "0.8rem"
+                                                                    "fontSize": "1rem"
                                                                 },
                                                             ),
                                                             html.Div(
@@ -2007,7 +2007,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                                                 "Tempo de processamento",
                                                                 className="text-muted",
                                                                 style={
-                                                                    "fontSize": "0.8rem"
+                                                                    "fontSize": "1rem"
                                                                 },
                                                             ),
                                                             html.Div(
@@ -2043,7 +2043,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                             ),
                                         ],
                                         className="d-flex align-items-start mt-3",
-                                        style={"fontSize": "0.85rem"},
+                                        style={"fontSize": "1rem"},
                                     ),
                                     # Botão Nova Consulta
                                     html.Div(
