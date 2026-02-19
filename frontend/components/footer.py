@@ -165,10 +165,6 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                                     ],
                                                                     title="Copiar email",
                                                                     className="ms-2 footer-copy-btn",
-                                                                    style={
-                                                                        "cursor": "pointer",
-                                                                        "fontSize": "0.9rem",
-                                                                    },
                                                                 ),
                                                             ],
                                                             className="d-flex align-items-center justify-content-center",
@@ -460,11 +456,7 @@ def create_simple_footer(lang: str = "pt") -> html.Footer:
                 className="py-3",
             ),
             fluid=True,
-            style={
-                "paddingLeft": "40px",
-                "paddingRight": "40px",
-                "maxWidth": "100%",
-            },
+            className="footer-simple-container",
         ),
         className="bg-white border-top",
     )

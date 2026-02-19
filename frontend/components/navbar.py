@@ -1,6 +1,5 @@
 """
-Navbar profissional para ETO Calculator - Estilo Acadêmico.
-Inclui logo, links internos + botão de tradução PT/EN.
+Navbar EVAonline - inclui logo, links internos + botão de tradução PT/EN.
 """
 
 import dash_bootstrap_components as dbc
@@ -9,7 +8,7 @@ from dash import html
 
 def create_navbar():
     """
-    Cria navbar responsiva com estilo acadêmico profissional.
+    Cria navbar responsiva.
     Returns:
         dbc.Navbar: Navbar completa.
     """
