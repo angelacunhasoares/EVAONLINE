@@ -33,8 +33,7 @@ def create_sidebar_card():
                     html.Div(
                         [
                             html.I(
-                                className="bi bi-cloud-sun-fill",
-                                style={"fontSize": "1.8rem"},
+                                className="bi bi-cloud-sun-fill card-header-icon",
                             ),
                         ],
                         className="me-3",
@@ -110,10 +109,7 @@ def create_sidebar_card():
                                                     [
                                                         dbc.InputGroupText(
                                                             "Lat",
-                                                            className="bg-white input-group-label",
-                                                            style={
-                                                                "minWidth": "42px"
-                                                            },
+                                                            className="bg-white input-group-label input-group-fixed",
                                                         ),
                                                         dbc.Input(
                                                             id="manual-lat",
@@ -133,10 +129,7 @@ def create_sidebar_card():
                                                     [
                                                         dbc.InputGroupText(
                                                             "Lon",
-                                                            className="bg-white input-group-label",
-                                                            style={
-                                                                "minWidth": "42px"
-                                                            },
+                                                            className="bg-white input-group-label input-group-fixed",
                                                         ),
                                                         dbc.Input(
                                                             id="manual-lon",
@@ -156,10 +149,7 @@ def create_sidebar_card():
                                                     [
                                                         dbc.InputGroupText(
                                                             "Alt",
-                                                            className="bg-white input-group-label",
-                                                            style={
-                                                                "minWidth": "42px"
-                                                            },
+                                                            className="bg-white input-group-label input-group-fixed",
                                                         ),
                                                         dbc.Input(
                                                             id="manual-alt",
@@ -201,8 +191,7 @@ def create_sidebar_card():
                                 ],
                             ),
                         ],
-                        className="mb-4 pb-3",
-                        style={"borderBottom": "1px solid #e9ecef"},
+                        className="mb-4 pb-3 section-separator",
                     ),
                     # Secao 1: Tipo de Dados
                     html.Div(
@@ -258,8 +247,7 @@ def create_sidebar_card():
                                         "label": html.Div(
                                             [
                                                 html.I(
-                                                    className="bi bi-cloud-sun-fill me-2",
-                                                    style={"color": "#7b1fa2"},
+                                                    className="bi bi-cloud-sun-fill me-2 forecast-icon",
                                                 ),
                                                 html.Span("Forecast"),
                                                 html.Small(
@@ -311,12 +299,7 @@ def create_sidebar_card():
                         ],
                         id="calculate-eto-btn",
                         color="success",
-                        className="w-100 py-2 fw-semibold",
-                        style={
-                            "borderRadius": "10px",
-                            "boxShadow": "0 4px 15px rgba(40, 167, 69, 0.3)",
-                            "transition": "all 0.3s ease",
-                        },
+                        className="w-100 py-2 fw-semibold btn-calculate-eto",
                         n_clicks=0,
                         disabled=True,
                     ),
@@ -328,19 +311,10 @@ def create_sidebar_card():
                     ),
                     html.Div(id="eto-progress-container", className="mt-2"),
                 ],
-                className="p-3",
-                style={
-                    "backgroundColor": "#ffffff",
-                    "minHeight": "400px",
-                },
+                className="p-3 sidebar-body",
             ),
         ],
-        style={
-            "borderRadius": "12px",
-            "boxShadow": "0 10px 40px rgba(0,0,0,0.1)",
-            "overflow": "hidden",
-            "border": "none",
-        },
+        className="card-wrapper",
     )
 
 
@@ -354,8 +328,7 @@ def create_map_card():
                     html.Div(
                         [
                             html.I(
-                                className="bi bi-geo-alt-fill",
-                                style={"fontSize": "1.8rem"},
+                                className="bi bi-geo-alt-fill card-header-icon",
                             ),
                         ],
                         className="me-3",
@@ -380,6 +353,12 @@ def create_map_card():
                 [
                     # Mapa
                     create_world_map(),
+                ],
+                className="map-card-body",
+            ),
+            # Info abaixo do mapa
+            html.Div(
+                [
                     # Info de Selecao
                     html.Div(
                         id="current-selection-info",
@@ -417,22 +396,16 @@ def create_map_card():
                                         className="text-primary",
                                     ),
                                 ],
-                                className="text-muted",
+                                className="text-muted matopiba-reference",
                             ),
                         ],
-                        className="mt-2 px-1 text-sm",
+                        className="mt-1 px-2",
                     ),
                 ],
                 className="p-2",
-                style={"backgroundColor": "#ffffff"},
             ),
         ],
-        style={
-            "borderRadius": "12px",
-            "boxShadow": "0 10px 40px rgba(0,0,0,0.1)",
-            "overflow": "hidden",
-            "border": "none",
-        },
+        className="card-wrapper",
     )
 
 
@@ -442,7 +415,7 @@ def create_map_card():
 home_layout = dbc.Container(
     [
         # Espacamento superior
-        html.Div(className="py-2"),
+        html.Div(className="py-0"),
         # Layout Principal: Sidebar (4 cols) + Mapa (8 cols)
         dbc.Row(
             [
@@ -521,17 +494,11 @@ home_layout = dbc.Container(
         # Toast Container
         html.Div(
             id="toast-container",
-            style={
-                "position": "fixed",
-                "top": "80px",
-                "right": "20px",
-                "zIndex": 9999,
-                "minWidth": "300px",
-            },
+            className="toast-container-fixed",
         ),
     ],
     fluid=False,
-    className="py-3",
+    className="py-1",
 )
 
 logger.info("Home page (unified) loaded successfully")

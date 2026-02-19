@@ -19,8 +19,7 @@ def _create_quick_start_section():
                     html.H2(
                         "🚀 Quick Start",
                         id="quick-start",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     dbc.Card(
                         [
@@ -40,12 +39,7 @@ def _create_quick_start_section():
                                                             dbc.Badge(
                                                                 "1",
                                                                 color="primary",
-                                                                className="me-3",
-                                                                style={
-                                                                    "fontSize": "1.2rem",
-                                                                    "padding": "8px 14px",
-                                                                    "borderRadius": "50%",
-                                                                },
+                                                                className="me-3 doc-step-badge",
                                                             ),
                                                             html.Div(
                                                                 [
@@ -92,12 +86,7 @@ def _create_quick_start_section():
                                                             dbc.Badge(
                                                                 "2",
                                                                 color="primary",
-                                                                className="me-3",
-                                                                style={
-                                                                    "fontSize": "1.2rem",
-                                                                    "padding": "8px 14px",
-                                                                    "borderRadius": "50%",
-                                                                },
+                                                                className="me-3 doc-step-badge",
                                                             ),
                                                             html.Div(
                                                                 [
@@ -144,12 +133,7 @@ def _create_quick_start_section():
                                                             dbc.Badge(
                                                                 "3",
                                                                 color="primary",
-                                                                className="me-3",
-                                                                style={
-                                                                    "fontSize": "1.2rem",
-                                                                    "padding": "8px 14px",
-                                                                    "borderRadius": "50%",
-                                                                },
+                                                                className="me-3 doc-step-badge",
                                                             ),
                                                             html.Div(
                                                                 [
@@ -208,6 +192,262 @@ def _create_quick_start_section():
     )
 
 
+def _create_interactive_map_section():
+    """Describes the interactive map and its layers."""
+    return dbc.Row(
+        [
+            dbc.Col(
+                [
+                    html.H2(
+                        "🗺️ Interactive Map",
+                        id="interactive-map",
+                        className="mb-4 doc-section-title",
+                    ),
+                    dbc.Card(
+                        [
+                            dbc.CardBody(
+                                [
+                                    html.P(
+                                        [
+                                            "The interactive world map allows you to select any location "
+                                            "by clicking directly on the map. It includes contextual layers "
+                                            "for better geographic reference, especially for Brazilian regions.",
+                                        ],
+                                        className="mb-4",
+                                    ),
+                                    html.H5("Map Controls", className="mb-3"),
+                                    dbc.Row(
+                                        [
+                                            dbc.Col(
+                                                [
+                                                    dbc.Card(
+                                                        [
+                                                            dbc.CardBody(
+                                                                [
+                                                                    html.Div(
+                                                                        [
+                                                                            html.Span(
+                                                                                "🗺️",
+                                                                                className="doc-emoji-icon",
+                                                                            ),
+                                                                            html.Strong(
+                                                                                " Layer Control",
+                                                                                className="ms-2",
+                                                                            ),
+                                                                        ],
+                                                                        className="mb-2",
+                                                                    ),
+                                                                    html.P(
+                                                                        "Click the map icon in the top-right corner "
+                                                                        "to toggle contextual layers on/off.",
+                                                                        className="small text-muted mb-0",
+                                                                    ),
+                                                                ]
+                                                            )
+                                                        ],
+                                                        className="h-100 border-start border-primary border-3",
+                                                    ),
+                                                ],
+                                                md=6,
+                                                className="mb-3",
+                                            ),
+                                            dbc.Col(
+                                                [
+                                                    dbc.Card(
+                                                        [
+                                                            dbc.CardBody(
+                                                                [
+                                                                    html.Div(
+                                                                        [
+                                                                            html.Span(
+                                                                                "📍",
+                                                                                className="doc-emoji-icon",
+                                                                            ),
+                                                                            html.Strong(
+                                                                                " Geolocation",
+                                                                                className="ms-2",
+                                                                            ),
+                                                                        ],
+                                                                        className="mb-2",
+                                                                    ),
+                                                                    html.P(
+                                                                        "Click the arrow icon in the top-left corner "
+                                                                        "to automatically detect your current location.",
+                                                                        className="small text-muted mb-0",
+                                                                    ),
+                                                                ]
+                                                            )
+                                                        ],
+                                                        className="h-100 border-start border-info border-3",
+                                                    ),
+                                                ],
+                                                md=6,
+                                                className="mb-3",
+                                            ),
+                                        ]
+                                    ),
+                                    html.H5(
+                                        "Available Layers",
+                                        className="mb-3 mt-4",
+                                    ),
+                                    dbc.Table(
+                                        [
+                                            html.Thead(
+                                                html.Tr(
+                                                    [
+                                                        html.Th(
+                                                            "Layer",
+                                                            className="doc-table-col-wide",
+                                                        ),
+                                                        html.Th("Description"),
+                                                        html.Th(
+                                                            "Default",
+                                                            className="doc-table-col-narrow",
+                                                        ),
+                                                    ]
+                                                )
+                                            ),
+                                            html.Tbody(
+                                                [
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                [
+                                                                    html.Img(
+                                                                        src="/assets/images/Flag_of_Brazil.svg",
+                                                                        className="doc-flag-icon",
+                                                                    ),
+                                                                    "Brasil - Estados",
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                "Displays the boundaries of all 27 Brazilian states (UFs). "
+                                                                "Useful for geographic reference when working with locations in Brazil."
+                                                            ),
+                                                            html.Td(
+                                                                dbc.Badge(
+                                                                    "ON",
+                                                                    color="success",
+                                                                ),
+                                                                className="text-center",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                [
+                                                                    html.Span(
+                                                                        "🌾",
+                                                                        className="me-1",
+                                                                    ),
+                                                                    "MATOPIBA - Região",
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                [
+                                                                    "Shows the MATOPIBA agricultural frontier region, covering parts of ",
+                                                                    html.Strong(
+                                                                        "Ma"
+                                                                    ),
+                                                                    "ranhão, ",
+                                                                    html.Strong(
+                                                                        "To"
+                                                                    ),
+                                                                    "cantins, ",
+                                                                    html.Strong(
+                                                                        "Pi"
+                                                                    ),
+                                                                    "auí, and ",
+                                                                    html.Strong(
+                                                                        "Ba"
+                                                                    ),
+                                                                    "hia states. Important region for Brazilian agribusiness.",
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                dbc.Badge(
+                                                                    "OFF",
+                                                                    color="secondary",
+                                                                ),
+                                                                className="text-center",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                [
+                                                                    html.Span(
+                                                                        "🏘️",
+                                                                        className="me-1",
+                                                                    ),
+                                                                    "337 Cidades",
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                "Displays 337 municipalities within the MATOPIBA region. "
+                                                                "Each marker shows city name, coordinates, and elevation on hover."
+                                                            ),
+                                                            html.Td(
+                                                                dbc.Badge(
+                                                                    "OFF",
+                                                                    color="secondary",
+                                                                ),
+                                                                className="text-center",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                [
+                                                                    html.Span(
+                                                                        "🎓",
+                                                                        className="me-1",
+                                                                    ),
+                                                                    "Piracicaba/SP",
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                [
+                                                                    "Special marker for Piracicaba/SP, home of ",
+                                                                    html.Strong(
+                                                                        "ESALQ/USP"
+                                                                    ),
+                                                                    ' (Escola Superior de Agricultura "Luiz de Queiroz"), '
+                                                                    "where EVAonline was developed.",
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                dbc.Badge(
+                                                                    "ON",
+                                                                    color="success",
+                                                                ),
+                                                                className="text-center",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ]
+                                            ),
+                                        ],
+                                        bordered=True,
+                                        hover=True,
+                                        responsive=True,
+                                        className="mb-0",
+                                    ),
+                                ]
+                            )
+                        ],
+                        className="mb-4 shadow-sm",
+                    ),
+                ],
+                width=12,
+            )
+        ]
+    )
+
+
 def _create_operation_modes_section():
     """Describes the 3 operational modes."""
     return dbc.Row(
@@ -217,8 +457,7 @@ def _create_operation_modes_section():
                     html.H2(
                         "📊 Operation Modes",
                         id="modos",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     html.P(
                         "EVAonline operates in three modes, automatically selected "
@@ -239,10 +478,7 @@ def _create_operation_modes_section():
                                                 ),
                                                 html.Strong("Historical Data"),
                                             ],
-                                            style={
-                                                "background": "linear-gradient(135deg, #1565c0, #0d47a1)",
-                                                "color": "white",
-                                            },
+                                            className="doc-card-header-historical",
                                         ),
                                         dbc.CardBody(
                                             [
@@ -323,10 +559,7 @@ def _create_operation_modes_section():
                                                 ),
                                                 html.Strong("Recent Data"),
                                             ],
-                                            style={
-                                                "background": "linear-gradient(135deg, #2e7d32, #1b5e20)",
-                                                "color": "white",
-                                            },
+                                            className="doc-card-header-recent",
                                         ),
                                         dbc.CardBody(
                                             [
@@ -396,10 +629,7 @@ def _create_operation_modes_section():
                                                 ),
                                                 html.Strong("Forecast"),
                                             ],
-                                            style={
-                                                "background": "linear-gradient(135deg, #7b1fa2, #4a148c)",
-                                                "color": "white",
-                                            },
+                                            className="doc-card-header-forecast",
                                         ),
                                         dbc.CardBody(
                                             [
@@ -493,10 +723,15 @@ def _create_usa_stations_section():
             dbc.Col(
                 [
                     html.H2(
-                        "🇺🇸 USA Weather Stations (NOAA)",
+                        [
+                            html.Img(
+                                src="/assets/images/Flag_of_the_United_States.svg",
+                                className="doc-flag-icon",
+                            ),
+                            "USA Weather Stations (NOAA)",
+                        ],
                         id="usa-stations",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     dbc.Card(
                         [
@@ -654,8 +889,7 @@ def _create_results_section():
                     html.H2(
                         "📈 Results & Visualizations",
                         id="resultados",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     dbc.Card(
                         [
@@ -844,10 +1078,7 @@ def _create_results_section():
                                                     dbc.CardBody(
                                                         [
                                                             html.I(
-                                                                className="bi bi-graph-up text-primary",
-                                                                style={
-                                                                    "fontSize": "1.5rem"
-                                                                },
+                                                                className="bi bi-graph-up text-primary doc-icon-lg",
                                                             ),
                                                             html.P(
                                                                 "ETo vs Temperature",
@@ -870,10 +1101,7 @@ def _create_results_section():
                                                     dbc.CardBody(
                                                         [
                                                             html.I(
-                                                                className="bi bi-sun text-warning",
-                                                                style={
-                                                                    "fontSize": "1.5rem"
-                                                                },
+                                                                className="bi bi-sun text-warning doc-icon-lg",
                                                             ),
                                                             html.P(
                                                                 "ETo vs Radiation",
@@ -896,10 +1124,7 @@ def _create_results_section():
                                                     dbc.CardBody(
                                                         [
                                                             html.I(
-                                                                className="bi bi-droplet text-info",
-                                                                style={
-                                                                    "fontSize": "1.5rem"
-                                                                },
+                                                                className="bi bi-droplet text-info doc-icon-lg",
                                                             ),
                                                             html.P(
                                                                 "Multivariate Panel",
@@ -922,10 +1147,7 @@ def _create_results_section():
                                                     dbc.CardBody(
                                                         [
                                                             html.I(
-                                                                className="bi bi-grid-3x3 text-danger",
-                                                                style={
-                                                                    "fontSize": "1.5rem"
-                                                                },
+                                                                className="bi bi-grid-3x3 text-danger doc-icon-lg",
                                                             ),
                                                             html.P(
                                                                 "ETo Heatmap",
@@ -1084,8 +1306,7 @@ def _create_variables_section():
                     html.H2(
                         "🔬 Climate Variables",
                         id="variables",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     dbc.Card(
                         [
@@ -1181,7 +1402,13 @@ def _create_data_sources_section():
         {
             "icon": "bi-flag",
             "name": "NWS Forecast (NOAA)",
-            "coverage": "🇺🇸 Continental USA only",
+            "coverage": [
+                html.Img(
+                    src="/assets/images/Flag_of_the_United_States.svg",
+                    className="doc-flag-icon-sm",
+                ),
+                "Continental USA only",
+            ],
             "resolution": "2.5 km grid",
             "period": "today → today + 6 days",
             "variables": "T, RH, Wind, Precipitation",
@@ -1193,7 +1420,13 @@ def _create_data_sources_section():
         {
             "icon": "bi-broadcast-pin",
             "name": "NWS Stations (NOAA)",
-            "coverage": "🇺🇸 ~1,800 active stations",
+            "coverage": [
+                html.Img(
+                    src="/assets/images/Flag_of_the_United_States.svg",
+                    className="doc-flag-icon-sm",
+                ),
+                "~1,800 active stations",
+            ],
             "resolution": "Point observations",
             "period": "Hourly real-time observations",
             "variables": "T, RH, Wind, Radiation, Precipitation",
@@ -1225,8 +1458,7 @@ def _create_data_sources_section():
                                 html.Div(
                                     [
                                         html.I(
-                                            className=f"bi {src['icon']} me-2",
-                                            style={"fontSize": "1.3rem"},
+                                            className=f"bi {src['icon']} me-2 doc-icon-md",
                                         ),
                                         html.Strong(src["name"]),
                                     ],
@@ -1304,8 +1536,7 @@ def _create_data_sources_section():
                     html.H2(
                         "📡 Data Sources (6 APIs)",
                         id="fontes-dados",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     html.P(
                         "EVAonline automatically integrates data from 6 sources. "
@@ -1348,8 +1579,7 @@ def _create_features_section():
                     html.H2(
                         "⚡ Automatic Features",
                         id="funcionalidades",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     dbc.Row(
                         [
@@ -1436,8 +1666,7 @@ def _feature_card(icon, title, description, color):
                 dbc.CardBody(
                     [
                         html.I(
-                            className=f"bi {icon} text-{color}",
-                            style={"fontSize": "1.8rem"},
+                            className=f"bi {icon} text-{color} doc-emoji-icon-lg",
                         ),
                         html.H6(title, className="mt-2 mb-1"),
                         html.Small(description, className="text-muted"),
@@ -1517,8 +1746,7 @@ def _create_faq_section():
                     html.H2(
                         "❓ FAQ",
                         id="faq",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     dbc.Accordion(
                         accordion_items,
@@ -1539,80 +1767,189 @@ def _create_license_section():
             dbc.Col(
                 [
                     html.H2(
-                        "📄 License & Citation",
+                        "📄 License",
                         id="licenca",
-                        className="mb-4",
-                        style={"color": "#2c3e50"},
+                        className="mb-4 doc-section-title",
                     ),
                     dbc.Card(
                         [
                             dbc.CardBody(
                                 [
+                                    html.H5(
+                                        "GNU Affero General Public License v3.0",
+                                        className="mb-4",
+                                    ),
+                                    # 3 columns: Permissions, Limitations, Conditions
                                     dbc.Row(
                                         [
+                                            # Permissions
                                             dbc.Col(
                                                 [
-                                                    html.H5(
-                                                        "GNU AGPL v3.0",
-                                                        className="mb-3",
-                                                    ),
-                                                    html.P(
-                                                        [
-                                                            "Copyright © 2024 ",
-                                                            html.Strong(
-                                                                "Angela Cristina Cunha Soares"
-                                                            ),
-                                                            ", Patricia A. A. Marques, Carlos D. Maciel",
-                                                        ]
+                                                    html.H6(
+                                                        "Permissions",
+                                                        className="mb-3 text-success",
                                                     ),
                                                     html.Div(
                                                         [
-                                                            dbc.Badge(
-                                                                "✅ Free to use",
-                                                                color="success",
-                                                                className="me-2 mb-2",
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-check-circle-fill text-success me-2"
+                                                                    ),
+                                                                    "Commercial use",
+                                                                ],
+                                                                className="mb-2",
                                                             ),
-                                                            dbc.Badge(
-                                                                "✅ Open source",
-                                                                color="success",
-                                                                className="me-2 mb-2",
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-check-circle-fill text-success me-2"
+                                                                    ),
+                                                                    "Modification",
+                                                                ],
+                                                                className="mb-2",
                                                             ),
-                                                            dbc.Badge(
-                                                                "✅ Modify & distribute",
-                                                                color="success",
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-check-circle-fill text-success me-2"
+                                                                    ),
+                                                                    "Distribution",
+                                                                ],
+                                                                className="mb-2",
+                                                            ),
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-check-circle-fill text-success me-2"
+                                                                    ),
+                                                                    "Patent use",
+                                                                ],
+                                                                className="mb-2",
+                                                            ),
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-check-circle-fill text-success me-2"
+                                                                    ),
+                                                                    "Private use",
+                                                                ],
                                                                 className="mb-2",
                                                             ),
                                                         ]
                                                     ),
                                                 ],
-                                                md=6,
+                                                md=4,
+                                                className="mb-3",
                                             ),
+                                            # Limitations
                                             dbc.Col(
                                                 [
-                                                    html.H5(
-                                                        "📖 How to Cite",
-                                                        className="mb-3",
+                                                    html.H6(
+                                                        "Limitations",
+                                                        className="mb-3 text-danger",
                                                     ),
-                                                    dbc.Alert(
+                                                    html.Div(
                                                         [
-                                                            html.Strong(
-                                                                "Soares, A. C. C., "
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-x-circle-fill text-danger me-2"
+                                                                    ),
+                                                                    "Liability",
+                                                                ],
+                                                                className="mb-2",
                                                             ),
-                                                            "Marques, P. A. A., Maciel, C. D. (2025). ",
-                                                            html.Em(
-                                                                "EVAonline: An online system for reference "
-                                                                "evapotranspiration calculation using multi-source "
-                                                                "data fusion."
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-x-circle-fill text-danger me-2"
+                                                                    ),
+                                                                    "Warranty",
+                                                                ],
+                                                                className="mb-2",
                                                             ),
-                                                            " SoftwareX.",
-                                                        ],
-                                                        color="light",
-                                                        className="small",
+                                                        ]
                                                     ),
                                                 ],
-                                                md=6,
+                                                md=4,
+                                                className="mb-3",
+                                            ),
+                                            # Conditions
+                                            dbc.Col(
+                                                [
+                                                    html.H6(
+                                                        "Conditions",
+                                                        className="mb-3 text-primary",
+                                                    ),
+                                                    html.Div(
+                                                        [
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-info-circle-fill text-primary me-2"
+                                                                    ),
+                                                                    "License and copyright notice",
+                                                                ],
+                                                                className="mb-2",
+                                                            ),
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-info-circle-fill text-primary me-2"
+                                                                    ),
+                                                                    "State changes",
+                                                                ],
+                                                                className="mb-2",
+                                                            ),
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-info-circle-fill text-primary me-2"
+                                                                    ),
+                                                                    "Disclose source",
+                                                                ],
+                                                                className="mb-2",
+                                                            ),
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-info-circle-fill text-primary me-2"
+                                                                    ),
+                                                                    "Network use is distribution",
+                                                                ],
+                                                                className="mb-2",
+                                                            ),
+                                                            html.Div(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-info-circle-fill text-primary me-2"
+                                                                    ),
+                                                                    "Same license",
+                                                                ],
+                                                                className="mb-2",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ],
+                                                md=4,
+                                                className="mb-3",
                                             ),
                                         ]
+                                    ),
+                                    html.Hr(className="my-3"),
+                                    html.P(
+                                        [
+                                            "Full license text available at ",
+                                            html.A(
+                                                "GitHub Repository",
+                                                href="https://github.com/silvianesoares/EVAONLINE/blob/main/LICENSE",
+                                                target="_blank",
+                                                className="text-primary",
+                                            ),
+                                            ".",
+                                        ],
+                                        className="text-muted small mb-0",
                                     ),
                                 ]
                             )
@@ -1639,74 +1976,160 @@ documentation_layout = html.Div(
                     [
                         dbc.CardBody(
                             [
-                                dbc.Nav(
+                                html.Div(
                                     [
-                                        dbc.NavLink(
-                                            "🚀 Quick Start",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "1",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-rocket-takeoff me-1"
+                                                ),
+                                                "Quick Start",
+                                            ],
                                             href="#quick-start",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
-                                        dbc.NavLink(
-                                            "📊 Operation Modes",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "2",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-map me-1"
+                                                ),
+                                                "Map",
+                                            ],
+                                            href="#interactive-map",
+                                            className="doc-nav-link",
+                                        ),
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "3",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-sliders me-1"
+                                                ),
+                                                "Modes",
+                                            ],
                                             href="#modos",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
-                                        dbc.NavLink(
-                                            "🇺🇸 USA Stations",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "4",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-geo-alt me-1"
+                                                ),
+                                                "USA",
+                                            ],
                                             href="#usa-stations",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
-                                        dbc.NavLink(
-                                            "📈 Results",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "5",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-graph-up me-1"
+                                                ),
+                                                "Results",
+                                            ],
                                             href="#resultados",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
-                                        dbc.NavLink(
-                                            "🔬 Variables",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "6",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-thermometer-half me-1"
+                                                ),
+                                                "Variables",
+                                            ],
                                             href="#variables",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
-                                        dbc.NavLink(
-                                            "📡 Data Sources",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "7",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-cloud-download me-1"
+                                                ),
+                                                "Sources",
+                                            ],
                                             href="#fontes-dados",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
-                                        dbc.NavLink(
-                                            "⚡ Features",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "8",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-lightning me-1"
+                                                ),
+                                                "Features",
+                                            ],
                                             href="#funcionalidades",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
-                                        dbc.NavLink(
-                                            "❓ FAQ",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "9",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-question-circle me-1"
+                                                ),
+                                                "FAQ",
+                                            ],
                                             href="#faq",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
-                                        dbc.NavLink(
-                                            "📄 License",
+                                        html.A(
+                                            [
+                                                html.Span(
+                                                    "10",
+                                                    className="doc-nav-number",
+                                                ),
+                                                html.I(
+                                                    className="bi bi-file-earmark-text me-1"
+                                                ),
+                                                "License",
+                                            ],
                                             href="#licenca",
-                                            external_link=True,
-                                            className="text-decoration-none",
+                                            className="doc-nav-link",
                                         ),
                                     ],
-                                    pills=True,
-                                    justified=True,
-                                    className="flex-wrap",
+                                    className="doc-nav-container",
                                 )
-                            ]
+                            ],
+                            className="py-2 px-3",
                         )
                     ],
-                    className="mb-4 shadow-sm",
+                    className="mb-4 shadow-sm doc-nav-card",
                 ),
                 # All sections
                 _create_quick_start_section(),
+                _create_interactive_map_section(),
                 _create_operation_modes_section(),
                 _create_usa_stations_section(),
                 _create_results_section(),
@@ -1715,26 +2138,10 @@ documentation_layout = html.Div(
                 _create_features_section(),
                 _create_faq_section(),
                 _create_license_section(),
-                # Footer
-                html.Hr(className="mt-5"),
-                html.P(
-                    [
-                        "© 2024-2025 EVAonline | ",
-                        html.A(
-                            "ESALQ/USP",
-                            href="https://www.esalq.usp.br",
-                            target="_blank",
-                        ),
-                        " | Made with ",
-                        html.I(className="bi bi-heart-fill text-danger"),
-                        " in Brazil",
-                    ],
-                    className="text-center text-muted small mb-4",
-                ),
             ],
             fluid=False,
             className="py-4",
         )
     ],
-    style={"backgroundColor": "#f8f9fa", "minHeight": "100vh"},
+    className="doc-page-container",
 )

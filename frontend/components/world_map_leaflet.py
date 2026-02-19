@@ -38,7 +38,7 @@ def create_world_map():
         "OpenStreetMap</a> contributors",
         maxZoom=18,
         minZoom=2,
-        noWrap=True,  # ✅ Evita repetição infinita do mapa nos lados
+        noWrap=True,  # Evita repetição infinita do mapa
     )
 
     # Layer Group para marcadores (será atualizado via callback)
@@ -102,11 +102,7 @@ def create_world_map():
         center=initial_center,
         zoom=initial_zoom,
         children=map_children,
-        style={
-            "width": "100%",
-            "height": "800px",  # Reduzido para melhor proporção sem margens
-            "borderRadius": "8px",
-        },
+        className="leaflet-map",
         # ✅ Configurações para evitar duplicação do mapa mundial
         worldCopyJump=False,  # Desabilita o "pulo" entre cópias do mundo
         maxBounds=[
@@ -125,7 +121,7 @@ def create_world_map():
 
     map_with_control = html.Div(
         [map_component, custom_control],
-        style={"position": "relative", "width": "100%"},
+        className="map-container",
     )
 
     return map_with_control
@@ -152,11 +148,7 @@ def create_map_marker(lat, lon, label="Local Selecionado"):
             dl.Popup(
                 html.H6(
                     f"📍 {label}",
-                    style={
-                        "margin": "8px",
-                        "color": "#2c3e50",
-                        "fontWeight": "500",
-                    },
+                    className="map-marker-popup",
                 )
             ),
         ],
@@ -219,17 +211,17 @@ def create_location_info_popup(location_data):
         [
             html.H6(
                 f"📍 {city}",
-                style={"marginBottom": "8px", "color": "#2c3e50"},
+                className="map-popup-title",
             ),
             (
                 html.P(
                     f"🌍 {country}",
-                    style={"marginBottom": "4px", "fontSize": "14px"},
+                    className="map-popup-country",
                 )
                 if country
                 else None
             ),
-            html.Hr(style={"margin": "8px 0"}),
+            html.Hr(className="map-popup-hr"),
             html.P(
                 [
                     html.Strong("Coordenadas:"),
@@ -243,22 +235,22 @@ def create_location_info_popup(location_data):
                         className="text-muted",
                     ),
                 ],
-                style={"fontSize": "12px", "marginBottom": "8px"},
+                className="map-popup-coords",
             ),
             html.P(
                 [html.Strong("Fuso: "), f"{timezone}"],
-                style={"fontSize": "12px", "marginBottom": "4px"},
+                className="map-popup-info",
             ),
             (
                 html.P(
                     [html.Strong("Altitude: "), f"{elevation} m"],
-                    style={"fontSize": "12px", "marginBottom": "4px"},
+                    className="map-popup-info",
                 )
                 if elevation
                 else None
             ),
         ],
-        style={"minWidth": "250px", "padding": "8px"},
+        className="map-popup-container",
     )
 
     return popup_content
@@ -518,7 +510,7 @@ def load_matopiba_cities_markers():
                                         className="mb-0 small",
                                     ),
                                 ],
-                                style={"minWidth": "200px"},
+                                className="map-city-popup",
                             )
                         ),
                     ],
@@ -576,8 +568,7 @@ def load_piracicaba_marker():
                         [
                             html.H5(
                                 "🎓 Piracicaba/SP",
-                                className="mb-2",
-                                style={"color": "#2c5282"},
+                                className="mb-2 map-popup-city-link",
                             ),
                             html.P(
                                 html.B("Local de Desenvolvimento:"),
@@ -601,10 +592,7 @@ def load_piracicaba_marker():
                                 className="mb-0 small",
                             ),
                         ],
-                        style={
-                            "minWidth": "280px",
-                            "padding": "10px",
-                        },
+                        className="map-piracicaba-popup",
                     )
                 ),
             ],
@@ -798,7 +786,7 @@ def create_cities_layer():
                                         className="mb-0 small",
                                     ),
                                 ],
-                                style={"minWidth": "200px"},
+                                className="map-city-popup",
                             )
                         ),
                     ],
@@ -854,8 +842,7 @@ def create_piracicaba_layer():
                         [
                             html.H5(
                                 "🎓 Piracicaba/SP",
-                                className="mb-2",
-                                style={"color": "#2c5282"},
+                                className="mb-2 map-popup-city-link",
                             ),
                             html.P(
                                 html.B("Local de Desenvolvimento:"),
@@ -879,7 +866,7 @@ def create_piracicaba_layer():
                                 className="mb-0 small",
                             ),
                         ],
-                        style={"minWidth": "280px", "padding": "10px"},
+                        className="map-piracicaba-popup",
                     )
                 ),
             ],
@@ -925,24 +912,7 @@ def create_custom_layer_control():
                 id="layer-control-toggle",
                 n_clicks=0,
                 title="Alternar Camadas",
-                style={
-                    "position": "absolute",
-                    "top": "10px",
-                    "right": "10px",
-                    "zIndex": 1001,
-                    "background": "white",
-                    "border": "2px solid #3388ff",
-                    "borderRadius": "50%",
-                    "width": "40px",
-                    "height": "40px",
-                    "fontSize": "20px",
-                    "cursor": "pointer",
-                    "boxShadow": "0 2px 8px rgba(0,0,0,0.3)",
-                    "display": "flex",
-                    "alignItems": "center",
-                    "justifyContent": "center",
-                    "transition": "all 0.3s",
-                },
+                className="layer-control-toggle-btn",
             ),
             # ✅ Painel Collapsible (inicialmente oculto)
             html.Div(
@@ -952,38 +922,17 @@ def create_custom_layer_control():
                         [
                             html.H6(
                                 "🗺️ Camadas do Mapa",
-                                style={
-                                    "margin": "0",
-                                    "fontWeight": "bold",
-                                    "color": "#2c3e50",
-                                    "flex": "1",
-                                },
+                                className="layer-control-title",
                             ),
                             html.Button(
                                 "✕",
                                 id="layer-control-close",
                                 n_clicks=0,
                                 title="Fechar",
-                                style={
-                                    "background": "transparent",
-                                    "border": "none",
-                                    "fontSize": "20px",
-                                    "cursor": "pointer",
-                                    "color": "#7f8c8d",
-                                    "padding": "0",
-                                    "width": "24px",
-                                    "height": "24px",
-                                    "lineHeight": "20px",
-                                },
+                                className="layer-control-close-btn",
                             ),
                         ],
-                        style={
-                            "display": "flex",
-                            "alignItems": "center",
-                            "marginBottom": "15px",
-                            "paddingBottom": "10px",
-                            "borderBottom": "1px solid #ecf0f1",
-                        },
+                        className="layer-control-header",
                     ),
                     # Checkboxes das camadas
                     html.Div(
@@ -996,12 +945,9 @@ def create_custom_layer_control():
                                             {
                                                 "label": html.Span(
                                                     [
-                                                        html.Span(
-                                                            "🇧🇷",
-                                                            style={
-                                                                "fontFamily": "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif",
-                                                                "fontSize": "1.1em",
-                                                            },
+                                                        html.Img(
+                                                            src="/assets/images/Flag_of_Brazil.svg",
+                                                            className="layer-flag-icon",
                                                         ),
                                                         " Brasil - Estados",
                                                     ]
@@ -1011,20 +957,9 @@ def create_custom_layer_control():
                                         ],
                                         value=["brasil"],  # Inicia marcado
                                         id="layer-brasil-toggle",
-                                        style={
-                                            "display": "inline-block",
-                                            "marginRight": "5px",
-                                        },
+                                        className="layer-checklist",
                                     ),
                                 ],
-                                style={
-                                    "display": "block",
-                                    "marginBottom": "10px",
-                                    "cursor": "pointer",
-                                    "padding": "5px",
-                                    "borderRadius": "4px",
-                                    "transition": "background 0.2s",
-                                },
                                 className="layer-checkbox-label",
                             ),
                             # Checkbox MATOPIBA
@@ -1039,20 +974,9 @@ def create_custom_layer_control():
                                         ],
                                         value=[],
                                         id="layer-matopiba-toggle",
-                                        style={
-                                            "display": "inline-block",
-                                            "marginRight": "5px",
-                                        },
+                                        className="layer-checklist",
                                     ),
                                 ],
-                                style={
-                                    "display": "block",
-                                    "marginBottom": "10px",
-                                    "cursor": "pointer",
-                                    "padding": "5px",
-                                    "borderRadius": "4px",
-                                    "transition": "background 0.2s",
-                                },
                                 className="layer-checkbox-label",
                             ),
                             # Checkbox Cidades
@@ -1067,20 +991,9 @@ def create_custom_layer_control():
                                         ],
                                         value=[],
                                         id="layer-cities-toggle",
-                                        style={
-                                            "display": "inline-block",
-                                            "marginRight": "5px",
-                                        },
+                                        className="layer-checklist",
                                     ),
                                 ],
-                                style={
-                                    "display": "block",
-                                    "marginBottom": "10px",
-                                    "cursor": "pointer",
-                                    "padding": "5px",
-                                    "borderRadius": "4px",
-                                    "transition": "background 0.2s",
-                                },
                                 className="layer-checkbox-label",
                             ),
                             # Checkbox Piracicaba
@@ -1095,51 +1008,23 @@ def create_custom_layer_control():
                                         ],
                                         value=["piracicaba"],  # Inicia marcado
                                         id="layer-piracicaba-toggle",
-                                        style={
-                                            "display": "inline-block",
-                                            "marginRight": "5px",
-                                        },
+                                        className="layer-checklist",
                                     ),
                                 ],
-                                style={
-                                    "display": "block",
-                                    "marginBottom": "5px",
-                                    "cursor": "pointer",
-                                    "padding": "5px",
-                                    "borderRadius": "4px",
-                                    "transition": "background 0.2s",
-                                },
                                 className="layer-checkbox-label",
                             ),
                         ]
                     ),
                 ],
                 id="layer-control-panel",
+                className="layer-control-panel",
                 style={
-                    "position": "absolute",
-                    "top": "10px",
-                    "right": "60px",  # Espaço para o botão toggle
-                    "zIndex": 1000,
-                    "background": "white",
-                    "padding": "15px",
-                    "borderRadius": "8px",
-                    "boxShadow": "0 4px 12px rgba(0,0,0,0.2)",
-                    "minWidth": "250px",
-                    "maxHeight": "350px",
-                    "overflowY": "auto",
-                    "border": "2px solid #3388ff",
-                    "display": "none",  # Inicia oculto
-                    "animation": "fadeIn 0.3s",
-                },
+                    "display": "none"
+                },  # Funcional: controlado pelo callback
             ),
         ],
         id="custom-layer-control-container",
-        style={
-            "position": "absolute",
-            "top": "0",
-            "right": "0",
-            "zIndex": 1002,
-        },
+        className="layer-control-container",
     )
 
     return control_html

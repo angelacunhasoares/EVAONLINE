@@ -27,22 +27,25 @@ class FooterManager:
 
     @lru_cache(maxsize=1)
     def get_developer_data(self) -> List[Dict]:
-        """Desenvolvedores com emails."""
+        """Desenvolvedores com emails e ORCID."""
         return [
             {
                 "name": "Ângela S. M. C. Soares",
                 "email": "angelasilviane@alumni.usp.br",
                 "institution": "ESALQ/USP",
+                "orcid": "0000-0002-1253-7193",
             },
             {
                 "name": "Patricia A. A. Marques",
                 "email": "paamarques@usp.br",
                 "institution": "ESALQ/USP",
+                "orcid": "0000-0002-6818-4833",
             },
             {
                 "name": "Carlos D. Maciel",
                 "email": "carlos.maciel@unesp.br",
                 "institution": "UNESP",
+                "orcid": "0000-0003-0137-6678",
             },
         ]
 
@@ -117,9 +120,27 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                             [
                                                 html.Li(
                                                     [
-                                                        html.Strong(
-                                                            dev["name"],
-                                                            className="d-block",
+                                                        html.Div(
+                                                            [
+                                                                html.Strong(
+                                                                    dev[
+                                                                        "name"
+                                                                    ],
+                                                                    className="me-2",
+                                                                ),
+                                                                html.A(
+                                                                    html.Img(
+                                                                        src="/assets/images/ORCID_iD.svg",
+                                                                        alt="ORCID",
+                                                                        className="footer-orcid-icon",
+                                                                    ),
+                                                                    href=f"https://orcid.org/{dev['orcid']}",
+                                                                    target="_blank",
+                                                                    rel="noopener noreferrer",
+                                                                    title=f"ORCID: {dev['orcid']}",
+                                                                ),
+                                                            ],
+                                                            className="d-flex align-items-center justify-content-center",
                                                         ),
                                                         html.Span(
                                                             f"{dev['institution']}",
@@ -259,6 +280,36 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                     href="/documentation",
                                                     title="Documentação",
                                                     className="footer-icon-link docs-link",
+                                                ),
+                                                html.A(
+                                                    [
+                                                        html.I(
+                                                            className="bi bi-journal-text footer-icon",
+                                                        ),
+                                                        html.Span(
+                                                            "FAO-56",
+                                                            className="d-block small mt-1 footer-icon-label",
+                                                        ),
+                                                    ],
+                                                    href="https://www.fao.org/3/x0490e/x0490e00.htm",
+                                                    target="_blank",
+                                                    rel="noopener noreferrer",
+                                                    title="FAO Irrigation and Drainage Paper 56",
+                                                    className="footer-icon-link",
+                                                ),
+                                                html.A(
+                                                    [
+                                                        html.I(
+                                                            className="bi bi-code-slash footer-icon",
+                                                        ),
+                                                        html.Span(
+                                                            "API",
+                                                            className="d-block small mt-1 footer-icon-label",
+                                                        ),
+                                                    ],
+                                                    href="/apidocs",
+                                                    title="Documentação da API",
+                                                    className="footer-icon-link",
                                                 ),
                                             ],
                                             className=(

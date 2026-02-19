@@ -134,6 +134,15 @@ small {
 .form-control,
 .form-select {
     font-size: 1rem !important;
+    border-radius: 8px !important;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
 /* Form check labels (radio/checkbox) */
@@ -184,10 +193,301 @@ small {
     font-size: 1.2rem !important;
 }
 
+/* ===== HOME PAGE COMPONENT STYLES ===== */
+/* Classes para substituir estilos inline no home.py */
+
+/* Ícone grande nos headers de card */
+.card-header-icon {
+    font-size: 1.8rem;
+}
+
+/* Ícone do forecast (roxo) */
+.forecast-icon {
+    color: #7b1fa2;
+}
+
+/* Separador de seção */
+.section-separator {
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* Input group text com largura mínima */
+.input-group-fixed {
+    min-width: 42px;
+}
+
+/* Botão Calculate ETo */
+.btn-calculate-eto {
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-calculate-eto:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Corpo da sidebar */
+.sidebar-body {
+    background-color: #ffffff;
+    min-height: 400px;
+}
+
+/* Card wrapper (sidebar e mapa) */
+.card-wrapper {
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: none;
+}
+
+/* Toast container posicionamento */
+.toast-container-fixed {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+}
+
+/* ===== MAP COMPONENT STYLES ===== */
+/* Classes para substituir estilos inline no world_map_leaflet.py */
+
+/* Map card body - container do mapa sem padding */
+.map-card-body {
+    padding: 0 !important;
+    aspect-ratio: 16 / 9;
+    max-height: 650px;
+    background-color: transparent;
+    overflow: hidden;
+}
+
+/* Container do mapa com controles */
+.map-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Estilos do mapa Leaflet - ocupar 100% sem margens */
+.leaflet-map,
+.leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 0 8px 8px;
+    background: #a8d4e6 !important;
+}
+
+/* Referência MATOPIBA abaixo do mapa */
+.matopiba-reference {
+    font-size: 0.75rem !important;
+}
+
+.matopiba-reference a {
+    font-size: inherit !important;
+}
+
+/* ===== LAYER CONTROL STYLES ===== */
+
+/* Botão toggle flutuante do controle de camadas */
+.layer-control-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+    background: white;
+    border: 2px solid #3388ff;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.layer-control-toggle-btn:hover {
+    background: #f0f0f0;
+    transform: scale(1.05);
+}
+
+/* Painel de controle de camadas */
+.layer-control-panel {
+    position: absolute;
+    top: 10px;
+    right: 60px;
+    z-index: 1000;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    min-width: auto;
+    max-height: 350px;
+    overflow-y: auto;
+    border: 2px solid #3388ff;
+    /* display controlado via callback Python */
+    animation: fadeIn 0.3s;
+}
+
+/* Container do controle de camadas */
+.layer-control-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1002;
+}
+
+/* Header do painel de camadas */
+.layer-control-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+/* Título do painel de camadas */
+.layer-control-title {
+    margin: 0;
+    font-weight: bold;
+    color: #2c3e50;
+    flex: 1;
+    font-size: 20px !important;
+}
+
+/* Botão fechar do painel */
+.layer-control-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #7f8c8d;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    line-height: 20px;
+}
+
+.layer-control-close-btn:hover {
+    color: #e74c3c;
+}
+
+/* Checklist inline */
+.layer-checklist {
+    display: inline-block;
+    margin-right: 5px;
+}
+
+/* Label das camadas - fonte menor com hover */
+.layer-checkbox-label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.layer-checkbox-label:hover {
+    background-color: #f8f9fa;
+}
+
+/* Emoji com fonte correta */
+.emoji-flag {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-size: 1em;
+}
+
+/* Ícone de bandeira SVG nas camadas */
+.layer-flag-icon {
+    width: 18px;
+    height: 13px;
+    vertical-align: middle;
+    margin-right: 2px;
+}
+
+/* ===== MAP POPUP STYLES ===== */
+
+/* Container do popup */
+.map-popup-container {
+    min-width: 250px;
+    padding: 8px;
+}
+
+/* Título do popup (cidade) */
+.map-popup-title {
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+/* País no popup */
+.map-popup-country {
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+/* HR no popup */
+.map-popup-hr {
+    margin: 8px 0;
+}
+
+/* Info de coordenadas */
+.map-popup-coords {
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+/* Info geral (fuso, altitude) */
+.map-popup-info {
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+/* Popup do marker */
+.map-marker-popup {
+    margin: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+/* Popup de cidade com minWidth */
+.map-city-popup {
+    min-width: 200px;
+}
+
+/* Link de cidade no popup */
+.map-popup-city-link {
+    color: #2c5282;
+}
+
+/* Popup de Piracicaba */
+.map-piracicaba-popup {
+    min-width: 280px;
+    padding: 10px;
+}
+
 /* ===== FORÇA REDUÇÃO DE ESPAÇO ===== */
 
-/* CRÍTICO: Remove padding-bottom do page-content */
+/* ===== Base Layout Styles ===== */
+/* Styles for base_layout.py - moved from inline */
+
+/* Root app container - flexbox column layout */
+.app-root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main page content - fills available space */
 #page-content {
+    flex: 1;
+    overflow-y: auto;
     padding-bottom: 0 !important;
 }
 
@@ -253,7 +553,7 @@ html {
 
 /* Consistent top margin for all main content sections */
 .container>.row {
-    margin-top: 25px !important;
+    margin-top: 0px !important;
     margin-bottom: 0px !important;
 }
 
@@ -595,10 +895,7 @@ footer.bg-white {
     transform: scale(1.1);
 }
 
-/* Layer control checkbox hover */
-.layer-checkbox-label:hover {
-    background-color: #f8f9fa;
-}
+/* (Consolidado em Layer Control Styles acima) */
 
 /* Responsive footer adjustments */
 @media (max-width: 768px) {
@@ -616,8 +913,7 @@ footer.bg-white {
 .Select-value-label,
 .Select-control,
 .Select-input input,
-.Select-placeholder,
-.Select-value-label {
+.Select-placeholder {
     font-size: 1rem !important;
     line-height: 1.6 !important;
 }
@@ -642,10 +938,6 @@ footer.bg-white {
 /* Selected value */
 .Select-value {
     line-height: 40px !important;
-}
-
-.Select-value-label {
-    font-size: 1rem !important;
 }
 
 /* Input text */
@@ -675,16 +967,15 @@ footer.bg-white {
     overflow: hidden !important;
 }
 
-/* Animated progress bar */
-.progress-bar-animated {
-    animation: progress-bar-stripes 1s linear infinite !important;
-}
-
-/* Progress bar text */
+/* Progress bar text and animation */
 .progress-bar {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+}
+
+.progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite !important;
 }
 
 /* ===== Sidebar Professional Styles ===== */
@@ -723,30 +1014,6 @@ footer.bg-white {
     transform: translateY(0);
 }
 
-/* Select dropdown estilizado */
-.form-select {
-    border-radius: 8px !important;
-    border: 1px solid #e9ecef;
-    transition: all 0.2s ease;
-}
-
-.form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-}
-
-/* Input fields estilizados */
-.form-control {
-    border-radius: 8px !important;
-    border: 1px solid #e9ecef;
-    transition: all 0.2s ease;
-}
-
-.form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-}
-
 /* DatePicker estilizado */
 .DateInput_input {
     border-radius: 8px !important;
@@ -779,6 +1046,196 @@ footer.bg-white {
     transition-property: background-color, border-color, box-shadow, transform;
     transition-duration: 0.2s;
     transition-timing-function: ease;
+}
+
+/* ===== Documentation Navigation - Professional Academic Style ===== */
+
+/* Card container for navigation */
+.doc-nav-card {
+    border: none;
+    border-bottom: 3px solid #0088aa;
+    border-radius: 0;
+    background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+}
+
+/* Navigation container - horizontal scroll on mobile */
+.doc-nav-container {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #0088aa #e9ecef;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+}
+
+.doc-nav-container::-webkit-scrollbar {
+    height: 4px;
+}
+
+.doc-nav-container::-webkit-scrollbar-track {
+    background: #e9ecef;
+}
+
+.doc-nav-container::-webkit-scrollbar-thumb {
+    background: #0088aa;
+    border-radius: 2px;
+}
+
+/* Navigation links */
+.doc-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    text-decoration: none;
+    color: #495057;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border-right: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.doc-nav-link:last-child {
+    border-right: none;
+}
+
+.doc-nav-link:hover {
+    background-color: rgba(0, 136, 170, 0.08);
+    color: #0088aa;
+}
+
+.doc-nav-link:hover .doc-nav-number {
+    background-color: #0088aa;
+    color: white;
+}
+
+/* Section numbers - academic style */
+.doc-nav-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #6c757d;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    margin-right: 6px;
+    transition: all 0.2s ease;
+}
+
+/* Icons in navigation */
+.doc-nav-link i {
+    font-size: 0.9rem;
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.doc-nav-link:hover i {
+    color: #0088aa;
+}
+
+/* Responsive - smaller text on mobile */
+@media (max-width: 768px) {
+    .doc-nav-link {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .doc-nav-number {
+        min-width: 18px;
+        height: 18px;
+        font-size: 0.65rem;
+    }
+}
+
+/* ===== Documentation Content Styles ===== */
+/* Classes para substituir estilos inline em documentation.py */
+
+/* Títulos de seção da documentação */
+.doc-section-title {
+    color: #2c3e50 !important;
+}
+
+/* Badge circular para passos (1, 2, 3) */
+.doc-step-badge {
+    font-size: 1.2rem !important;
+    padding: 8px 14px !important;
+    border-radius: 50% !important;
+}
+
+/* Ícones emoji em tamanho médio */
+.doc-emoji-icon {
+    font-size: 1.5rem;
+}
+
+/* Ícones emoji em tamanho grande */
+.doc-emoji-icon-lg {
+    font-size: 1.8rem;
+}
+
+/* Ícones Bootstrap em tamanho médio */
+.doc-icon-md {
+    font-size: 1.3rem;
+}
+
+/* Ícones Bootstrap em tamanho grande */
+.doc-icon-lg {
+    font-size: 1.5rem;
+}
+
+/* Coluna de tabela larga */
+.doc-table-col-wide {
+    width: 25%;
+}
+
+/* Coluna de tabela estreita */
+.doc-table-col-narrow {
+    width: 10%;
+}
+
+/* Card header - Historical Data (azul) */
+.doc-card-header-historical {
+    background: linear-gradient(135deg, #1565c0, #0d47a1) !important;
+    color: white !important;
+}
+
+/* Card header - Recent Data (verde) */
+.doc-card-header-recent {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20) !important;
+    color: white !important;
+}
+
+/* Card header - Forecast (roxo) */
+.doc-card-header-forecast {
+    background: linear-gradient(135deg, #7b1fa2, #4a148c) !important;
+    color: white !important;
+}
+
+/* Container da página de documentação */
+.doc-page-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Flag icon no mapa da documentação */
+.doc-flag-icon {
+    height: 1.1em;
+    width: auto;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* Flag icon menor para tabelas de fontes de dados */
+.doc-flag-icon-sm {
+    width: 14px;
+    height: 10px;
+    margin-right: 4px;
+    vertical-align: middle;
 }
 
 /* ===== Footer Professional Styles ===== */
@@ -842,9 +1299,9 @@ footer.bg-white {
 
 /* Logos dos parceiros */
 .footer-partner-logo {
-    height: 75px;
-    max-width: 160px;
-    margin: 8px;
+    height: 100px;
+    max-width: 180px;
+    margin: 10px;
     display: block;
     object-fit: contain;
     opacity: 0.9;
@@ -896,6 +1353,20 @@ footer.bg-white {
 
 .footer-icon-link:hover .footer-github-icon {
     transform: scale(1.1);
+}
+
+/* ORCID icon no footer dos desenvolvedores */
+.footer-orcid-icon {
+    height: 18px;
+    width: 18px;
+    vertical-align: middle;
+    opacity: 0.85;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.footer-orcid-icon:hover {
+    opacity: 1;
+    transform: scale(1.15);
 }
 
 /* Labels dos ícones */

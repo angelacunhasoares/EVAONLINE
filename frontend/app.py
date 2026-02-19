@@ -1,5 +1,5 @@
 """
-Aplicação Dash do ETO Calculator (integrada ao Backend FastAPI).
+Aplicação Dash do ETo Calculator (integrada ao Backend FastAPI).
 
 Exports:
 - create_dash_app(): Factory para criar instância Dash
