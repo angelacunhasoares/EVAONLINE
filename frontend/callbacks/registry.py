@@ -30,15 +30,15 @@ def register_all_callbacks(app):
         #  Callbacks da página ETo (com decoradores @callback)
         from . import eto_callbacks  # Importa para registrar automaticamente
 
-        #  Callbacks do contador de visitantes
-        from . import (
-            visitor_callbacks,
-        )  # Importa para registrar automaticamente
-
-        #  Callbacks de sessão (identificação de usuários anônimos)
+        #  Callbacks de sessão (DEVE ser registrado ANTES do visitor_callbacks)
         from .cache_callbacks import register_cache_callbacks
 
         register_cache_callbacks(app)
+
+        #  Callbacks do contador de visitantes (usa app-session-id)
+        from . import (
+            visitor_callbacks,
+        )  # Importa para registrar automaticamente
 
         # from .selection_info_callbacks import (
         #     register_selection_info_callbacks

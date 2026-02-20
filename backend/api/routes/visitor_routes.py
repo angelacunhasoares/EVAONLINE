@@ -3,8 +3,10 @@ Rotas para contador de visitantes em tempo real
 """
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import redis
+from typing import Optional
 
 from backend.database.connection import get_db
 from backend.database.redis_pool import get_redis_client
@@ -15,20 +17,32 @@ from backend.core.analytics.visitor_counter_service import (
 router = APIRouter(prefix="/visitors", tags=["Visitors"])
 
 
+class VisitorIncrementRequest(BaseModel):
+    """Body para incrementar visitante (session_id opcional)."""
+
+    session_id: Optional[str] = None
+
+
 @router.post("/increment")
 async def increment_visitor_count(
+    body: VisitorIncrementRequest = VisitorIncrementRequest(),
     redis_client: redis.Redis = Depends(get_redis_client),
     db: Session = Depends(get_db),
 ):
     """
-    Incrementa contador de visitantes.
-    Chamado quando um usuário acessa a aplicação.
+    Incrementa contador de visitantes com deduplicação por sessão.
+
+    Body (opcional):
+        {"session_id": "sess_abc123"}
+
+    Se session_id for fornecido, visitantes repetidos no mesmo dia
+    NÃO incrementam o total (apenas page views por hora).
 
     Returns:
         Dict com estatísticas atualizadas
     """
     service = VisitorCounterService(redis_client, db)
-    return service.increment_visitor()
+    return service.increment_visitor(session_id=body.session_id)
 
 
 @router.get("/stats")

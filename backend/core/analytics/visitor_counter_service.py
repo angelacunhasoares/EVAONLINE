@@ -22,16 +22,38 @@ class VisitorCounterService:
         self.REDIS_KEY_PEAK_HOUR = "visitors:peak_hour"
         self.REDIS_KEY_HOURLY = "visitors:hourly"  # Contador por hora
 
-    def increment_visitor(self) -> Dict:
+    def increment_visitor(self, session_id: str = None) -> Dict:
         """
-        Incrementa contador de visitantes no Redis
-        Retorna status atual
+        Incrementa contador de visitantes no Redis com deduplicação por sessão.
+
+        Se session_id for fornecido, verifica se já foi contado hoje.
+        Sessões repetidas NÃO incrementam o total (evita inflação).
+        Cada sessão ainda incrementa o hourly (page views por hora).
+
+        Args:
+            session_id: ID único da sessão do usuário (ex: "sess_abc123")
+
+        Returns:
+            Dict com estatísticas atualizadas
         """
         try:
-            # Incrementar contador total
-            self.redis.incr(self.REDIS_KEY_VISITORS)
+            is_new_visitor = True
 
-            # Incrementar hora atual
+            # Deduplicação: verificar se sessão já foi contada hoje
+            if session_id:
+                is_new_visitor = not self.redis.sismember(
+                    self.REDIS_KEY_UNIQUE_TODAY, session_id
+                )
+                if is_new_visitor:
+                    self.redis.sadd(self.REDIS_KEY_UNIQUE_TODAY, session_id)
+                    # Expirar set à meia-noite (~24h)
+                    self.redis.expire(self.REDIS_KEY_UNIQUE_TODAY, 86400)
+
+            # Incrementar total APENAS se visitante novo (ou sem session_id)
+            if is_new_visitor:
+                self.redis.incr(self.REDIS_KEY_VISITORS)
+
+            # Incrementar hora atual (page views, sempre conta)
             current_hour = datetime.utcnow().strftime("%H:00")
             hourly_key = f"{self.REDIS_KEY_HOURLY}:{current_hour}"
             self.redis.incr(hourly_key)
@@ -40,10 +62,13 @@ class VisitorCounterService:
             # Obter counts
             total = int(self.redis.get(self.REDIS_KEY_VISITORS) or 0)
             hourly = int(self.redis.get(hourly_key) or 0)
+            unique_today = self.redis.scard(self.REDIS_KEY_UNIQUE_TODAY) or 0
 
             return {
                 "total_visitors": total,
                 "current_hour_visitors": hourly,
+                "unique_today": unique_today,
+                "is_new_visitor": is_new_visitor,
                 "current_hour": current_hour,
                 "timestamp": datetime.utcnow().isoformat(),
             }
