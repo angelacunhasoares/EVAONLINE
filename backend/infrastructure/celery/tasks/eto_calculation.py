@@ -71,6 +71,8 @@ def calculate_eto_task(
         APIError: Se todas as fontes falharem
     """
     import asyncio
+
+    import nest_asyncio
     from backend.core.eto_calculation.eto_services import EToProcessingService
     from backend.api.services.climate_validation import (
         ClimateValidationService,
@@ -81,6 +83,20 @@ def calculate_eto_task(
     from backend.api.services.climate_source_availability import (
         OperationMode,
     )
+
+    def run_async_safely(coro):
+        """Run async coroutine safely in Celery worker (handles closed loops)."""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        nest_asyncio.apply(loop)
+        return loop.run_until_complete(coro)
 
     task_id = self.request.id
     start_time = datetime.now()
@@ -178,7 +194,7 @@ def calculate_eto_task(
         logger.info("[60%] Calculando ETo (FAO-56 Penman-Monteith)...")
 
         # O process_location já faz download + processamento completo
-        result = asyncio.run(
+        result = run_async_safely(
             service.process_location(
                 latitude=lat,
                 longitude=lon,

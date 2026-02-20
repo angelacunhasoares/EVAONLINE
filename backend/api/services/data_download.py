@@ -111,6 +111,8 @@ async def download_weather_data(
         mode=detected_mode,
         start_date=data_inicial,
         end_date=data_final,
+        lat=latitude,
+        lng=longitude,
     )
     if not mode_valid:
         # Add warnings but don't fail (may be manual request)

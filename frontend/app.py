@@ -31,11 +31,11 @@ if str(frontend_path) not in sys.path:
 from frontend.core.dash_app_config import create_dash_app
 from frontend.core.base_layout import create_base_layout
 from frontend.callbacks.registry import register_all_callbacks
-from frontend.utils.logging_config import setup_logging
+from config.logging_config import setup_logging, get_logger
 
-# Setup logging
-setup_logging()
-logger = logging.getLogger(__name__)
+# Setup logging (uses Loguru with rotation, compression, retention)
+setup_logging(log_level="INFO", log_dir="logs", json_logs=False)
+logger = get_logger()
 
 
 def initialize_dash_app(standalone=False):

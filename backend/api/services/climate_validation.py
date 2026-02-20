@@ -591,7 +591,7 @@ class ClimateValidationService:
                 (
                     "mode",
                     ClimateValidationService.validate_request_mode(
-                        mode, start_date, end_date
+                        mode, start_date, end_date, lat=lat, lng=lon
                     ),
                 )
             )
