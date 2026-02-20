@@ -35,9 +35,10 @@ def register_all_callbacks(app):
             visitor_callbacks,
         )  # Importa para registrar automaticamente
 
-        # Callbacks a serem reativados conforme necessário:
-        # from .cache_callbacks import register_cache_callbacks
-        # register_cache_callbacks(app)
+        #  Callbacks de sessão (identificação de usuários anônimos)
+        from .cache_callbacks import register_cache_callbacks
+
+        register_cache_callbacks(app)
 
         # from .selection_info_callbacks import (
         #     register_selection_info_callbacks
