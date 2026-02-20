@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 try:
     _settings = get_legacy_settings()
     _port = getattr(_settings, "api", {}).get("PORT", 8000)
-    API_BASE_URL = f"http://localhost:{_port}{_settings.API_V1_PREFIX}"
+    _prefix = getattr(_settings, "API_V1_PREFIX", "/api/v1")
+    API_BASE_URL = f"http://localhost:{_port}{_prefix}"
+    logger.info(f"🔗 Visitor API URL: {API_BASE_URL}")
 except Exception:
     API_BASE_URL = "http://localhost:8000/api/v1"
     logger.warning(f"⚠️ Usando API_BASE_URL fallback: {API_BASE_URL}")
@@ -68,21 +70,28 @@ def update_visitor_counter(n_intervals):
             total = data.get("total_visitors", 0)
             hourly = data.get("current_hour_visitors", 0)
 
-            logger.debug(f"📊 Visitantes: {total} total, {hourly} última hora")
+            if n_intervals and n_intervals % 30 == 0:
+                # Log apenas a cada 5 minutos (30 × 10s)
+                logger.info(
+                    f"📊 Visitantes: {total} total, {hourly} última hora"
+                )
+
             return f"{total:,}", f"{hourly:,}"
 
         logger.warning(f"API retornou status {response.status_code}")
-        return "N/A", "N/A"
+        return no_update, no_update
 
     except requests.exceptions.Timeout:
-        logger.warning("⏱️ Timeout ao buscar estatísticas de visitantes")
-        return "...", "..."
+        logger.debug("⏱️ Timeout ao buscar estatísticas de visitantes")
+        return no_update, no_update
     except requests.exceptions.ConnectionError:
-        logger.warning("🔌 Erro de conexão ao buscar estatísticas")
+        # Log apenas no primeiro erro (n_intervals=0 ou 1)
+        if not n_intervals or n_intervals <= 1:
+            logger.warning("🔌 Backend não disponível para visitor stats")
         return "offline", "offline"
     except Exception as e:
         logger.error(f"❌ Erro ao atualizar contador: {e}")
-        return "erro", "erro"
+        return no_update, no_update
 
 
 # ============================================================================
@@ -103,6 +112,10 @@ def increment_visitor_on_page_load(pathname, session_id):
 
     Só incrementa na página principal (/) para evitar
     inflar contagem com navegação interna.
+
+    O backend deduplica por session_id:
+    - Visitante novo no dia: incrementa total + hourly
+    - Visitante repetido no dia: incrementa apenas hourly (page view)
 
     Args:
         pathname: Caminho da URL atual
@@ -128,16 +141,28 @@ def increment_visitor_on_page_load(pathname, session_id):
 
         if response.status_code == 200:
             data = response.json()
+            is_new = data.get("is_new_visitor", True)
+            total = data.get("total_visitors", "?")
             sid_display = session_id[:16] if session_id else "N/A"
-            logger.info(
-                f"👤 Visitante registrado: {data.get('total_visitors')} total"
-                f" (sessão: {sid_display}...)"
-            )
+
+            if is_new:
+                logger.info(
+                    f"👤 Novo visitante: total={total}"
+                    f" (sessão: {sid_display}...)"
+                )
+            else:
+                logger.debug(
+                    f"👤 Visitante recorrente: total={total}"
+                    f" (sessão: {sid_display}...)"
+                )
         else:
             logger.warning(
-                f"⚠️ Falha ao registrar visitante: status {response.status_code}"
+                f"⚠️ Falha ao registrar visitante:"
+                f" status {response.status_code}"
             )
 
+    except requests.exceptions.ConnectionError:
+        logger.debug("🔌 Backend não disponível para increment visitor")
     except Exception as e:
         logger.debug(f"Erro ao registrar visitante: {e}")
 
