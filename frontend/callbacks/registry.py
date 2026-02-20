@@ -36,19 +36,9 @@ def register_all_callbacks(app):
         register_cache_callbacks(app)
 
         #  Callbacks do contador de visitantes (usa app-session-id)
-        from . import (
-            visitor_callbacks,
-        )  # Importa para registrar automaticamente
+        from . import visitor_callbacks  # noqa: F401
 
-        # from .selection_info_callbacks import (
-        #     register_selection_info_callbacks
-        # )
-        # register_selection_info_callbacks(app)
-
-        # from .location_sync_callbacks import register_location_sync_callbacks
-        # register_location_sync_callbacks(app)
-
-        logger.info(" Todos callbacks registrados!")
+        logger.info("✅ Todos callbacks registrados!")
     except Exception as e:
         logger.error(f"❌ Erro ao registrar callbacks: {e}")
         raise
