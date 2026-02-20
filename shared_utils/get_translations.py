@@ -1,69 +1,120 @@
+"""
+Sistema centralizado de traduções i18n.
+
+Suporta chaves aninhadas nos arquivos JSON de tradução.
+Idiomas: Inglês (en, padrão) e Português (pt).
+
+Uso:
+    from shared_utils.get_translations import t, get_translations
+
+    # Acesso por chaves aninhadas
+    t("pt", "sidebar", "title")        → "Calculadora ETo"
+    t("en", "results", "new_query")    → "New Query"
+
+    # Dicionário completo
+    translations = get_translations("pt")
+    translations["navbar"]["home"]     → "INÍCIO"
+
+Arquivos:
+    config/translations/en.json
+    config/translations/pt.json
+"""
+
 import json
+import logging
 import os
-from typing import Dict
+from typing import Any, Dict
 
-from loguru import logger
+logger = logging.getLogger(__name__)
 
-# Cache em memória para armazenar as traduções já carregadas
-_translations_cache = {}
+# Cache em memória para traduções já carregadas
+_translations_cache: Dict[str, Dict[str, Any]] = {}
 
 
-def get_translations(lang: str = "pt") -> Dict[str, str]:
+def get_translations(lang: str = "en") -> Dict[str, Any]:
     """
-    Carrega as traduções de um arquivo JSON correspondente ao idioma,
-    com cache em memória para otimizar o desempenho.
-
-    Esta função espera que exista uma pasta 'config/translations' na raiz do projeto
-    contendo os arquivos, como 'config/translations/pt.json' e 'config/translations/en.json'.
+    Carrega traduções de um arquivo JSON com cache em memória.
 
     Args:
-        lang (str): O código do idioma (ex: 'pt', 'en').
+        lang: Código do idioma ('en' ou 'pt'). Padrão: 'en'.
 
     Returns:
-        Dict[str, str]: Um dicionário contendo os textos traduzidos.
+        Dicionário com traduções (pode conter sub-dicionários).
     """
-    # 1. Verifica se a tradução já está no cache para evitar ler o arquivo novamente
     if lang in _translations_cache:
         return _translations_cache[lang]
 
-    # 2. Constrói o caminho para o arquivo JSON de forma dinâmica
-    #    Isso funciona bem localmente e dentro do Docker.
-    #    Tenta múltiplos caminhos: relativo, absoluto /app, e baseado no arquivo atual
+    # Tentar múltiplos caminhos para o arquivo de traduções
+    possible_paths = [
+        os.path.join("config", "translations", f"{lang}.json"),
+        os.path.join("/app", "config", "translations", f"{lang}.json"),
+        os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "config",
+            "translations",
+            f"{lang}.json",
+        ),
+    ]
 
-    # Tentar caminho relativo primeiro
-    file_path = os.path.join("config", "translations", f"{lang}.json")
+    for file_path in possible_paths:
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    translations = json.load(f)
+                    _translations_cache[lang] = translations
+                    logger.info(
+                        f"✅ Traduções '{lang}' carregadas de: {file_path}"
+                    )
+                    return translations
+            except json.JSONDecodeError:
+                logger.error(f"❌ Erro de sintaxe no JSON: {file_path}")
+                return {}
 
-    # Se não encontrar, tentar com /app
-    if not os.path.exists(file_path):
-        file_path = os.path.join("/app", "config", "translations", f"{lang}.json")
+    # Fallback: se não encontrou o idioma solicitado, tenta inglês
+    logger.warning(
+        f"⚠️ Tradução '{lang}' não encontrada. Tentando fallback 'en'."
+    )
+    if lang != "en":
+        return get_translations("en")
 
-    # Se ainda não encontrar, tentar baseado na pasta utils
-    if not os.path.exists(file_path):
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        file_path = os.path.join(base_dir, "config", "translations", f"{lang}.json")
+    logger.error("❌ Arquivo de tradução padrão 'en.json' não encontrado.")
+    return {}
 
-    try:
-        # 3. Abre e carrega o arquivo JSON
-        with open(file_path, "r", encoding="utf-8") as f:
-            translations = json.load(f)
-            _translations_cache[lang] = translations  # Armazena no cache para futuras chamadas
-            logger.info(f"Traduções para '{lang}' carregadas do arquivo: {file_path}")
-            return translations
 
-    except FileNotFoundError:
-        logger.warning(
-            f"Arquivo de tradução não encontrado para '{lang}' em '{file_path}'. Usando 'pt' como fallback."
-        )
-        # 4. Se o arquivo do idioma solicitado não for encontrado, tenta carregar o português como padrão.
-        if lang != "pt":
-            return get_translations("pt")
+def t(lang: str, *keys: str, default: str = "") -> str:
+    """
+    Acessa tradução por caminho de chaves aninhadas.
+
+    Args:
+        lang: Código do idioma ('en' ou 'pt')
+        *keys: Caminho de chaves (ex: "sidebar", "title")
+        default: Valor padrão se chave não encontrada
+
+    Returns:
+        String traduzida ou default
+
+    Exemplos:
+        t("pt", "sidebar", "title")         → "Calculadora ETo"
+        t("en", "navbar", "home")            → "HOME"
+        t("pt", "results", "success_days")   → "dias calculados"
+        t("en", "inexistente", default="?")  → "?"
+    """
+    translations = get_translations(lang)
+    value = translations
+
+    for key in keys:
+        if isinstance(value, dict):
+            value = value.get(key)
         else:
-            # Se nem o arquivo de português for encontrado, retorna um dicionário vazio para evitar que o app quebre.
-            logger.error(
-                "Arquivo de tradução padrão 'pt.json' não encontrado. A interface pode aparecer sem textos."
-            )
-            return {}
+            return default
+        if value is None:
+            return default
 
-    except json.JSONDecodeError:
-        logger.error(f"Erro de sintaxe no arquivo JSON: {file_path}. Verifique se o JSON é válido.")
-        return {}  # Retorna vazio para não quebrar a aplicação
+    return value if isinstance(value, str) else default
+
+
+def clear_translations_cache():
+    """Limpa cache de traduções (útil para hot-reload em dev)."""
+    global _translations_cache
+    _translations_cache = {}
+    logger.info("🔄 Cache de traduções limpo")

@@ -88,7 +88,7 @@ class FooterManager:
 footer_manager = FooterManager()
 
 
-def create_footer(lang: str = "pt") -> html.Footer:
+def create_footer(lang: str = "en") -> html.Footer:
     """
     Cria footer profissional com 4 colunas responsivas.
     Args:
@@ -330,7 +330,8 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                 className="bi bi-people-fill me-2 footer-visitors",
                                             ),
                                             html.Span(
-                                                "Visitantes: ",
+                                                "Visitors: ",
+                                                id="visitor-label",
                                                 className="text-muted small",
                                             ),
                                             html.Strong(
@@ -339,7 +340,8 @@ def create_footer(lang: str = "pt") -> html.Footer:
                                                 className="text-primary small",
                                             ),
                                             html.Span(
-                                                " | Última hora: ",
+                                                " | Last hour: ",
+                                                id="visitor-hourly-label",
                                                 className="text-muted small ms-2",
                                             ),
                                             html.Strong(
@@ -393,20 +395,14 @@ def create_footer(lang: str = "pt") -> html.Footer:
 
 
 def _get_footer_texts(lang: str) -> Dict:
-    """Textos i18n."""
-    texts = {
-        "pt": {
-            "developers": "Desenvolvedores",
-            "partners": "Parceiros",
-            "links": "Links Importantes",
-        },
-        "en": {
-            "developers": "Developers",
-            "partners": "Partners",
-            "links": "Important Links",
-        },
+    """Textos i18n usando sistema centralizado de traduções."""
+    from shared_utils.get_translations import t
+
+    return {
+        "developers": t(lang, "footer", "developers", default="Developers"),
+        "partners": t(lang, "footer", "partners", default="Partners"),
+        "links": t(lang, "footer", "links", default="Important Links"),
     }
-    return texts.get(lang, texts["pt"])
 
 
 def _create_fallback_footer():

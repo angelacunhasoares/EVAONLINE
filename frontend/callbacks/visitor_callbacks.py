@@ -2,8 +2,9 @@
 Callbacks para contador de visitantes em tempo real.
 
 Fluxo:
-1. increment_visitor_on_page_load: Incrementa contador na primeira visita da sessão
-2. update_visitor_counter: Atualiza display no footer a cada 10 segundos
+1. update_visitor_counter: Atualiza display no footer a cada 10 segundos
+2. increment_visitor_on_page_load: Incrementa na primeira visita da sessão
+3. translate_visitor_labels: Traduz labels quando idioma muda
 
 Integração Backend:
 - POST /visitors/increment → VisitorCounterService.increment_visitor()
@@ -12,10 +13,13 @@ Integração Backend:
 Stores usados:
 - visitor-counter-interval (base_layout.py): Interval de 10s
 - app-session-id (base_layout.py): Session ID único por aba
+- language-store (base_layout.py): Idioma atual
 
 IDs de Output (footer.py):
 - visitor-count: Total de visitantes
 - visitor-count-hourly: Visitantes na última hora
+- visitor-label: Label "Visitors:" / "Visitantes:"
+- visitor-hourly-label: Label "Last hour:" / "Última hora:"
 """
 
 import logging
@@ -24,6 +28,7 @@ import requests
 from dash import Input, Output, State, callback, no_update
 
 from config.settings.app_config import get_legacy_settings
+from shared_utils.get_translations import t
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +60,6 @@ def update_visitor_counter(n_intervals):
 
     Chamado pelo dcc.Interval configurado em base_layout.py (10s).
     Consulta GET /visitors/stats para obter contagem atual.
-
-    Args:
-        n_intervals: Número de intervalos passados (incrementa a cada 10s)
-
-    Returns:
-        Tuple[str, str]: (total_visitors, hourly_visitors) formatados
     """
     try:
         response = requests.get(f"{API_BASE_URL}/visitors/stats", timeout=3)
@@ -71,7 +70,6 @@ def update_visitor_counter(n_intervals):
             hourly = data.get("current_hour_visitors", 0)
 
             if n_intervals and n_intervals % 30 == 0:
-                # Log apenas a cada 5 minutos (30 × 10s)
                 logger.info(
                     f"📊 Visitantes: {total} total, {hourly} última hora"
                 )
@@ -85,7 +83,6 @@ def update_visitor_counter(n_intervals):
         logger.debug("⏱️ Timeout ao buscar estatísticas de visitantes")
         return no_update, no_update
     except requests.exceptions.ConnectionError:
-        # Log apenas no primeiro erro (n_intervals=0 ou 1)
         if not n_intervals or n_intervals <= 1:
             logger.warning("🔌 Backend não disponível para visitor stats")
         return "offline", "offline"
@@ -105,26 +102,10 @@ def update_visitor_counter(n_intervals):
 )
 def increment_visitor_on_page_load(pathname, session_id):
     """
-    Incrementa o contador quando usuário acessa a aplicação.
+    Incrementa o contador quando usuário acessa a página principal.
 
-    Usa session_id para que o backend possa diferenciar
-    usuários únicos de page views repetidos.
-
-    Só incrementa na página principal (/) para evitar
-    inflar contagem com navegação interna.
-
-    O backend deduplica por session_id:
-    - Visitante novo no dia: incrementa total + hourly
-    - Visitante repetido no dia: incrementa apenas hourly (page view)
-
-    Args:
-        pathname: Caminho da URL atual
-        session_id: ID único da sessão (sessionStorage, via cache_callbacks)
-
-    Returns:
-        no_update: Não modifica o Interval (efeito colateral apenas)
+    Só incrementa na "/". Backend deduplica por session_id.
     """
-    # Só incrementar na página principal (evita inflar com navegação interna)
     if pathname not in ("/", None):
         return no_update
 
@@ -167,6 +148,30 @@ def increment_visitor_on_page_load(pathname, session_id):
         logger.debug(f"Erro ao registrar visitante: {e}")
 
     return no_update
+
+
+# ============================================================================
+# CALLBACK 3: Tradução dos labels do visitor counter
+# ============================================================================
+@callback(
+    [
+        Output("visitor-label", "children"),
+        Output("visitor-hourly-label", "children"),
+    ],
+    Input("language-store", "data"),
+)
+def translate_visitor_labels(lang):
+    """Traduz labels do contador de visitantes quando idioma muda."""
+    if not lang:
+        lang = "en"
+
+    visitors_text = t(lang, "footer", "visitors", default="Visitors")
+    last_hour_text = t(lang, "footer", "last_hour", default="Last hour")
+
+    return (
+        f"{visitors_text}: ",
+        f" | {last_hour_text}: ",
+    )
 
 
 logger.info("✅ Callbacks de contador de visitantes registrados")

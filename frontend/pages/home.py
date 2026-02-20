@@ -42,10 +42,12 @@ def create_sidebar_card():
                         [
                             html.H5(
                                 "ETo Calculator",
+                                id="sidebar-title",
                                 className="mb-0 fw-bold",
                             ),
                             html.Small(
                                 "FAO-56 Penman-Monteith",
+                                id="sidebar-subtitle",
                                 className="opacity-75",
                             ),
                         ],

@@ -8,9 +8,10 @@ import sys
 
 import dash_bootstrap_components as dbc
 import requests
-from dash import Input, Output, State, html, callback_context
+from dash import Input, Output, State, html, callback_context, no_update
 from dash.exceptions import PreventUpdate
 from geopy.geocoders import Nominatim
+from shared_utils.get_translations import t
 
 from frontend.utils.mode_detector import get_timezone_for_location
 from ..components.world_map_leaflet import (
@@ -35,7 +36,8 @@ def register_home_callbacks(app):
         try:
             # Fazer chamada para a API de health
             response = requests.get(
-                "http://localhost:8000/api/v1/health", timeout=5
+                "http://localhost:8000/api/v1/health",
+                timeout=5,
             )
             data = response.json()
 
@@ -104,7 +106,7 @@ def register_home_callbacks(app):
         try:
             # Fazer chamada para a API de status dos serviços
             response = requests.get(
-                "http://localhost:8000/api/v1/api/internal/" "services/status",
+                "http://localhost:8000/api/v1/api/internal/services/status",
                 timeout=10,
             )
             data = response.json()
@@ -397,6 +399,41 @@ def register_home_callbacks(app):
                 True,
                 default_sidebar_location,
             )
+
+    # ================================================================
+    # TRADUÇÃO DA SIDEBAR
+    # ================================================================
+    @app.callback(
+        [
+            Output("sidebar-title", "children"),
+            Output("sidebar-subtitle", "children"),
+            Output("calculate-eto-btn", "children", allow_duplicate=True),
+        ],
+        Input("language-store", "data"),
+        prevent_initial_call=True,
+    )
+    def translate_sidebar(lang):
+        """Traduz os elementos da sidebar quando o idioma muda."""
+        if not lang:
+            lang = "en"
+
+        calc_btn_content = [
+            html.I(className="bi bi-calculator-fill me-2"),
+            t(lang, "sidebar", "calculate_btn", default="CALCULATE ETo"),
+        ]
+
+        return (
+            t(lang, "sidebar", "title", default="ETo Calculator"),
+            t(
+                lang,
+                "sidebar",
+                "subtitle",
+                default="FAO-56 Penman-Monteith",
+            ),
+            calc_btn_content,
+        )
+
+    logger.info("✅ Callbacks da home registrados com sucesso")
 
 
 def get_location_info(lat, lon):
