@@ -401,19 +401,28 @@ def register_home_callbacks(app):
             )
 
     # ================================================================
-    # TRADUÇÃO DA SIDEBAR
+    # TRADUÇÃO DA SIDEBAR + MAP CARD
     # ================================================================
     @app.callback(
         [
             Output("sidebar-title", "children"),
             Output("sidebar-subtitle", "children"),
             Output("calculate-eto-btn", "children", allow_duplicate=True),
+            Output("sidebar-selected-location", "children"),
+            Output("sidebar-data-type", "children"),
+            Output("sidebar-manual-input-text", "children"),
+            Output("sidebar-apply-text", "children"),
+            Output("sidebar-altitude-help", "children"),
+            Output("data-type-radio", "options"),
+            Output("map-select-title", "children"),
+            Output("map-select-subtitle", "children"),
+            Output("matopiba-reference-text", "children"),
         ],
         Input("language-store", "data"),
         prevent_initial_call=True,
     )
     def translate_sidebar(lang):
-        """Traduz os elementos da sidebar quando o idioma muda."""
+        """Traduz todos os elementos da sidebar e map card quando o idioma muda."""
         if not lang:
             lang = "en"
 
@@ -422,15 +431,97 @@ def register_home_callbacks(app):
             t(lang, "sidebar", "calculate_btn", default="CALCULATE ETo"),
         ]
 
+        # Radio items traduzidos
+        radio_options = [
+            {
+                "label": html.Div(
+                    [
+                        html.I(
+                            className="bi bi-hourglass-split me-2 text-primary"
+                        ),
+                        html.Span(
+                            t(lang, "sidebar", "historical_label", default="Historical")
+                        ),
+                        html.Small(
+                            f" {t(lang, 'sidebar', 'historical_period', default='(1990 → yesterday)')}",
+                            className="text-muted ms-1",
+                        ),
+                    ],
+                    className="d-flex align-items-center",
+                ),
+                "value": "historical",
+            },
+            {
+                "label": html.Div(
+                    [
+                        html.I(
+                            className="bi bi-clock-history me-2 text-success"
+                        ),
+                        html.Span(
+                            t(lang, "sidebar", "recent_label", default="Recent")
+                        ),
+                        html.Small(
+                            f" {t(lang, 'sidebar', 'recent_period', default='(Last 7-30 days)')}",
+                            className="text-muted ms-1",
+                        ),
+                    ],
+                    className="d-flex align-items-center",
+                ),
+                "value": "recent",
+            },
+            {
+                "label": html.Div(
+                    [
+                        html.I(
+                            className="bi bi-cloud-sun-fill me-2 forecast-icon",
+                        ),
+                        html.Span(
+                            t(lang, "sidebar", "forecast_label", default="Forecast")
+                        ),
+                        html.Small(
+                            f" {t(lang, 'sidebar', 'forecast_period', default='(5 days)')}",
+                            className="text-muted ms-1",
+                        ),
+                    ],
+                    className="d-flex align-items-center",
+                ),
+                "value": "forecast",
+            },
+        ]
+
+        # MATOPIBA reference com tradução
+        matopiba_children = [
+            html.Strong("MATOPIBA"),
+            t(lang, "map", "matopiba_desc", default=": Acronym from the initials of the states of "),
+            html.Strong("Ma"),
+            "ranhão, ",
+            html.Strong("To"),
+            "cantins, ",
+            html.Strong("Pi"),
+            t(lang, "map", "matopiba_and", default="auí and "),
+            html.Strong("Ba"),
+            "hia. ",
+            html.A(
+                t(lang, "map", "learn_more_embrapa", default="Learn more (Embrapa)"),
+                href="https://www.embrapa.br/territorial/busca-de-publicacoes/-/publicacao/1037313/proposta-de-delimitacao-territorial-do-matopiba",
+                target="_blank",
+                className="text-primary",
+            ),
+        ]
+
         return (
             t(lang, "sidebar", "title", default="ETo Calculator"),
-            t(
-                lang,
-                "sidebar",
-                "subtitle",
-                default="FAO-56 Penman-Monteith",
-            ),
+            t(lang, "sidebar", "subtitle", default="FAO-56 Penman-Monteith"),
             calc_btn_content,
+            t(lang, "sidebar", "selected_location", default="Selected Location"),
+            t(lang, "sidebar", "data_type", default="Data Type"),
+            t(lang, "sidebar", "manual_input", default="Manual Input"),
+            t(lang, "sidebar", "apply", default="Apply"),
+            t(lang, "sidebar", "altitude_help", default="Altitude is optional (auto-detected via SRTM)"),
+            radio_options,
+            t(lang, "map", "select_location", default="Select Location"),
+            t(lang, "map", "click_or_geo", default="Click on the map or use geolocation"),
+            matopiba_children,
         )
 
     logger.info("✅ Callbacks da home registrados com sucesso")

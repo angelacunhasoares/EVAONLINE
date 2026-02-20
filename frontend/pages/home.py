@@ -68,6 +68,7 @@ def create_sidebar_card():
                                     ),
                                     html.Span(
                                         "Selected Location",
+                                        id="sidebar-selected-location",
                                         className="fw-semibold text-dark",
                                     ),
                                 ],
@@ -96,7 +97,10 @@ def create_sidebar_card():
                                             html.I(
                                                 className="bi bi-pencil-square me-1"
                                             ),
-                                            "Manual Input",
+                                            html.Span(
+                                                "Manual Input",
+                                                id="sidebar-manual-input-text",
+                                            ),
                                         ],
                                         id="toggle-manual-coords",
                                         color="link",
@@ -172,7 +176,10 @@ def create_sidebar_card():
                                                         html.I(
                                                             className="bi bi-check2-circle me-1"
                                                         ),
-                                                        "Apply",
+                                                        html.Span(
+                                                            "Apply",
+                                                            id="sidebar-apply-text",
+                                                        ),
                                                     ],
                                                     id="apply-manual-coords",
                                                     color="success",
@@ -182,6 +189,7 @@ def create_sidebar_card():
                                                 ),
                                                 html.Small(
                                                     "Altitude is optional (auto-detected via SRTM)",
+                                                    id="sidebar-altitude-help",
                                                     className="text-muted d-block mt-1 help-text",
                                                 ),
                                             ],
@@ -205,6 +213,7 @@ def create_sidebar_card():
                                     ),
                                     html.Span(
                                         "Data Type",
+                                        id="sidebar-data-type",
                                         className="fw-semibold text-dark",
                                     ),
                                 ],
@@ -339,10 +348,12 @@ def create_map_card():
                         [
                             html.H5(
                                 "Select Location",
+                                id="map-select-title",
                                 className="mb-0 fw-bold",
                             ),
                             html.Small(
                                 "Click on the map or use geolocation",
+                                id="map-select-subtitle",
                                 className="opacity-75",
                             ),
                         ],
@@ -382,22 +393,24 @@ def create_map_card():
                             html.Small(
                                 [
                                     html.Strong("MATOPIBA"),
-                                    ": Acrônimo das iniciais dos estados do ",
+                                    ": Acronym from the initials of the states of ",
                                     html.Strong("Ma"),
                                     "ranhão, ",
                                     html.Strong("To"),
                                     "cantins, ",
                                     html.Strong("Pi"),
-                                    "auí e ",
+                                    "auí and ",
                                     html.Strong("Ba"),
                                     "hia. ",
                                     html.A(
-                                        "Saiba mais (Embrapa)",
+                                        "Learn more (Embrapa)",
+                                        id="matopiba-learn-more",
                                         href="https://www.embrapa.br/territorial/busca-de-publicacoes/-/publicacao/1037313/proposta-de-delimitacao-territorial-do-matopiba",
                                         target="_blank",
                                         className="text-primary",
                                     ),
                                 ],
+                                id="matopiba-reference-text",
                                 className="text-muted matopiba-reference",
                             ),
                         ],

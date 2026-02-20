@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 @callback(
     Output("language-label", "children"),
-    Output("language-toggle", "style"),
     Output("language-store", "data"),
     Input("language-toggle", "n_clicks"),
     State("language-store", "data"),
@@ -46,7 +45,7 @@ def toggle_language(n_clicks, current_language):
         current_language: Idioma atual ("en" ou "pt")
 
     Returns:
-        tuple: (novo_label, estilo_botão, código_idioma)
+        tuple: (novo_label, código_idioma)
     """
     if not n_clicks:
         raise PreventUpdate
@@ -59,21 +58,7 @@ def toggle_language(n_clicks, current_language):
 
     logger.info(f"🌐 Idioma alterado: {current_language} → {new_language}")
 
-    # Estilo do botão (verde teal C4AI)
-    button_style = {
-        "backgroundColor": "#00695c",
-        "borderColor": "#00695c",
-        "fontWeight": "600",
-        "fontSize": "0.9rem",
-        "padding": "8px 20px",
-        "textTransform": "uppercase",
-        "letterSpacing": "0.5px",
-        "borderRadius": "4px",
-        "minWidth": "130px",
-        "textAlign": "center",
-    }
-
-    return new_label, button_style, new_language
+    return new_label, new_language
 
 
 # ============================================================================

@@ -16,6 +16,14 @@
         "subtitle": "FAO-56 Penman-Monteith",
         "click_map": "Click on the map to select a point",
         "selected_location": "Selected Location",
+        "manual_input": "Manual Input",
+        "data_type": "Data Type",
+        "historical_label": "Historical",
+        "historical_period": "(1990 \u2192 yesterday)",
+        "recent_label": "Recent",
+        "recent_period": "(Last 7-30 days)",
+        "forecast_label": "Forecast",
+        "forecast_period": "(5 days)",
         "latitude": "Latitude",
         "longitude": "Longitude",
         "altitude": "Altitude",
@@ -39,6 +47,11 @@
     },
     "map": {
         "title": "Interactive Map",
+        "select_location": "Select Location",
+        "click_or_geo": "Click on the map or use geolocation",
+        "learn_more_embrapa": "Learn more (Embrapa)",
+        "matopiba_desc": ": Acronym from the initials of the states of ",
+        "matopiba_and": "au\u00ed and ",
         "layers": "Layers",
         "brazil_borders": "Brazil - State Borders",
         "matopiba": "MATOPIBA - Region",
@@ -125,7 +138,8 @@
         "last_hour": "Last hour",
         "license": "License",
         "documentation": "Documentation",
-        "api": "API"
+        "api": "API",
+        "copyright": ". Open-source under license "
     },
     "errors": {
         "connection_error": "Could not connect to the server",

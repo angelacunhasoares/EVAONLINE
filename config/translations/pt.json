@@ -15,8 +15,14 @@
         "title": "Calculadora ETo",
         "subtitle": "FAO-56 Penman-Monteith",
         "click_map": "Clique no mapa para selecionar um ponto",
-        "selected_location": "Local Selecionado",
-        "latitude": "Latitude",
+        "selected_location": "Local Selecionado",        "manual_input": "Entrada Manual",
+        "data_type": "Tipo de Dados",
+        "historical_label": "Hist\u00f3rico",
+        "historical_period": "(1990 \u2192 ontem)",
+        "recent_label": "Recente",
+        "recent_period": "(\u00daltimos 7-30 dias)",
+        "forecast_label": "Previs\u00e3o",
+        "forecast_period": "(5 dias)",        "latitude": "Latitude",
         "longitude": "Longitude",
         "altitude": "Altitude",
         "altitude_placeholder": "546 (m)",
@@ -39,6 +45,11 @@
     },
     "map": {
         "title": "Mapa Interativo",
+        "select_location": "Selecionar Local",
+        "click_or_geo": "Clique no mapa ou use geolocaliza\u00e7\u00e3o",
+        "learn_more_embrapa": "Saiba mais (Embrapa)",
+        "matopiba_desc": ": Acr\u00f4nimo das iniciais dos estados do ",
+        "matopiba_and": "au\u00ed e ",
         "layers": "Camadas",
         "brazil_borders": "Brasil - Fronteiras Estaduais",
         "matopiba": "MATOPIBA - Região",
@@ -125,7 +136,8 @@
         "last_hour": "Última hora",
         "license": "Licença",
         "documentation": "Documentação",
-        "api": "API"
+        "api": "API",
+        "copyright": ". Open-source sob licença "
     },
     "errors": {
         "connection_error": "Não foi possível conectar ao servidor",

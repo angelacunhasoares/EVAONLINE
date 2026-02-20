@@ -248,7 +248,8 @@ def create_footer(lang: str = "en") -> html.Footer:
                                                             className="bi bi-file-earmark-text footer-icon",
                                                         ),
                                                         html.Span(
-                                                            "Licença",
+                                                            "License",
+                                                            id="footer-license-label",
                                                             className="d-block small mt-1 footer-icon-label",
                                                         ),
                                                     ],
@@ -269,7 +270,8 @@ def create_footer(lang: str = "en") -> html.Footer:
                                                             className="bi bi-book footer-icon",
                                                         ),
                                                         html.Span(
-                                                            "Documentação",
+                                                            "Documentation",
+                                                            id="footer-docs-label",
                                                             className="d-block small mt-1 footer-icon-label",
                                                         ),
                                                     ],
@@ -365,7 +367,10 @@ def create_footer(lang: str = "en") -> html.Footer:
                                         [
                                             f"Copyright ©{footer_manager.current_year} ",
                                             html.Strong("EVAonline"),
-                                            ". Open-source sob licença ",
+                                            html.Span(
+                                                ". Open-source under license ",
+                                                id="footer-copyright",
+                                            ),
                                             html.A(
                                                 "AGPLv3",
                                                 href="https://github.com/angelassilviane/EVAONLINE/blob/main/LICENSE",

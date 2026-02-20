@@ -20,6 +20,9 @@ IDs de Output (footer.py):
 - visitor-count-hourly: Visitantes na última hora
 - visitor-label: Label "Visitors:" / "Visitantes:"
 - visitor-hourly-label: Label "Last hour:" / "Última hora:"
+- footer-license-label: Label "License" / "Licença"
+- footer-docs-label: Label "Documentation" / "Documentação"
+- footer-copyright: Texto "Open-source under license" / "sob licença"
 """
 
 import logging
@@ -151,26 +154,37 @@ def increment_visitor_on_page_load(pathname, session_id):
 
 
 # ============================================================================
-# CALLBACK 3: Tradução dos labels do visitor counter
+# CALLBACK 3: Tradução dos labels do visitor counter e footer
 # ============================================================================
 @callback(
     [
         Output("visitor-label", "children"),
         Output("visitor-hourly-label", "children"),
+        Output("footer-license-label", "children"),
+        Output("footer-docs-label", "children"),
+        Output("footer-copyright", "children"),
     ],
     Input("language-store", "data"),
 )
 def translate_visitor_labels(lang):
-    """Traduz labels do contador de visitantes quando idioma muda."""
+    """Traduz labels do contador de visitantes e links do footer quando idioma muda."""
     if not lang:
         lang = "en"
 
     visitors_text = t(lang, "footer", "visitors", default="Visitors")
     last_hour_text = t(lang, "footer", "last_hour", default="Last hour")
+    license_text = t(lang, "footer", "license", default="License")
+    docs_text = t(lang, "footer", "documentation", default="Documentation")
+    copyright_text = t(
+        lang, "footer", "copyright", default=". Open-source under license "
+    )
 
     return (
         f"{visitors_text}: ",
         f" | {last_hour_text}: ",
+        license_text,
+        docs_text,
+        copyright_text,
     )
 
 
