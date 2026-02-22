@@ -309,10 +309,43 @@ small {
     min-width: 42px;
 }
 
-/* DatePicker */
+/* DatePicker — input fields */
+.SingleDatePicker,
+.SingleDatePickerInput {
+    width: 100% !important;
+    display: block !important;
+}
+
+.DateInput {
+    width: 100% !important;
+}
+
 .DateInput_input {
     border-radius: var(--radius-md) !important;
     font-size: 0.95rem !important;
+    padding: 8px 12px !important;
+    width: 100% !important;
+    line-height: 1.4 !important;
+}
+
+/* DatePicker — calendar popup */
+.SingleDatePicker_picker {
+    z-index: 1050 !important;
+    transform: scale(1.15) !important;
+    transform-origin: top left !important;
+}
+
+.SingleDatePicker_picker .CalendarDay {
+    font-size: 0.78rem !important;
+}
+
+.SingleDatePicker_picker .DayPicker_weekHeader_li small {
+    font-size: 0.75rem !important;
+}
+
+.SingleDatePicker_picker .CalendarMonth_caption strong {
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
 }
 
 /* Custom radio group (sidebar) */

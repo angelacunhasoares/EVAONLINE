@@ -87,8 +87,8 @@ EVAonline_ElsevierSoftwareX/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/angelacunhasoares/EVAonline_SoftwareX.git
-   cd EVAonline_ElsevierSoftwareX
+   git clone https://github.com/angelacunhasoares/EVAONLINE.git
+   cd EVAONLINE
    ```
 
 2. **Set up environment variables:**

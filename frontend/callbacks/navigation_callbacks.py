@@ -12,13 +12,13 @@ NOTA: Navegação via NavLink usa href (browser nativo).
 
 import logging
 
-from dash import html
-from dash.dependencies import Input, Output, State
+from dash.dependencies import ClientsideFunction, Input, Output, State
 
 # Layouts das páginas
 from ..pages.home import home_layout
-from ..pages.about import about_layout
+from ..pages.about import create_about_layout
 from ..pages.documentation import documentation_layout
+from ..pages.architecture import create_architecture_layout
 
 logger = logging.getLogger(__name__)
 
@@ -28,30 +28,42 @@ def register_navigation_callbacks(app):
     Registra callbacks de navegação.
 
     Callbacks registrados:
-    1. display_page: Roteamento baseado na URL
+    1. display_page: Roteamento baseado na URL (com suporte a idioma)
     2. toggle_navbar: Toggle da navbar em mobile
     3. clientside_callback: Atualização do título da página
     """
 
     # ================================================================
-    # 1. ROTEAMENTO - Exibe página baseado na URL
+    # 1. ROTEAMENTO - Exibe página baseado na URL e idioma
     # ================================================================
     @app.callback(
         Output("page-content", "children"),
         Input("url", "pathname"),
+        Input("language-store", "data"),
     )
-    def display_page(pathname):
+    def display_page(pathname, lang):
         """
         Controla a exibição das páginas baseado na URL.
+        Para a página Architecture, regenera o layout com o idioma atual.
 
         Rotas:
         - /documentation → Página de documentação
         - /about → Página sobre
+        - /architecture → Página de arquitetura (traduzível)
         - / (e qualquer outra) → Home (mapa + cálculo ETo)
         """
-        logger.info(f"🧭 Navegando para: {pathname}")
+        if not lang:
+            lang = "en"
+
+        logger.info(f"🧭 Navegando para: {pathname} (lang={lang})")
+
+        # Páginas dinâmicas (traduzíveis)
+        if pathname == "/architecture":
+            return create_architecture_layout(lang)
+        if pathname == "/about":
+            return create_about_layout(lang)
+
         pages = {
-            "/about": about_layout,
             "/documentation": documentation_layout,
         }
         # Qualquer rota não mapeada vai para home (incluindo "/" e "/eto-calculator")
@@ -84,6 +96,7 @@ def register_navigation_callbacks(app):
                 '/': 'EVAonline: Home',
                 '/eto-calculator': 'EVAonline: Calcular ETo',
                 '/documentation': 'EVAonline: Documentation',
+                '/architecture': 'EVAonline: Architecture',
                 '/about': 'EVAonline: About'
             };
             document.title = titles[pathname] || 'EVAonline';
@@ -92,6 +105,37 @@ def register_navigation_callbacks(app):
         """,
         Output("url", "hash"),
         Input("url", "pathname"),
+    )
+
+    # ================================================================
+    # 4. DATEPICKER LOCALE - Translates calendar month/day names
+    # via DOM manipulation (MutationObserver in datepicker_locale.js)
+    # ================================================================
+    app.clientside_callback(
+        ClientsideFunction("datepicker_locale", "set_locale"),
+        Output("datepicker-locale-output", "children"),
+        Input("language-store", "data"),
+    )
+
+    # ================================================================
+    # 5. GEOLOCATE + LAYER TOGGLE BUTTON TITLES - Clientside
+    # Updates the LocateControl button title (DOM-level) and
+    # layer toggle button title when language changes
+    # ================================================================
+    app.clientside_callback(
+        """
+        function(lang) {
+            setTimeout(function() {
+                var btn = document.querySelector('.leaflet-control-locate a');
+                if (btn) {
+                    btn.title = (lang === 'pt') ? 'Minha Localização' : 'My Location';
+                }
+            }, 500);
+            return (lang === 'pt') ? 'Alternar Camadas' : 'Toggle Layers';
+        }
+        """,
+        Output("layer-control-toggle", "title"),
+        Input("language-store", "data"),
     )
 
     logger.info("✅ Callbacks de navegação registrados com sucesso")

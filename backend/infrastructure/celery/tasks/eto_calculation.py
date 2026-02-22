@@ -42,6 +42,7 @@ def calculate_eto_task(
     session_id: str | None = None,
     file_format: str = "csv",  # csv (padrão) ou excel
     enable_fusion: bool = False,  # 🔀 Flag para fusão Kalman
+    lang: str = "en",  # Language for email templates (en/pt)
 ) -> dict[str, Any]:
     """
     Calcula ETo para localização com progresso em tempo real.
@@ -122,6 +123,7 @@ def calculate_eto_task(
                     end_date=end_date,
                     started_at=start_time,
                     file_format=file_format,
+                    lang=lang,
                 )
 
                 send_html_email(
@@ -489,6 +491,7 @@ def calculate_eto_task(
                             file_format=file_format,
                             elevation=result.get("elevation", {}).get("value"),
                             summary_stats=summary_stats,
+                            lang=lang,
                         )
 
                         # Enviar email HTML com anexo
@@ -562,6 +565,7 @@ def calculate_eto_task(
                         start_date=start_date,
                         end_date=end_date,
                         error_message=str(e),
+                        lang=lang,
                     )
                     send_html_email(
                         to=email, subject=subject, html_body=html_body

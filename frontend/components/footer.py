@@ -114,6 +114,7 @@ def create_footer(lang: str = "en") -> html.Footer:
                                     [
                                         html.H6(
                                             texts["developers"],
+                                            id="footer-developers-title",
                                             className="mb-3 text-center footer-column-title",
                                         ),
                                         html.Ul(
@@ -185,6 +186,7 @@ def create_footer(lang: str = "en") -> html.Footer:
                                     [
                                         html.H6(
                                             texts["partners"],
+                                            id="footer-partners-title",
                                             className="mb-3 text-center footer-column-title",
                                         ),
                                         html.Div(
@@ -216,6 +218,7 @@ def create_footer(lang: str = "en") -> html.Footer:
                                     [
                                         html.H6(
                                             texts["links"],
+                                            id="footer-links-title",
                                             className="mb-3 text-center footer-column-title",
                                         ),
                                         html.Div(
@@ -235,7 +238,7 @@ def create_footer(lang: str = "en") -> html.Footer:
                                                     href=(
                                                         "https://github.com/"
                                                         "angelacunhasoares/"
-                                                        "EVAonline_SoftwareX"
+                                                        "EVAONLINE"
                                                     ),
                                                     target="_blank",
                                                     rel="noopener noreferrer",
@@ -256,8 +259,8 @@ def create_footer(lang: str = "en") -> html.Footer:
                                                     href=(
                                                         "https://github.com/"
                                                         "angelacunhasoares/"
-                                                        "EVAonline_SoftwareX?"
-                                                        "tab=License-1-ov-file"
+                                                        "EVAONLINE/blob/main/"
+                                                        "LICENSE"
                                                     ),
                                                     target="_blank",
                                                     rel="noopener noreferrer",
@@ -373,7 +376,7 @@ def create_footer(lang: str = "en") -> html.Footer:
                                             ),
                                             html.A(
                                                 "AGPLv3",
-                                                href="https://github.com/angelassilviane/EVAONLINE/blob/main/LICENSE",
+                                                href="https://github.com/angelacunhasoares/EVAONLINE/blob/main/LICENSE",
                                                 target="_blank",
                                                 rel="noopener noreferrer",
                                                 className="footer-license-link",

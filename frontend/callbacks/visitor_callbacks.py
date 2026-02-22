@@ -163,6 +163,9 @@ def increment_visitor_on_page_load(pathname, session_id):
         Output("footer-license-label", "children"),
         Output("footer-docs-label", "children"),
         Output("footer-copyright", "children"),
+        Output("footer-developers-title", "children"),
+        Output("footer-partners-title", "children"),
+        Output("footer-links-title", "children"),
     ],
     Input("language-store", "data"),
 )
@@ -178,6 +181,9 @@ def translate_visitor_labels(lang):
     copyright_text = t(
         lang, "footer", "copyright", default=". Open-source under license "
     )
+    developers_text = t(lang, "footer", "developers", default="Developers")
+    partners_text = t(lang, "footer", "partners", default="Partners")
+    links_text = t(lang, "footer", "links", default="Important Links")
 
     return (
         f"{visitors_text}: ",
@@ -185,6 +191,9 @@ def translate_visitor_labels(lang):
         license_text,
         docs_text,
         copyright_text,
+        developers_text,
+        partners_text,
+        links_text,
     )
 
 

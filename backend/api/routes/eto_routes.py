@@ -65,6 +65,7 @@ class EToCalculationRequest(BaseModel):
     visitor_id: Optional[str] = None  # ID único do visitante
     session_id: Optional[str] = None  # ID da sessão
     file_format: Optional[str] = "csv"  # csv (padrão) ou excel
+    lang: Optional[str] = "en"  # Language for email templates (en/pt)
 
 
 class LocationInfoRequest(BaseModel):
@@ -194,6 +195,7 @@ async def calculate_eto(
             session_id=request.session_id,  # ID da sessão
             file_format=request.file_format,  # Formato: excel ou csv
             enable_fusion=enable_fusion,  # Flag de fusão Kalman
+            lang=request.lang,  # Language for email templates
         )
 
         task_id = task.id

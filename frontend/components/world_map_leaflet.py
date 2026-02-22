@@ -47,6 +47,7 @@ def create_world_map():
     # ✅ LocateControl para geolocalizacao automatica do usuario
     # Configuracoes otimizadas para performance
     locate_control = dl.LocateControl(
+        id="locate-control",
         locateOptions={
             "enableHighAccuracy": False,  # Mais rapido (usa IP/WiFi em vez de GPS)
             "maxZoom": 14,  # Zoom menor para carregar mais rapido
@@ -911,7 +912,7 @@ def create_custom_layer_control():
                 "🗺️",
                 id="layer-control-toggle",
                 n_clicks=0,
-                title="Alternar Camadas",
+                title="Toggle Layers",
                 className="layer-control-toggle-btn",
             ),
             # ✅ Painel Collapsible (inicialmente oculto)
@@ -921,14 +922,15 @@ def create_custom_layer_control():
                     html.Div(
                         [
                             html.H6(
-                                "🗺️ Camadas do Mapa",
+                                "🗺️ Map Layers",
+                                id="layer-control-title",
                                 className="layer-control-title",
                             ),
                             html.Button(
                                 "✕",
                                 id="layer-control-close",
                                 n_clicks=0,
-                                title="Fechar",
+                                title="Close",
                                 className="layer-control-close-btn",
                             ),
                         ],
@@ -949,7 +951,7 @@ def create_custom_layer_control():
                                                             src="/assets/images/Flag_of_Brazil.svg",
                                                             className="layer-flag-icon",
                                                         ),
-                                                        " Brasil - Estados",
+                                                        " Brazil - States",
                                                     ]
                                                 ),
                                                 "value": "brasil",
@@ -968,7 +970,7 @@ def create_custom_layer_control():
                                     dcc.Checklist(
                                         options=[
                                             {
-                                                "label": " 🌾 MATOPIBA - Região",
+                                                "label": " 🌾 MATOPIBA - Region",
                                                 "value": "matopiba",
                                             }
                                         ],
@@ -985,7 +987,7 @@ def create_custom_layer_control():
                                     dcc.Checklist(
                                         options=[
                                             {
-                                                "label": " 🏘️ 337 Cidades",
+                                                "label": " 🏘️ 337 Cities",
                                                 "value": "cities",
                                             }
                                         ],

@@ -197,23 +197,30 @@ def register_home_callbacks(app):
             Output("sidebar-location-display", "children"),
         ],
         Input("world-map", "clickData"),
+        State("language-store", "data"),
         prevent_initial_call=True,
     )
-    def handle_map_click(click_data):
+    def handle_map_click(click_data, lang):
         """
         Captura clique no mapa e habilita botões.
 
         Args:
             click_data: Dict com 'latlng' = [lat, lng] (lista de 2 números)
+            lang: Idioma atual ('en' ou 'pt')
 
         Returns:
             tuple: (click_data, location_data, nav_coords, marker, coords_display, btn_disabled, sidebar_location)
         """
+        if not lang:
+            lang = "en"
+
+        click_map_text = t(lang, "sidebar", "click_map", default="Click on the map to select a point")
+
         # Display padrão para sidebar
         default_sidebar_location = dbc.Alert(
             [
                 html.I(className="bi bi-hand-index-thumb me-2"),
-                "Click on the map to select a point",
+                click_map_text,
             ],
             color="secondary",
             className="mb-0 small py-2",
@@ -228,7 +235,7 @@ def register_home_callbacks(app):
         if not click_data or click_data == {}:
             logger.warning("click_data vazio ou None")
             debug_msg = html.Div(
-                "Click on the map to select a location",
+                click_map_text,
                 className="alert alert-info small",
             )
             return (
@@ -417,11 +424,13 @@ def register_home_callbacks(app):
             Output("map-select-title", "children"),
             Output("map-select-subtitle", "children"),
             Output("matopiba-reference-text", "children"),
+            Output("sidebar-location-display", "children", allow_duplicate=True),
         ],
         Input("language-store", "data"),
+        State("selected-location-data", "data"),
         prevent_initial_call=True,
     )
-    def translate_sidebar(lang):
+    def translate_sidebar(lang, selected_location):
         """Traduz todos os elementos da sidebar e map card quando o idioma muda."""
         if not lang:
             lang = "en"
@@ -509,6 +518,19 @@ def register_home_callbacks(app):
             ),
         ]
 
+        # Sidebar location display: only update if no location is selected
+        if selected_location and selected_location.get("lat") is not None:
+            sidebar_location_display = no_update
+        else:
+            sidebar_location_display = dbc.Alert(
+                [
+                    html.I(className="bi bi-hand-index-thumb me-2"),
+                    t(lang, "sidebar", "click_map", default="Click on the map to select a point"),
+                ],
+                color="secondary",
+                className="mb-0 small py-2",
+            )
+
         return (
             t(lang, "sidebar", "title", default="ETo Calculator"),
             t(lang, "sidebar", "subtitle", default="FAO-56 Penman-Monteith"),
@@ -522,7 +544,68 @@ def register_home_callbacks(app):
             t(lang, "map", "select_location", default="Select Location"),
             t(lang, "map", "click_or_geo", default="Click on the map or use geolocation"),
             matopiba_children,
+            sidebar_location_display,
         )
+
+    # ================================================================
+    # TRADUÇÃO DO CONTROLE DE CAMADAS DO MAPA
+    # ================================================================
+    @app.callback(
+        [
+            Output("layer-control-title", "children"),
+            Output("layer-control-close", "title"),
+            Output("layer-brasil-toggle", "options"),
+            Output("layer-matopiba-toggle", "options"),
+            Output("layer-cities-toggle", "options"),
+            Output("layer-piracicaba-toggle", "options"),
+        ],
+        Input("language-store", "data"),
+    )
+    def translate_layer_control(lang):
+        """Traduz o controle de camadas do mapa quando o idioma muda."""
+        if not lang:
+            lang = "en"
+
+        title = "🗺️ " + t(lang, "map", "layer_control_title", default="Map Layers")
+        close_title = t(lang, "map", "close", default="Close")
+
+        brasil_options = [
+            {
+                "label": html.Span(
+                    [
+                        html.Img(
+                            src="/assets/images/Flag_of_Brazil.svg",
+                            className="layer-flag-icon",
+                        ),
+                        " " + t(lang, "map", "brazil_states", default="Brazil - States"),
+                    ]
+                ),
+                "value": "brasil",
+            }
+        ]
+
+        matopiba_options = [
+            {
+                "label": " 🌾 " + t(lang, "map", "matopiba_region", default="MATOPIBA - Region"),
+                "value": "matopiba",
+            }
+        ]
+
+        cities_options = [
+            {
+                "label": " 🏘️ " + t(lang, "map", "cities_337", default="337 Cities"),
+                "value": "cities",
+            }
+        ]
+
+        piracicaba_options = [
+            {
+                "label": " 🎓 " + t(lang, "map", "piracicaba_sp", default="Piracicaba/SP"),
+                "value": "piracicaba",
+            }
+        ]
+
+        return title, close_title, brasil_options, matopiba_options, cities_options, piracicaba_options
 
     logger.info("✅ Callbacks da home registrados com sucesso")
 

@@ -307,14 +307,22 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
-      # 🔥 Worker especializado: apenas tarefas ETo
+      # SMTP para envio de emails
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
+      # Worker especializado: apenas tarefas ETo
       - CELERY_QUEUES=eto
-      - CELERY_CONCURRENCY=2 # 🔥 Limitado para evitar sobrecarga
+      - CELERY_CONCURRENCY=2 # Limitado para evitar sobrecarga
       - CELERY_PREFETCH_MULTIPLIER=1
       - CELERY_TASK_ROUTES={"backend.infrastructure.celery.tasks.eto_calculation.calculate_eto_task":{"queue":"eto"}}
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
+      - ./temp:/app/temp
     depends_on:
       postgres:
         condition: service_healthy

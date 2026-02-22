@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 # CALLBACK 1: Toggle de idioma (botão PT/EN)
 # ============================================================================
 @callback(
-    Output("language-label", "children"),
     Output("language-store", "data"),
     Input("language-toggle", "n_clicks"),
     State("language-store", "data"),
@@ -37,15 +36,14 @@ def toggle_language(n_clicks, current_language):
     """
     Alterna entre Português e Inglês ao clicar no botão.
 
-    O label mostra o OUTRO idioma (o que será ativado ao clicar).
-    Ex: Se está em EN, label mostra "PORTUGUÊS" (para trocar).
+    O label é atualizado por translate_navbar_links (que reage ao language-store).
 
     Args:
         n_clicks: Número de cliques no botão
         current_language: Idioma atual ("en" ou "pt")
 
     Returns:
-        tuple: (novo_label, código_idioma)
+        str: Novo código de idioma
     """
     if not n_clicks:
         raise PreventUpdate
@@ -53,36 +51,41 @@ def toggle_language(n_clicks, current_language):
     # Alterna o idioma
     new_language = "pt" if current_language == "en" else "en"
 
-    # Label mostra o OUTRO idioma (convite para trocar)
-    new_label = t(new_language, "navbar", "language_button", default="ENGLISH")
-
     logger.info(f"🌐 Idioma alterado: {current_language} → {new_language}")
 
-    return new_label, new_language
+    return new_language
 
 
 # ============================================================================
 # CALLBACK 2: Tradução dos links da navbar
 # ============================================================================
 @callback(
+    Output("language-label", "children"),
     Output("nav-home", "children"),
     Output("nav-documentation", "children"),
+    Output("nav-architecture", "children"),
     Output("nav-about", "children"),
     Input("language-store", "data"),
 )
 def translate_navbar_links(lang):
     """
-    Traduz os links da navbar quando o idioma muda.
+    Traduz os links da navbar e atualiza o label do botão de idioma.
 
     Dispara automaticamente quando language-store é atualizado.
     Também dispara na carga inicial (language-store default = "en").
+
+    O label do botão mostra o OUTRO idioma (convite para trocar):
+    - Se está em EN → botão mostra "PORTUGUÊS"
+    - Se está em PT → botão mostra "ENGLISH"
     """
     if not lang:
         lang = "en"
 
     return (
+        t(lang, "navbar", "language_button", default="PORTUGUÊS"),
         t(lang, "navbar", "home", default="HOME"),
         t(lang, "navbar", "documentation", default="DOCUMENTATION"),
+        t(lang, "navbar", "architecture", default="ARCHITECTURE"),
         t(lang, "navbar", "about", default="ABOUT"),
     )
 
@@ -94,6 +97,7 @@ def translate_navbar_links(lang):
     [
         Output("nav-home", "style"),
         Output("nav-documentation", "style"),
+        Output("nav-architecture", "style"),
         Output("nav-about", "style"),
     ],
     Input("url", "pathname"),
@@ -122,11 +126,13 @@ def highlight_active_link(pathname):
 
     is_home = pathname in ("/", "/eto-calculator", None)
     is_docs = pathname == "/documentation"
+    is_arch = pathname == "/architecture"
     is_about = pathname == "/about"
 
     return (
         active_style if is_home else base_style,
         active_style if is_docs else base_style,
+        active_style if is_arch else base_style,
         active_style if is_about else base_style,
     )
 

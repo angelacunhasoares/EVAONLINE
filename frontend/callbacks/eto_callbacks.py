@@ -23,6 +23,7 @@ import pytz
 
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html, no_update
+from shared_utils.get_translations import t
 
 logger = logging.getLogger(__name__)
 
@@ -411,9 +412,10 @@ def render_location_input(mode, search):
         Input("data-type-radio", "value"),
         Input("navigation-coordinates", "data"),
     ],
+    State("language-store", "data"),
     prevent_initial_call=True,
 )
-def update_fusion_info(data_type, coords_data):
+def update_fusion_info(data_type, coords_data, lang):
     """
     Atualiza info de fusão automática baseado no modo selecionado.
     Exibe cards visuais abaixo do mapa com info de período e fontes.
@@ -426,6 +428,9 @@ def update_fusion_info(data_type, coords_data):
     if not data_type:
         return None  # No card shown until user selects a data type
 
+    if not lang:
+        lang = "en"
+
     # Verificar se está nos EUA
     in_usa = False
     if coords_data:
@@ -433,16 +438,19 @@ def update_fusion_info(data_type, coords_data):
         lon = coords_data.get("lon", 0)
         in_usa = -125 <= lon <= -65 and 25 <= lat <= 50
 
-    # Configuração por modo
+    # Configuração por modo — com tradução
     mode_config = {
         "historical": {
-            "title": "Historical Data",
-            "description": (
-                "ETo calculated from satellite and reanalysis "
-                "data with multi-source Kalman fusion."
+            "title": t(lang, "mode_info", "historical_title", default="Historical Data"),
+            "description": t(
+                lang, "mode_info", "historical_desc",
+                default="ETo calculated from satellite and reanalysis data with multi-source Kalman fusion.",
             ),
             "period_icon": "bi-hourglass-split",
-            "period": ("Custom range: 1990 \u2192 yesterday " "(max 90 days)"),
+            "period": t(
+                lang, "mode_info", "historical_period",
+                default="Custom range: 1990 \u2192 yesterday (max 90 days)",
+            ),
             "source_icon": "bi-broadcast-pin",
             "sources": ["NASA POWER", "Open-Meteo Archive"],
             "gradient": ("linear-gradient(135deg, #1976d2, #0d47a1)"),
@@ -450,13 +458,16 @@ def update_fusion_info(data_type, coords_data):
             "accent": "#0d47a1",
         },
         "recent": {
-            "title": "Recent Data",
-            "description": (
-                "ETo from recent observations and forecasts "
-                "combined for optimal coverage."
+            "title": t(lang, "mode_info", "recent_title", default="Recent Data"),
+            "description": t(
+                lang, "mode_info", "recent_desc",
+                default="ETo from recent observations and forecasts combined for optimal coverage.",
             ),
             "period_icon": "bi-calendar-check",
-            "period": ("Last 7, 14, 21 or 30 days " "(EVAonline standard)"),
+            "period": t(
+                lang, "mode_info", "recent_period",
+                default="Last 7, 14, 21 or 30 days (EVAonline standard)",
+            ),
             "source_icon": "bi-broadcast-pin",
             "sources": [
                 "NASA POWER",
@@ -468,12 +479,16 @@ def update_fusion_info(data_type, coords_data):
             "accent": "#1b5e20",
         },
         "forecast": {
-            "title": "Forecast \u2014 5 days",
-            "description": (
-                "ETo predicted from multi-model ensemble " "weather forecasts."
+            "title": t(lang, "mode_info", "forecast_title", default="Forecast \u2014 5 days"),
+            "description": t(
+                lang, "mode_info", "forecast_desc",
+                default="ETo predicted from multi-model ensemble weather forecasts.",
             ),
             "period_icon": "bi-calendar-plus",
-            "period": ("Today \u2192 today + 5 days (fixed)"),
+            "period": t(
+                lang, "mode_info", "forecast_period",
+                default="Today \u2192 today + 5 days (fixed)",
+            ),
             "source_icon": "bi-broadcast-pin",
             "sources": (
                 ["Open-Meteo Forecast", "MET Norway"]
@@ -553,7 +568,7 @@ def update_fusion_info(data_type, coords_data):
                     html.Span(
                         [
                             html.Span(
-                                "Period: ",
+                                t(lang, "mode_info", "period_label", default="Period: "),
                                 style={
                                     "color": "#6c757d",
                                     "fontWeight": "normal",
@@ -580,7 +595,7 @@ def update_fusion_info(data_type, coords_data):
                     html.Span(
                         [
                             html.Span(
-                                "Sources: ",
+                                t(lang, "mode_info", "sources_label", default="Sources: "),
                                 style={
                                     "color": "#6c757d",
                                     "fontWeight": "normal",
@@ -732,9 +747,10 @@ def enable_calculate_button(coords_data, data_type):
         Input("btn-new-query", "n_clicks"),
         Input("btn-new-query-sidebar", "n_clicks"),
     ],
+    State("language-store", "data"),
     prevent_initial_call=True,
 )
-def reset_for_new_query(n_clicks_main, n_clicks_sidebar):
+def reset_for_new_query(n_clicks_main, n_clicks_sidebar, lang):
     """
     Reseta a interface para uma nova consulta quando o usuário
     clica em 'Nova Consulta' ou 'Selecionar Outro Ponto'.
@@ -745,11 +761,16 @@ def reset_for_new_query(n_clicks_main, n_clicks_sidebar):
     if not n_clicks_main and not n_clicks_sidebar:
         raise PreventUpdate
 
+    if not lang:
+        lang = "en"
+
+    click_map_text = t(lang, "sidebar", "click_map", default="Click on the map to select a point")
+
     # Default message for sidebar location
     default_sidebar_location = dbc.Alert(
         [
             html.I(className="bi bi-hand-index-thumb me-2"),
-            "Clique no mapa para selecionar um ponto",
+            click_map_text,
         ],
         color="secondary",
         className="mb-0 small py-2",
@@ -757,7 +778,7 @@ def reset_for_new_query(n_clicks_main, n_clicks_sidebar):
 
     # Default message for coords display
     default_coords_display = html.Div(
-        "Clique no mapa para selecionar uma localização",
+        click_map_text,
         className="alert alert-info small",
     )
 
@@ -781,19 +802,26 @@ def reset_for_new_query(n_clicks_main, n_clicks_sidebar):
 @callback(
     Output("conditional-form", "children"),
     Input("data-type-radio", "value"),
+    State("language-store", "data"),
 )
-def render_conditional_form(data_type):
+def render_conditional_form(data_type, lang):
     """
     Renderiza formulário condicional baseado no tipo de dados.
 
     - Histórico: date range (1990 → ontem)
     - Atual: últimos N dias (1-7)
     """
+    if not lang:
+        lang = "en"
+
     if data_type == "historical":
+        # Date format depends on language
+        date_format = "MM/DD/YYYY" if lang == "en" else "DD/MM/YYYY"
+ 
         return html.Div(
             [
                 html.Label(
-                    "Período de Análise:",
+                    t(lang, "form", "analysis_period", default="Analysis Period:"),
                     className="fw-bold mb-3",
                     style={"fontSize": "1.1rem"},
                 ),
@@ -801,7 +829,8 @@ def render_conditional_form(data_type):
                 html.Div(
                     [
                         html.Label(
-                            "Data Inicial (DD/MM/AAAA):", className="mb-2"
+                            t(lang, "form", "start_date_label", default="Start Date (MM/DD/YYYY):"),
+                            className="mb-2",
                         ),
                         dcc.DatePickerSingle(
                             id="start-date-historical",
@@ -811,8 +840,8 @@ def render_conditional_form(data_type):
                             initial_visible_month=datetime.now()
                             - timedelta(days=30),
                             date=None,
-                            display_format="DD/MM/YYYY",
-                            placeholder="DD/MM/AAAA",
+                            display_format=date_format,
+                            placeholder=t(lang, "form", "date_placeholder", default="MM/DD/YYYY"),
                             className="w-100",
                         ),
                     ],
@@ -822,7 +851,8 @@ def render_conditional_form(data_type):
                 html.Div(
                     [
                         html.Label(
-                            "Data Final (DD/MM/AAAA):", className="mb-2"
+                            t(lang, "form", "end_date_label", default="End Date (MM/DD/YYYY):"),
+                            className="mb-2",
                         ),
                         dcc.DatePickerSingle(
                             id="end-date-historical",
@@ -831,8 +861,8 @@ def render_conditional_form(data_type):
                             - timedelta(days=1),
                             initial_visible_month=datetime.now(),
                             date=None,
-                            display_format="DD/MM/YYYY",
-                            placeholder="DD/MM/AAAA",
+                            display_format=date_format,
+                            placeholder=t(lang, "form", "date_placeholder", default="MM/DD/YYYY"),
                             className="w-100",
                         ),
                     ],
@@ -843,7 +873,8 @@ def render_conditional_form(data_type):
                     [
                         html.Label(
                             [
-                                "E-mail ",
+                                t(lang, "form", "email_label", default="E-mail"),
+                                " ",
                                 html.Span("*", style={"color": "red"}),
                             ],
                             className="mb-2 fw-bold",
@@ -851,16 +882,16 @@ def render_conditional_form(data_type):
                         dbc.Input(
                             id="email-historical",
                             type="email",
-                            placeholder="seu.email@exemplo.com",
+                            placeholder=t(lang, "form", "email_placeholder", default="your.email@example.com"),
                             className="w-100",
                             required=True,
                         ),
                         dbc.FormFeedback(
-                            "Por favor, insira um e-mail válido",
+                            t(lang, "form", "email_invalid", default="Please enter a valid e-mail"),
                             type="invalid",
                         ),
                         html.Small(
-                            "Obrigatório para envio de relatório",
+                            t(lang, "form", "email_required", default="Required for report delivery"),
                             className="text-info d-block mt-1",
                         ),
                     ],
@@ -870,7 +901,7 @@ def render_conditional_form(data_type):
                 html.Div(
                     [
                         html.Label(
-                            "Formato do arquivo",
+                            t(lang, "form", "file_format", default="File format"),
                             className="mb-2 fw-bold",
                         ),
                         dbc.RadioItems(
@@ -890,18 +921,18 @@ def render_conditional_form(data_type):
                             className="mb-2",
                         ),
                         html.Small(
-                            "Formato dos dados enviados por email",
+                            t(lang, "form", "format_email_desc", default="Format of data sent by email"),
                             className="text-muted d-block",
                         ),
                     ],
                     className="mb-3",
                 ),
                 html.Small(
-                    "Dados históricos: 01/01/1990 até ontem",
+                    t(lang, "form", "historical_range", default="Historical data: 01/01/1990 to yesterday"),
                     className="text-muted d-block",
                 ),
                 html.Small(
-                    "Limite: 90 dias por requisição",
+                    t(lang, "form", "historical_limit", default="Limit: 90 days per request"),
                     className="text-warning d-block",
                 ),
                 # Hidden field for callback compatibility
@@ -921,7 +952,7 @@ def render_conditional_form(data_type):
         return html.Div(
             [
                 html.Label(
-                    "Período de Análise:",
+                    t(lang, "form", "analysis_period", default="Analysis Period:"),
                     className="fw-bold mb-3",
                     style={"fontSize": "1.1rem"},
                 ),
@@ -934,24 +965,24 @@ def render_conditional_form(data_type):
                                     id="days-current",
                                     options=[
                                         {
-                                            "label": "Últimos 7 dias",
+                                            "label": t(lang, "form", "last_7_days", default="Last 7 days"),
                                             "value": "7",
                                         },
                                         {
-                                            "label": "Últimos 14 dias",
+                                            "label": t(lang, "form", "last_14_days", default="Last 14 days"),
                                             "value": "14",
                                         },
                                         {
-                                            "label": "Últimos 21 dias",
+                                            "label": t(lang, "form", "last_21_days", default="Last 21 days"),
                                             "value": "21",
                                         },
                                         {
-                                            "label": "Últimos 30 dias",
+                                            "label": t(lang, "form", "last_30_days", default="Last 30 days"),
                                             "value": "30",
                                         },
                                     ],
                                     value=None,
-                                    placeholder="Selecione o período",
+                                    placeholder=t(lang, "form", "select_period", default="Select period"),
                                     className="w-100",
                                 ),
                             ],
@@ -1044,6 +1075,7 @@ def render_conditional_form(data_type):
         State("days-current", "value"),
         State("app-session-id", "data"),
         State("manual-elevation", "data"),
+        State("language-store", "data"),
     ],
     prevent_initial_call=True,
 )
@@ -1058,6 +1090,7 @@ def calculate_eto(
     days_current,
     session_id,
     manual_elevation=None,
+    lang=None,
 ):
     """
     Calcula ETo com detecção automática de modo operacional.
@@ -1078,6 +1111,10 @@ def calculate_eto(
     import uuid
 
     logger.info("🧮 calculate_eto callback triggered")
+
+    # Default language
+    if not lang:
+        lang = "en"
 
     if n_clicks is None or n_clicks == 0:
         logger.warning("⚠️ Aborting - n_clicks empty or zero")
@@ -1526,6 +1563,7 @@ def calculate_eto(
         # Adicionar session_id para identificação única do usuário
         payload["session_id"] = session_id
         payload["visitor_id"] = session_id  # Para compatibilidade
+        payload["lang"] = lang or "en"  # Idioma para emails
 
         logger.info(f"📦 Final payload (auto-fusion): {payload}")
 

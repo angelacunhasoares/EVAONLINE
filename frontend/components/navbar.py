@@ -78,6 +78,14 @@ def create_navbar():
                                 ),
                                 dbc.NavItem(
                                     dbc.NavLink(
+                                        "ARCHITECTURE",
+                                        href="/architecture",
+                                        id="nav-architecture",
+                                        className="nav-link-academic",
+                                    )
+                                ),
+                                dbc.NavItem(
+                                    dbc.NavLink(
                                         "ABOUT",
                                         href="/about",
                                         id="nav-about",
@@ -103,7 +111,7 @@ def create_navbar():
                                     dbc.Button(
                                         html.Span(
                                             id="language-label",
-                                            children="ENGLISH",
+                                            children="PORTUGUÊS",
                                         ),
                                         id="language-toggle",
                                         className="ms-2",
