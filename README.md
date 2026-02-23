@@ -3,250 +3,261 @@
   <td width="200">
     <img src="frontend/assets/images/logo_evaonline_png.png" alt="EVAonline Logo" width="200">
   </td>
-  
   <td>
-    🌦️ EVAonline is a comprehensive web application for calculating reference evapotranspiration (ET₀) using the FAO-56 Penman-Monteith method. It employs a sophisticated data fusion approach, integrating real-time meteorological data from multiple global sources (NASA POWER, MET Norway API, National Weather Service API, and NOAA Climate Data Online). Built with modern technologies, it provides interactive dashboards, real-time data processing, and advanced geospatial visualization capabilities.
+    🌦️ <strong>EVAonline</strong> is a comprehensive web application for calculating reference evapotranspiration (ET₀) using the <strong>FAO-56 Penman-Monteith</strong> method. It employs a sophisticated <strong>Kalman-filter data fusion</strong> approach, integrating real-time meteorological data from multiple global sources (NASA POWER, Open-Meteo, MET Norway, and the U.S. National Weather Service). Built with Dash + FastAPI, it provides interactive dashboards, real-time WebSocket progress tracking, per-table/chart downloads, water-deficit analysis, and full bilingual support (EN/PT).
   </td>
 </tr>
 </table>
+
+---
 
 ## 🏗️ Architecture
 
 ### Tech Stack
 
-**Frontend & Visualization:**
-- **Dash**: Interactive dashboards and data visualization
-- **Dash Bootstrap Components**: Responsive UI components
-- **dash-leaflet**: Interactive maps with GeoJSON layers and heatmaps
+| Layer | Technology |
+|---|---|
+| **Frontend** | Dash 3, Dash Bootstrap Components, dash-leaflet, Plotly 6 |
+| **Backend** | FastAPI, Celery (3 worker types), Redis Pub/Sub |
+| **Database** | PostgreSQL 16 + PostGIS 3.4, Alembic migrations |
+| **Cache** | Redis 7 (caching + message broker) |
+| **Infra** | Docker Compose (12 services), Nginx, Prometheus + Grafana |
+| **i18n** | JSON-based translations (EN / PT) |
+| **CI/Quality** | pytest, black, flake8, mypy, pre-commit |
 
-**Backend & APIs:**
-- **FastAPI**: High-performance API server with WebSocket support
-- **Celery**: Asynchronous task processing
-- **Redis**: Caching and message broker (Pub/Sub)
+### Service Map (Docker Compose)
 
-**Database & Storage:**
-- **PostgreSQL + PostGIS**: Geospatial data management
-- **Redis**: High-performance caching layer
+```
+┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
+│   Nginx      │→ │  API (Dash + │→ │  PostgreSQL 16   │
+│  (reverse    │  │  FastAPI +   │  │  + PostGIS 3.4   │
+│   proxy)     │  │  Uvicorn)    │  └──────────────────┘
+└──────────────┘  └──────┬───────┘           ↑
+                         │ WebSocket         │ Alembic
+                         ↓                   │
+                  ┌──────────────┐  ┌────────┴─────────┐
+                  │  Redis 7     │← │  Celery Workers   │
+                  │  (cache +    │  │  • general        │
+                  │   broker)    │  │  • eto-dedicated  │
+                  └──────────────┘  │  • beat scheduler │
+                         ↑         └────────────────────┘
+                  ┌──────┴───────┐
+                  │   Flower     │  (Celery monitoring UI)
+                  └──────────────┘
+                  ┌──────────────┐  ┌──────────────┐
+                  │  Prometheus  │→ │   Grafana    │
+                  └──────────────┘  └──────────────┘
+```
 
-**Infrastructure:**
-- **Docker & Docker Compose**: Containerization
-- **Nginx**: Reverse proxy and static file serving
-- **Prometheus + Grafana**: Monitoring and metrics
-- **Render**: Cloud deployment platform
+---
 
 ## 📁 Project Structure
 
 ```
-EVAonline_ElsevierSoftwareX/
-├── backend/               # Backend application layer
-│   ├── api/              # FastAPI REST API and WebSocket services
-│   ├── core/             # Core business logic (data processing, ETo calculations)
-│   ├── database/         # Database layer (models, connections, migrations)
-│   ├── infrastructure/   # Infrastructure services (cache, Celery workers)
-│   └── tests/            # Backend integration and unit tests
-├── frontend/             # Frontend Dash application
-│   ├── app.py           # Main Dash application
-│   ├── assets/          # Static assets (CSS, JS, images)
-│   ├── components/      # Reusable Dash components
-│   └── pages/           # Page-level components
-├── tests/                # Root-level integration and system tests
-│   └── integration/     # Cross-service integration tests
-├── scripts/              # Operational and maintenance scripts
-│   ├── manage_db.py     # Database management utilities
-│   └── get_hourly_data.py # Data ingestion scripts
-├── docs/                 # Project documentation
-│   ├── architecture.mmd  # System architecture diagram (Mermaid)
-│   ├── DATABASE_README.md # Database schema documentation
-│   └── guides/          # Setup and development guides
-├── config/               # Configuration files
-│   ├── settings/        # Application settings
-│   └── translations/    # i18n translation files
-├── utils/                # Shared utility modules
-├── alembic/              # Database migration scripts (Alembic)
-├── assets_generation/    # Static asset generation scripts
-├── monitoring/           # Observability configuration (Prometheus, Grafana)
-├── archive/              # Deprecated code and old versions
-├── docker-compose.yml    # Multi-service orchestration
-├── Dockerfile            # Multi-stage container build
-├── alembic.ini          # Alembic migration configuration
-└── requirements/         # Python dependencies (3-tier structure)
-    ├── base.txt         # Core dependencies (50 packages)
-    ├── production.txt    # Production additions (60 packages)
-    └── development.txt   # Dev-only dependencies (100 packages)
+EVAONLINE/
+├── backend/                    # Backend application
+│   ├── api/                   # FastAPI layer
+│   │   ├── routes/            # REST endpoints (ETo, health, geolocation, visitors, climate)
+│   │   ├── websocket/         # WebSocket service (real-time task progress)
+│   │   ├── middleware/        # Request middleware
+│   │   └── services/          # API business services
+│   ├── core/                  # Core business logic
+│   │   ├── data_processing/   # Kalman filters, climate fusion, ensemble, limits
+│   │   ├── data_results/      # Result graphs, tables, statistics, layout
+│   │   ├── eto_calculation/   # FAO-56 PM ETo engine
+│   │   ├── analytics/         # Data analytics
+│   │   └── utils/             # Backend utilities
+│   ├── database/              # SQLAlchemy models & connections
+│   ├── infrastructure/        # Cache, Celery workers, loaders, visitor tracking
+│   └── tests/                 # Backend tests
+├── frontend/                   # Dash application
+│   ├── app.py                 # Main Dash app entry point
+│   ├── pages/                 # Page components (home, documentation, architecture, about)
+│   ├── callbacks/             # Dash callbacks (ETo, home, navbar, navigation, cache, visitor)
+│   ├── components/            # Reusable components (navbar, footer, map, info cards)
+│   ├── services/              # Frontend services
+│   ├── assets/                # Static files (CSS, JS, images)
+│   ├── utils/                 # Frontend utilities
+│   └── tests/                 # Frontend tests
+├── config/                     # Configuration
+│   ├── settings/              # App settings (dev, prod, test)
+│   ├── translations/          # i18n files (en.json, pt.json)
+│   └── logging_config.py      # Loguru configuration
+├── shared_utils/               # Shared modules (translations, logging, WebSocket client)
+├── data/                       # Data assets
+│   ├── csv/                   # Preloaded CSV datasets
+│   ├── geojson/               # GeoJSON boundaries
+│   ├── historical/            # Historical climate data
+│   └── scripts/               # Data preparation scripts
+├── database/                   # DB config, init scripts, seed data
+├── alembic/                    # Database migrations
+├── scripts/                    # Operational scripts (coverage, sync, validation)
+├── docker/                     # Docker configs (backend, nginx, monitoring)
+├── docs/                       # Technical documentation
+├── EVAonline_validation_v1.0.0/ # Independent validation package
+├── docker-compose.yml          # 12-service orchestration
+├── Dockerfile                  # Multi-stage build (builder + runtime)
+├── pyproject.toml              # Project metadata & dependencies
+└── requirements.txt            # Locked dependencies (uv pip compile)
 ```
+
+---
+
+## 📊 Features
+
+### ETo Calculation Engine
+- **FAO-56 Penman-Monteith** method with all required climate variables
+- **7 input variables**: Tmax, Tmin, Tmean (°C), relative humidity (%), wind speed at 2 m (m/s), solar radiation (MJ/m²/day), precipitation (mm)
+- **3 operation modes**: Dashboard (quick), Forecast (6-day), Historical (any period, async via email)
+- **Automatic ocean/water body detection** — blocks invalid calculations
+
+### Data Fusion (Kalman Filters)
+- **Multi-source integration**: NASA POWER + Open-Meteo + regional sources
+- **Kalman Ensemble filter**: optimal weighting of concurrent data sources
+- **Climate limits validation**: automatic QC with plausible-range checks
+- **Fusion modes**: Full Kalman / Simple average / Single source (auto-selected)
+
+### Regional Specialized Sources
+| Region | Source | Details |
+|---|---|---|
+| **Global** | NASA POWER, Open-Meteo | Satellite + reanalysis data |
+| **Europe** | MET Norway (Frost API) | High-resolution station data |
+| **USA** | National Weather Service | Real-time NWS station card with distance, elevation, last observation |
+| **Brazil / MATOPIBA** | Open-Meteo + historical validation | Validated against Xavier's gridded dataset |
+
+### Results & Analysis
+- **Summary tab**: ETo totals, water balance, data sources, fusion mode, irrigation recommendations
+- **Data tables**: daily climate data, ETo summary, descriptive statistics, normality test — each with individual **CSV & Excel download** buttons
+- **5 interactive charts** (Plotly): ETo vs Temperature, ETo vs Radiation, Temperature & Precipitation, Water Deficit, Correlation Heatmap — each with **PNG & JPG download** buttons
+- **Statistical analysis**: mean, median, SD, quartiles, IQR, CV%, skewness, kurtosis, Shapiro-Wilk normality test, trend analysis
+- **30-day minimum rule**: CV%, skewness, kurtosis, Shapiro-Wilk, and correlation heatmap require ≥30 days of data
+- **Water deficit analysis**: daily water balance (P − ETo), deficit/surplus days, cumulative deficit, interactive area chart
+- **ETo comparison**: EVAonline ETo vs Open-Meteo reference ETo side-by-side
+- **Locale-aware exports**: PT (`;` separator, `,` decimal) / EN (`,` separator, `.` decimal)
+
+### Visualization & Maps
+- **Interactive world map**: dash-leaflet with OpenStreetMap tiles
+- **GeoJSON layers**: country/region boundaries
+- **City heatmap**: kernel density estimation
+- **Real-time progress**: WebSocket-powered task tracking with translated status messages
+
+### Internationalization (i18n)
+- Full **English** and **Portuguese** support
+- Language toggle in navbar (persisted in dcc.Store)
+- All UI strings, progress messages, NWS station cards, error messages, and documentation pages translated
+
+### Performance & Infrastructure
+- **Redis caching**: sub-second responses for repeated queries
+- **3 Celery worker types**: general, ETo-dedicated, beat scheduler
+- **Flower**: web UI for Celery task monitoring
+- **Prometheus + Grafana**: API metrics, response times, cache hit rates
+- **Structured logging**: Loguru with configurable levels
+- **Health checks**: `/health`, `/health/detailed`, `/ready` endpoints
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Python 3.9+
-- Git
+- **Docker** and **Docker Compose** v2+
+- **Python 3.12+** (for local development)
+- **Git**
 
-### Installation
+### Quick Start (Docker)
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/angelacunhasoares/EVAONLINE.git
-   cd EVAONLINE
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-3. **Build and run with Docker Compose:**
-   ```bash
-   docker-compose up --build
-   ```
-
-4. **Access the application:**
-   - **Dashboard:** http://localhost:8050
-   - **API Documentation:** http://localhost:8000/docs
-   - **Prometheus:** http://localhost:9090
-   - **Grafana:** http://localhost:3000
-
-## 🛠️ Management Scripts
-
-The project includes unified management scripts for common operations:
-
-### Windows (PowerShell)
-```powershell
-# Mostrar status dos serviços
-docker-compose ps
-
-# Iniciar todos os serviços
-docker-compose up -d
-
-# Parar todos os serviços
-docker-compose down
-
-# Ver logs
-docker-compose logs -f api
-
-# Executar testes
-python -m pytest tests/ -v
-```
-
-### Linux/macOS (Bash)
 ```bash
-# Mostrar status dos serviços
-docker-compose ps
+# 1. Clone
+git clone https://github.com/angelacunhasoares/EVAONLINE.git
+cd EVAONLINE
 
-# Iniciar todos os serviços
-docker-compose up -d
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your database passwords and API keys
 
-# Parar todos os serviços
-docker-compose down
+# 3. Build and start all services
+docker compose up --build -d
 
-# Ver logs
-docker-compose logs -f api
-
-# Executar testes
-python -m pytest tests/ -v
+# 4. Access the application
+#    Dashboard:    http://localhost:8050
+#    API docs:     http://localhost:8000/docs
+#    Flower:       http://localhost:5555
+#    Prometheus:   http://localhost:9090
+#    Grafana:      http://localhost:3000
+#    Adminer:      http://localhost:8080
 ```
 
-##  🔧 Configuration
+### Local Development
+
+```bash
+# Install dependencies (requires Python 3.12+)
+pip install -e ".[dev]"
+
+# Start only database + cache
+docker compose up postgres redis -d
+
+# Run API server
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+# Run Celery worker
+celery -A backend.infrastructure.celery worker --loglevel=info
+
+# Run tests
+pytest backend/tests/ frontend/tests/ -v
+```
+
+---
+
+## 🔧 Configuration
 
 ### Environment Variables
 
 Key configuration options in `.env`:
 
-- `POSTGRES_*`: PostgreSQL database settings
-- `REDIS_*`: Redis cache and broker settings
-- `FASTAPI_*`: API server configuration
-- `DASH_*`: Dashboard application settings
+| Variable | Description |
+|---|---|
+| `POSTGRES_*` | PostgreSQL connection settings |
+| `REDIS_*` | Redis cache and broker settings |
+| `FASTAPI_*` | API server configuration |
+| `DASH_*` | Dashboard application settings |
+| `CELERY_*` | Worker concurrency and queues |
+| `SECRET_KEY` | Application secret for sessions |
 
-## 📊 Features
+---
 
-### Data Sources and Processing
+## 🔌 API Endpoints
 
-#### Real-Time Data Integration
-EVAonline integrates multiple real-time weather data sources through RESTful APIs:
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/eto/calculate` | Submit ETo calculation task |
+| `POST` | `/api/eto/location-info` | Get location metadata (elevation, timezone) |
+| `GET` | `/api/climate-sources` | List available climate data sources |
+| `WebSocket` | `/ws/task_status/{task_id}` | Real-time task progress updates |
+| `GET` | `/health` | Basic health check |
+| `GET` | `/health/detailed` | Detailed health (DB, Redis, Celery) |
+| `GET` | `/ready` | Readiness probe |
 
-- **Global Coverage**:
-  - **NASA POWER**: Primary meteorological satellite data
-  - **Open-Meteo Forecast**: Global weather forecasting and historical data
-  - **Open-Meteo Elevation API**: High-precision global elevation data
-
-- **Regional Specialized Sources**:
-  - **MET Norway API**: High-resolution European weather data
-  - **National Weather Service API**: Detailed USA meteorological data
-  - **Open-Meteo Forecast**: MATOPIBA region data (updated 3x daily)
-
-#### Data Fusion and Processing
-- **Multi-Source Integration**: 
-  - Real-time data fusion from all available APIs
-  - Weighted ensemble approach for robust estimates
-  - Automated quality control and cross-validation
-
-- **Brazilian Regional Validation**:
-  - Validation against Xavier's Brazilian Daily Weather Gridded Dataset
-  - High-resolution (0.25° x 0.25°) meteorological data covering Brazil
-  - Extensive ground-truth validation using weather station data
-  - Reference dataset specifically developed for Brazilian conditions
-
-#### Automated Features
-- **Global Elevation Integration**:
-  - Automated elevation retrieval for any location
-  - Ensures accurate ET₀ calculations worldwide
-
-*Note: EVAonline employs data fusion algorithms to combine multiple real-time data sources, with AgERA5 serving as an independent validation dataset to ensure calculation accuracy.*
-
-### Visualization
-- **Interactive Maps**: GeoJSON layers with OpenStreetMap tiles
-- **Heatmaps**: Kernel density estimation for city distribution
-- **Real-time Updates**: WebSocket-powered live data refresh
-- **Statistical Analysis**: Correlation matrices, trend analysis
-
-### Performance
-- **Redis Caching**: Sub-second response times for repeated queries
-- **Async Processing**: Celery workers for heavy computations
-- **Spatial Indexing**: PostGIS GIST indices for fast geospatial queries
-
-## 🛠️ Development
-
-### Local Development Setup
-
-1. **Install dependencies:**
-   ```bash
-   # For production environment
-   pip install -r requirements/production.txt
-   
-   # OR for development with testing/linting tools
-   pip install -r requirements/development.txt
-   ```
-
-2. **Run services locally:**
-   ```bash
-   # Start database and cache
-   docker-compose up postgres redis -d
-   
-   # Run API server
-   uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-   
-   # Run Dash app
-   python pages/main.py
-   
-   # Run Celery worker
-   celery -A api.celery_config worker --loglevel=info
-   ```
-
-### API Endpoints
-
-- `GET /api/geo_data`: Retrieve GeoJSON data
-- `WebSocket /ws/geo_data`: Real-time data updates
-- `POST /api/calculate_eto`: Calculate evapotranspiration
+---
 
 ## 📈 Monitoring
 
-The application includes comprehensive monitoring:
+- **Prometheus**: collects API response times, request counts, error rates, cache metrics
+- **Grafana**: pre-configured dashboards for system performance
+- **Flower**: Celery task monitoring (queue depth, worker status, task history)
+- **Loguru**: structured application logs with rotation
 
-- **Prometheus Metrics**: API response times, database queries, cache hit rates
-- **Grafana Dashboards**: Visual monitoring of system performance
-- **Application Logs**: Structured logging with Loguru
+---
+
+## 🧪 Validation
+
+The `EVAonline_validation_v1.0.0/` directory contains an **independent validation package** with:
+- Complete validation analysis notebook
+- Tutorial pipeline notebook
+- Validation scripts and reference data
+- Reproducible environment (`environment.yml`, `requirements.txt`)
+- Citation file (`CITATION.cff`)
+
+---
 
 ## 🤝 Contributing
 
@@ -256,27 +267,35 @@ The application includes comprehensive monitoring:
 4. Push to branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
+---
+
 ## 📄 License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0). See the [LICENSE](LICENSE) file for details.
+
+---
 
 ## 🎯 Citation
 
 If you use EVAonline in your research, please cite:
 
 ```bibtex
-@article{evaonline2024,
-  title={EVAonline: An online tool for reference evapotranspiration estimation},
-  author={Your Name},
-  journal={SoftwareX},
-  year={2024}
+@article{evaonline2025,
+  title     = {EVAonline: An online tool for reference evapotranspiration estimation},
+  author    = {Soares, Silviane Angela Cunha},
+  journal   = {SoftwareX},
+  year      = {2025},
+  url       = {https://github.com/angelacunhasoares/EVAONLINE}
 }
 ```
 
+---
+
 ## 📞 Support
 
-For questions and support:
-- Create an issue in this repository
-- Contact: [angelassilviane#gmail.com]
+- **Issues**: [GitHub Issues](https://github.com/angelacunhasoares/EVAONLINE/issues)
+- **Contact**: angelassilviane@gmail.com
+
+---
 
 Built with ❤️ for the agricultural and environmental research community.
