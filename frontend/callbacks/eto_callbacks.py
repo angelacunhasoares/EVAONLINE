@@ -3012,10 +3012,23 @@ def _send_table(df_export, base_name, excel_clicked, sheet_name="Data", lang="pt
 
     timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
 
+    # Round all numeric columns to 2 decimal places for clean export.
+    # This also prevents Portuguese Excel from misinterpreting 3-digit
+    # decimal values (e.g. 29.885) as thousands-separated integers.
+    num_cols = df_export.select_dtypes(include="number").columns
+    df_export = df_export.copy()
+    df_export[num_cols] = df_export[num_cols].round(2)
+
     if excel_clicked:
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine="openpyxl") as w:
             df_export.to_excel(w, index=False, sheet_name=sheet_name)
+            # Apply 2-decimal number format for consistent display
+            ws = w.sheets[sheet_name]
+            for row in ws.iter_rows(min_row=2, min_col=1):
+                for cell in row:
+                    if isinstance(cell.value, (int, float)):
+                        cell.number_format = "0.00"
         buf.seek(0)
         return dcc.send_bytes(buf.getvalue(), f"EVAonline_{base_name}_{timestamp}.xlsx")
 
