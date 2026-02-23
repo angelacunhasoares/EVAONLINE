@@ -3297,4 +3297,50 @@ def download_table_normality(csv_n, excel_n, results_data, lang_data):
     return _send_table(norm_df, "Normality", _is_excel_trigger(), "Shapiro_Wilk", lang=lang)
 
 
+# ============================================================================
+# CLIENTSIDE CALLBACKS - Chart Image Downloads (PNG / JPG)
+# ============================================================================
+# Each chart has two buttons: PNG and JPG.
+# Downloads run entirely in the browser via Plotly.downloadImage().
+# ============================================================================
+
+from dash import clientside_callback
+
+# Chart definitions: (chart_id, graph_component_id, default_filename)
+_CHARTS = [
+    ("deficit",       "chart-deficit",       "EVAonline_WaterDeficit"),
+    ("eto-temp",      "chart-eto-temp",      "EVAonline_ETo_vs_Temp"),
+    ("eto-rad",       "chart-eto-rad",       "EVAonline_ETo_vs_Radiation"),
+    ("temp-rad-prec", "chart-temp-rad-prec", "EVAonline_Temp_Rad_Prec"),
+    ("heatmap",       "chart-heatmap",       "EVAonline_Heatmap"),
+]
+
+for _cid, _gid, _fname in _CHARTS:
+    for _fmt, _plotly_fmt in [("png", "png"), ("jpg", "jpeg")]:
+        clientside_callback(
+            f"""
+            function(n_clicks) {{
+                if (!n_clicks) {{
+                    return window.dash_clientside.no_update;
+                }}
+                var graphDiv = document.getElementById("{_gid}");
+                if (!graphDiv) {{
+                    return window.dash_clientside.no_update;
+                }}
+                Plotly.downloadImage(graphDiv, {{
+                    format: "{_plotly_fmt}",
+                    width: 1920,
+                    height: 1080,
+                    scale: 2,
+                    filename: "{_fname}"
+                }});
+                return "";
+            }}
+            """,
+            Output(f"btn-dl-chart-{_cid}-{_fmt}", "title"),
+            Input(f"btn-dl-chart-{_cid}-{_fmt}", "n_clicks"),
+            prevent_initial_call=True,
+        )
+
+
 logger.info("✅ Página ETo carregada com sucesso")

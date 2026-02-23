@@ -684,6 +684,7 @@ def create_deficit_chart_section(
                 ),
                 # Gráfico
                 dcc.Graph(
+                    id="chart-deficit",
                     figure=fig_deficit,
                     config={"displayModeBar": False},
                     style={"height": "400px"},

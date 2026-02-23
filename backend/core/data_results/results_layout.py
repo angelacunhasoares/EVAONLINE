@@ -53,6 +53,32 @@ def _table_download_buttons(table_id: str, lang: str = "pt"):
     )
 
 
+def _chart_download_buttons(chart_id: str, lang: str = "pt"):
+    """Create compact PNG + JPG download buttons for a chart section."""
+    return html.Div(
+        dbc.ButtonGroup(
+            [
+                dbc.Button(
+                    [html.I(className="bi bi-file-earmark-image me-1"), "PNG"],
+                    id=f"btn-dl-chart-{chart_id}-png",
+                    size="sm",
+                    color="info",
+                    outline=True,
+                ),
+                dbc.Button(
+                    [html.I(className="bi bi-file-earmark-image me-1"), "JPG"],
+                    id=f"btn-dl-chart-{chart_id}-jpg",
+                    size="sm",
+                    color="warning",
+                    outline=True,
+                ),
+            ],
+            size="sm",
+        ),
+        className="d-flex justify-content-end mt-2 mb-1",
+    )
+
+
 def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
     """
     Create results layout with two tabs.
@@ -173,6 +199,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                             className="results-table-title",
                         ),
                         create_deficit_chart_section(df, lang),
+                        _chart_download_buttons("deficit", lang),
                     ],
                     className="mb-5",
                 ),
@@ -197,12 +224,14 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                                             className="text-center mb-2",
                                         ),
                                         dcc.Graph(
+                                            id="chart-eto-temp",
                                             figure=plot_eto_vs_temperature(
                                                 df, lang
                                             ),
                                             config={"displayModeBar": False},
                                             style={"height": "550px"},
                                         ),
+                                        _chart_download_buttons("eto-temp", lang),
                                     ],
                                     md=12,
                                     className="mb-5",
@@ -218,12 +247,14 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                                             className="text-center mb-2",
                                         ),
                                         dcc.Graph(
+                                            id="chart-eto-rad",
                                             figure=plot_eto_vs_radiation(
                                                 df, lang
                                             ),
                                             config={"displayModeBar": False},
                                             style={"height": "550px"},
                                         ),
+                                        _chart_download_buttons("eto-rad", lang),
                                     ],
                                     md=12,
                                     className="mb-5",
@@ -239,12 +270,14 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                                             className="text-center mb-2",
                                         ),
                                         dcc.Graph(
+                                            id="chart-temp-rad-prec",
                                             figure=plot_temp_rad_prec(
                                                 df, lang
                                             ),
                                             config={"displayModeBar": False},
                                             style={"height": "550px"},
                                         ),
+                                        _chart_download_buttons("temp-rad-prec", lang),
                                     ],
                                     md=12,
                                     className="mb-5",
@@ -280,10 +313,12 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                                     dbc.Col(
                                         [
                                             dcc.Graph(
+                                                id="chart-heatmap",
                                                 figure=plot_heatmap(df, lang),
                                                 config={"displayModeBar": False},
                                                 style={"height": "600px"},
                                             ),
+                                            _chart_download_buttons("heatmap", lang),
                                         ],
                                         md=12,
                                     ),
