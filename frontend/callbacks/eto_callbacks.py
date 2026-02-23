@@ -2998,11 +2998,13 @@ def download_excel(n_clicks, results_data):
 # ============================================================================
 
 
-def _send_table(df_export, base_name, excel_clicked, sheet_name="Data"):
+def _send_table(df_export, base_name, excel_clicked, sheet_name="Data", lang="pt"):
     """Helper: send a DataFrame as CSV or Excel.
 
     Args:
         excel_clicked: True when the Excel button was the trigger.
+        lang: Interface language — controls decimal/separator formatting.
+              'pt' → decimal=',' sep=';'  |  'en' → decimal='.' sep=','
     """
     import io
     import pandas as pd
@@ -3016,7 +3018,20 @@ def _send_table(df_export, base_name, excel_clicked, sheet_name="Data"):
             df_export.to_excel(w, index=False, sheet_name=sheet_name)
         buf.seek(0)
         return dcc.send_bytes(buf.getvalue(), f"EVAonline_{base_name}_{timestamp}.xlsx")
-    return dcc.send_data_frame(df_export.to_csv, f"EVAonline_{base_name}_{timestamp}.csv", index=False)
+
+    # CSV: locale-aware formatting
+    if lang == "pt":
+        csv_sep, csv_dec = ";", ","
+    else:
+        csv_sep, csv_dec = ",", "."
+
+    return dcc.send_data_frame(
+        df_export.to_csv,
+        f"EVAonline_{base_name}_{timestamp}.csv",
+        index=False,
+        sep=csv_sep,
+        decimal=csv_dec,
+    )
 
 
 # Map from serialized (store) column names to internal column names
@@ -3063,7 +3078,7 @@ def _is_excel_trigger():
 )
 def download_table_climate(csv_n, excel_n, results_data, lang_data):
     """Download da tabela Daily Climate Data."""
-    if not results_data:
+    if not results_data or not (csv_n or excel_n):
         return no_update
 
     import pandas as pd
@@ -3091,7 +3106,7 @@ def download_table_climate(csv_n, excel_n, results_data, lang_data):
         eto_col: dv.get("eto_evaonline", "ETo EVAonline (mm/day)"),
     })
 
-    return _send_table(df_export, "Climate", _is_excel_trigger(), "Climate_Data")
+    return _send_table(df_export, "Climate", _is_excel_trigger(), "Climate_Data", lang=lang)
 
 
 @callback(
@@ -3104,7 +3119,7 @@ def download_table_climate(csv_n, excel_n, results_data, lang_data):
 )
 def download_table_stats(csv_n, excel_n, results_data, lang_data):
     """Download da tabela Descriptive Statistics."""
-    if not results_data:
+    if not results_data or not (csv_n or excel_n):
         return no_update
 
     import pandas as pd
@@ -3159,7 +3174,7 @@ def download_table_stats(csv_n, excel_n, results_data, lang_data):
     stats_df.insert(0, st.get("statistic", "Statistic"), stats_df.index)
     stats_df = stats_df.rename(columns=col_names)
 
-    return _send_table(stats_df, "Statistics", _is_excel_trigger(), "Descriptive_Stats")
+    return _send_table(stats_df, "Statistics", _is_excel_trigger(), "Descriptive_Stats", lang=lang)
 
 
 @callback(
@@ -3172,7 +3187,7 @@ def download_table_stats(csv_n, excel_n, results_data, lang_data):
 )
 def download_table_eto_summary(csv_n, excel_n, results_data, lang_data):
     """Download da tabela ETo Summary / Water Balance."""
-    if not results_data:
+    if not results_data or not (csv_n or excel_n):
         return no_update
 
     import pandas as pd
@@ -3205,7 +3220,7 @@ def download_table_eto_summary(csv_n, excel_n, results_data, lang_data):
         eto_col: dv.get("eto_evaonline", "ETo EVAonline (mm/day)"),
     })
 
-    return _send_table(df_exp, "WaterBalance", _is_excel_trigger(), "Water_Balance")
+    return _send_table(df_exp, "WaterBalance", _is_excel_trigger(), "Water_Balance", lang=lang)
 
 
 @callback(
@@ -3218,7 +3233,7 @@ def download_table_eto_summary(csv_n, excel_n, results_data, lang_data):
 )
 def download_table_normality(csv_n, excel_n, results_data, lang_data):
     """Download da tabela Normality Test (Shapiro-Wilk)."""
-    if not results_data:
+    if not results_data or not (csv_n or excel_n):
         return no_update
 
     import pandas as pd
@@ -3266,7 +3281,7 @@ def download_table_normality(csv_n, excel_n, results_data, lang_data):
     norm_df = pd.DataFrame(rows).T
     norm_df.insert(0, st.get("variable", "Variable"), norm_df.index)
 
-    return _send_table(norm_df, "Normality", _is_excel_trigger(), "Shapiro_Wilk")
+    return _send_table(norm_df, "Normality", _is_excel_trigger(), "Shapiro_Wilk", lang=lang)
 
 
 logger.info("✅ Página ETo carregada com sucesso")
