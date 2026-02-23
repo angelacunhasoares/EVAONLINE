@@ -17,7 +17,7 @@ from dash.dependencies import ClientsideFunction, Input, Output, State
 # Layouts das páginas
 from ..pages.home import home_layout
 from ..pages.about import create_about_layout
-from ..pages.documentation import documentation_layout
+from ..pages.documentation import create_documentation_layout
 from ..pages.architecture import create_architecture_layout
 
 logger = logging.getLogger(__name__)
@@ -62,12 +62,11 @@ def register_navigation_callbacks(app):
             return create_architecture_layout(lang)
         if pathname == "/about":
             return create_about_layout(lang)
+        if pathname == "/documentation":
+            return create_documentation_layout(lang)
 
-        pages = {
-            "/documentation": documentation_layout,
-        }
         # Qualquer rota não mapeada vai para home (incluindo "/" e "/eto-calculator")
-        return pages.get(pathname, home_layout)
+        return home_layout
 
     # ================================================================
     # 2. TOGGLE NAVBAR - Dispositivos móveis

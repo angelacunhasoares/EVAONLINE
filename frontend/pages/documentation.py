@@ -1,23 +1,40 @@
+# filepath: frontend/pages/documentation.py
+"""
+Página de Documentação do EVAonline.
+Suporta tradução dinâmica PT/EN via shared_utils.get_translations.
+"""
+
 import logging
 
 import dash_bootstrap_components as dbc
 from dash import html
 
+from shared_utils.get_translations import t
+
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# HELPER: Tradução com fallback
+# =============================================================================
+def _t(lang, *keys, default=""):
+    """Wrapper para tradução com prefixo 'documentation' automático."""
+    return t(lang, "documentation", *keys, default=default)
+
 
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
 
 
-def _create_quick_start_section():
+def _create_quick_start_section(lang):
     """How to use EVAonline - Quick and objective guide."""
     return dbc.Row(
         [
             dbc.Col(
                 [
                     html.H2(
-                        "🚀 Quick Start",
+                        _t(lang, "quick_start_title"),
                         id="quick-start",
                         className="mb-4 doc-section-title",
                     ),
@@ -26,7 +43,7 @@ def _create_quick_start_section():
                             dbc.CardBody(
                                 [
                                     html.H5(
-                                        "3 Steps to Calculate ETo",
+                                        _t(lang, "quick_start_steps_title"),
                                         className="mb-4",
                                     ),
                                     # Step 1
@@ -44,25 +61,24 @@ def _create_quick_start_section():
                                                             html.Div(
                                                                 [
                                                                     html.H6(
-                                                                        "Select a Location",
+                                                                        _t(lang, "step1_title"),
                                                                         className="mb-1",
                                                                     ),
                                                                     html.Small(
                                                                         [
-                                                                            "Click anywhere on the interactive map, or type coordinates manually. "
-                                                                            "The system automatically detects: ",
+                                                                            _t(lang, "step1_desc"),
                                                                             html.Strong(
-                                                                                "SRTM elevation"
+                                                                                _t(lang, "step1_elevation")
                                                                             ),
-                                                                            " (30m resolution via OpenTopoData), ",
+                                                                            _t(lang, "step1_elevation_detail"),
                                                                             html.Strong(
-                                                                                "timezone"
+                                                                                _t(lang, "step1_timezone")
                                                                             ),
-                                                                            ", and ",
+                                                                            _t(lang, "step1_and"),
                                                                             html.Strong(
-                                                                                "region"
+                                                                                _t(lang, "step1_region")
                                                                             ),
-                                                                            " (USA detection for extra data sources).",
+                                                                            _t(lang, "step1_region_detail"),
                                                                         ],
                                                                         className="text-muted",
                                                                     ),
@@ -91,25 +107,24 @@ def _create_quick_start_section():
                                                             html.Div(
                                                                 [
                                                                     html.H6(
-                                                                        "Choose Operation Mode & Period",
+                                                                        _t(lang, "step2_title"),
                                                                         className="mb-1",
                                                                     ),
                                                                     html.Small(
                                                                         [
-                                                                            "Select ",
+                                                                            _t(lang, "step2_desc_select"),
                                                                             html.Strong(
-                                                                                "Historical Data"
+                                                                                _t(lang, "step2_historical")
                                                                             ),
-                                                                            " (1990→present, 2-day delay, up to 90 days, email required), ",
+                                                                            _t(lang, "step2_historical_detail"),
                                                                             html.Strong(
-                                                                                "Recent Data"
+                                                                                _t(lang, "step2_recent")
                                                                             ),
-                                                                            " (last 7/14/21/30 days, instant results), or ",
+                                                                            _t(lang, "step2_recent_detail"),
                                                                             html.Strong(
-                                                                                "Forecast"
+                                                                                _t(lang, "step2_forecast")
                                                                             ),
-                                                                            " (today → today+5, irrigation planning). "
-                                                                            "The system auto-detects the best mode based on your date selection.",
+                                                                            _t(lang, "step2_forecast_detail"),
                                                                         ],
                                                                         className="text-muted",
                                                                     ),
@@ -138,23 +153,20 @@ def _create_quick_start_section():
                                                             html.Div(
                                                                 [
                                                                     html.H6(
-                                                                        "Click Calculate ETo",
+                                                                        _t(lang, "step3_title"),
                                                                         className="mb-1",
                                                                     ),
                                                                     html.Small(
                                                                         [
-                                                                            "The system automatically: fetches data from multiple APIs, "
-                                                                            "applies preprocessing (outlier detection, gap filling), "
-                                                                            "fuses sources via ",
+                                                                            _t(lang, "step3_desc"),
                                                                             html.Strong(
-                                                                                "Adaptive Kalman Filter"
+                                                                                _t(lang, "step3_kalman")
                                                                             ),
-                                                                            ", calculates ETo using ",
+                                                                            _t(lang, "step3_calculates"),
                                                                             html.Strong(
-                                                                                "FAO-56 Penman-Monteith"
+                                                                                _t(lang, "step3_fao56")
                                                                             ),
-                                                                            ", and displays interactive results. "
-                                                                            "Real-time progress is shown via WebSocket.",
+                                                                            _t(lang, "step3_displays"),
                                                                         ],
                                                                         className="text-muted",
                                                                     ),
@@ -173,9 +185,8 @@ def _create_quick_start_section():
                                             html.I(
                                                 className="bi bi-lightning-charge-fill me-2"
                                             ),
-                                            html.Strong("Fully Automatic: "),
-                                            "Source selection, data fusion, preprocessing, and ETo calculation "
-                                            "are entirely automatic. No manual configuration needed.",
+                                            html.Strong(_t(lang, "fully_automatic_title")),
+                                            _t(lang, "fully_automatic_desc"),
                                         ],
                                         color="success",
                                         className="mb-0",
@@ -192,14 +203,14 @@ def _create_quick_start_section():
     )
 
 
-def _create_interactive_map_section():
+def _create_interactive_map_section(lang):
     """Describes the interactive map and its layers."""
     return dbc.Row(
         [
             dbc.Col(
                 [
                     html.H2(
-                        "🗺️ Interactive Map",
+                        _t(lang, "map_title"),
                         id="interactive-map",
                         className="mb-4 doc-section-title",
                     ),
@@ -209,13 +220,11 @@ def _create_interactive_map_section():
                                 [
                                     html.P(
                                         [
-                                            "The interactive world map allows you to select any location "
-                                            "by clicking directly on the map. It includes contextual layers "
-                                            "for better geographic reference, especially for Brazilian regions.",
+                                            _t(lang, "map_intro"),
                                         ],
                                         className="mb-4",
                                     ),
-                                    html.H5("Map Controls", className="mb-3"),
+                                    html.H5(_t(lang, "map_controls_title"), className="mb-3"),
                                     dbc.Row(
                                         [
                                             dbc.Col(
@@ -231,15 +240,14 @@ def _create_interactive_map_section():
                                                                                 className="doc-emoji-icon",
                                                                             ),
                                                                             html.Strong(
-                                                                                " Layer Control",
+                                                                                _t(lang, "map_layer_control"),
                                                                                 className="ms-2",
                                                                             ),
                                                                         ],
                                                                         className="mb-2",
                                                                     ),
                                                                     html.P(
-                                                                        "Click the map icon in the top-right corner "
-                                                                        "to toggle contextual layers on/off.",
+                                                                        _t(lang, "map_layer_control_desc"),
                                                                         className="small text-muted mb-0",
                                                                     ),
                                                                 ]
@@ -264,15 +272,14 @@ def _create_interactive_map_section():
                                                                                 className="doc-emoji-icon",
                                                                             ),
                                                                             html.Strong(
-                                                                                " Geolocation",
+                                                                                _t(lang, "map_geolocation"),
                                                                                 className="ms-2",
                                                                             ),
                                                                         ],
                                                                         className="mb-2",
                                                                     ),
                                                                     html.P(
-                                                                        "Click the arrow icon in the top-left corner "
-                                                                        "to automatically detect your current location.",
+                                                                        _t(lang, "map_geolocation_desc"),
                                                                         className="small text-muted mb-0",
                                                                     ),
                                                                 ]
@@ -287,7 +294,7 @@ def _create_interactive_map_section():
                                         ]
                                     ),
                                     html.H5(
-                                        "Available Layers",
+                                        _t(lang, "map_layers_title"),
                                         className="mb-3 mt-4",
                                     ),
                                     dbc.Table(
@@ -296,12 +303,12 @@ def _create_interactive_map_section():
                                                 html.Tr(
                                                     [
                                                         html.Th(
-                                                            "Layer",
+                                                            _t(lang, "map_th_layer"),
                                                             className="doc-table-col-wide",
                                                         ),
-                                                        html.Th("Description"),
+                                                        html.Th(_t(lang, "map_th_description")),
                                                         html.Th(
-                                                            "Default",
+                                                            _t(lang, "map_th_default"),
                                                             className="doc-table-col-narrow",
                                                         ),
                                                     ]
@@ -321,8 +328,7 @@ def _create_interactive_map_section():
                                                                 ]
                                                             ),
                                                             html.Td(
-                                                                "Displays the boundaries of all 27 Brazilian states (UFs). "
-                                                                "Useful for geographic reference when working with locations in Brazil."
+                                                                _t(lang, "map_layer_estados_desc")
                                                             ),
                                                             html.Td(
                                                                 dbc.Badge(
@@ -346,7 +352,7 @@ def _create_interactive_map_section():
                                                             ),
                                                             html.Td(
                                                                 [
-                                                                    "Shows the MATOPIBA agricultural frontier region, covering parts of ",
+                                                                    _t(lang, "map_layer_matopiba_desc_start"),
                                                                     html.Strong(
                                                                         "Ma"
                                                                     ),
@@ -358,11 +364,11 @@ def _create_interactive_map_section():
                                                                     html.Strong(
                                                                         "Pi"
                                                                     ),
-                                                                    "auí, and ",
+                                                                    "auí, and " if lang == "en" else "auí e ",
                                                                     html.Strong(
                                                                         "Ba"
                                                                     ),
-                                                                    "hia states. Important region for Brazilian agribusiness.",
+                                                                    _t(lang, "map_layer_matopiba_desc_end"),
                                                                 ]
                                                             ),
                                                             html.Td(
@@ -386,8 +392,7 @@ def _create_interactive_map_section():
                                                                 ]
                                                             ),
                                                             html.Td(
-                                                                "Displays 337 municipalities within the MATOPIBA region. "
-                                                                "Each marker shows city name, coordinates, and elevation on hover."
+                                                                _t(lang, "map_layer_cities_desc")
                                                             ),
                                                             html.Td(
                                                                 dbc.Badge(
@@ -411,12 +416,14 @@ def _create_interactive_map_section():
                                                             ),
                                                             html.Td(
                                                                 [
-                                                                    "Special marker for Piracicaba/SP, home of ",
+                                                                    _t(lang, "map_layer_piracicaba_desc_start"),
                                                                     html.Strong(
                                                                         "ESALQ/USP"
                                                                     ),
                                                                     ' (Escola Superior de Agricultura "Luiz de Queiroz"), '
-                                                                    "where EVAonline was developed.",
+                                                                    if lang == "pt"
+                                                                    else " (College of Agriculture), ",
+                                                                    _t(lang, "map_layer_piracicaba_desc_end"),
                                                                 ]
                                                             ),
                                                             html.Td(
@@ -448,21 +455,19 @@ def _create_interactive_map_section():
     )
 
 
-def _create_operation_modes_section():
+def _create_operation_modes_section(lang):
     """Describes the 3 operational modes."""
     return dbc.Row(
         [
             dbc.Col(
                 [
                     html.H2(
-                        "📊 Operation Modes",
+                        _t(lang, "modes_title"),
                         id="modos",
                         className="mb-4 doc-section-title",
                     ),
                     html.P(
-                        "EVAonline operates in three modes, automatically selected "
-                        "based on the date range you choose. Each mode uses different "
-                        "data sources optimized for that time period.",
+                        _t(lang, "modes_intro"),
                         className="text-muted mb-3",
                     ),
                     dbc.Row(
@@ -476,14 +481,14 @@ def _create_operation_modes_section():
                                                 html.I(
                                                     className="bi bi-clock-history me-2"
                                                 ),
-                                                html.Strong("Historical Data"),
+                                                html.Strong(_t(lang, "mode_historical_title")),
                                             ],
                                             className="doc-card-header-historical",
                                         ),
                                         dbc.CardBody(
                                             [
                                                 html.P(
-                                                    "Long-term historical analysis for past periods.",
+                                                    _t(lang, "mode_historical_desc"),
                                                     className="mb-3",
                                                 ),
                                                 html.Ul(
@@ -491,11 +496,11 @@ def _create_operation_modes_section():
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Period: "
+                                                                    _t(lang, "label_period")
                                                                 ),
-                                                                "1990 → present ",
+                                                                _t(lang, "mode_historical_period"),
                                                                 dbc.Badge(
-                                                                    "2-day delay",
+                                                                    _t(lang, "mode_historical_delay"),
                                                                     color="warning",
                                                                     className="ms-1",
                                                                     pill=True,
@@ -505,38 +510,37 @@ def _create_operation_modes_section():
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Max request: "
+                                                                    _t(lang, "label_max_request")
                                                                 ),
-                                                                "90 days per request",
+                                                                _t(lang, "mode_historical_max"),
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Sources: "
+                                                                    _t(lang, "label_sources")
                                                                 ),
-                                                                "NASA POWER + Open-Meteo Archive",
+                                                                _t(lang, "mode_historical_sources"),
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Delivery: "
+                                                                    _t(lang, "label_delivery")
                                                                 ),
-                                                                "Processed asynchronously via Celery; "
-                                                                "results sent by email (CSV/Excel)",
+                                                                _t(lang, "mode_historical_delivery"),
                                                             ]
                                                         ),
                                                     ],
                                                     className="small",
                                                 ),
                                                 dbc.Badge(
-                                                    "Email required",
+                                                    _t(lang, "mode_historical_badge1"),
                                                     color="info",
                                                     className="mt-2 me-1",
                                                 ),
                                                 dbc.Badge(
-                                                    "Async processing",
+                                                    _t(lang, "mode_historical_badge2"),
                                                     color="secondary",
                                                     className="mt-2",
                                                 ),
@@ -557,14 +561,14 @@ def _create_operation_modes_section():
                                                 html.I(
                                                     className="bi bi-calendar-check me-2"
                                                 ),
-                                                html.Strong("Recent Data"),
+                                                html.Strong(_t(lang, "mode_recent_title")),
                                             ],
                                             className="doc-card-header-recent",
                                         ),
                                         dbc.CardBody(
                                             [
                                                 html.P(
-                                                    "Recent climate data up to today.",
+                                                    _t(lang, "mode_recent_desc"),
                                                     className="mb-3",
                                                 ),
                                                 html.Ul(
@@ -572,41 +576,40 @@ def _create_operation_modes_section():
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Period: "
+                                                                    _t(lang, "label_period")
                                                                 ),
-                                                                "Last 7, 14, 21, or 30 days → today",
+                                                                _t(lang, "mode_recent_period"),
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Sources: "
+                                                                    _t(lang, "label_sources")
                                                                 ),
-                                                                "NASA POWER + Open-Meteo Archive + "
-                                                                "Open-Meteo Forecast (gap filling)",
+                                                                _t(lang, "mode_recent_sources"),
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Delivery: "
+                                                                    _t(lang, "label_delivery")
                                                                 ),
-                                                                "Interactive dashboard with real-time progress",
+                                                                _t(lang, "mode_recent_delivery"),
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Gap filling: "
+                                                                    _t(lang, "label_gap_filling")
                                                                 ),
-                                                                "Open-Meteo Forecast fills the 2-day Archive delay",
+                                                                _t(lang, "mode_recent_gap"),
                                                             ]
                                                         ),
                                                     ],
                                                     className="small",
                                                 ),
                                                 dbc.Badge(
-                                                    "Instant results",
+                                                    _t(lang, "mode_recent_badge"),
                                                     color="success",
                                                     className="mt-2",
                                                 ),
@@ -627,14 +630,14 @@ def _create_operation_modes_section():
                                                 html.I(
                                                     className="bi bi-cloud-sun me-2"
                                                 ),
-                                                html.Strong("Forecast"),
+                                                html.Strong(_t(lang, "mode_forecast_title")),
                                             ],
                                             className="doc-card-header-forecast",
                                         ),
                                         dbc.CardBody(
                                             [
                                                 html.P(
-                                                    "ETo forecast for the next days.",
+                                                    _t(lang, "mode_forecast_desc"),
                                                     className="mb-3",
                                                 ),
                                                 html.Ul(
@@ -642,46 +645,46 @@ def _create_operation_modes_section():
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Period: "
+                                                                    _t(lang, "label_period")
                                                                 ),
-                                                                "Today → today + 5 days (6 days total)",
+                                                                _t(lang, "mode_forecast_period"),
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Sources (Global): "
+                                                                    _t(lang, "label_sources_global")
                                                                 ),
-                                                                "Open-Meteo Forecast + MET Norway (YR.no)",
+                                                                _t(lang, "mode_forecast_sources_global"),
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Sources (USA): "
+                                                                    _t(lang, "label_sources_usa")
                                                                 ),
-                                                                "adds NWS Forecast + NWS Stations (NOAA)",
+                                                                _t(lang, "mode_forecast_sources_usa"),
                                                             ]
                                                         ),
                                                         html.Li(
                                                             [
                                                                 html.Strong(
-                                                                    "Delivery: "
+                                                                    _t(lang, "label_delivery")
                                                                 ),
-                                                                "Interactive dashboard in real-time",
+                                                                _t(lang, "mode_forecast_delivery"),
                                                             ]
                                                         ),
                                                     ],
                                                     className="small",
                                                 ),
                                                 dbc.Badge(
-                                                    "Irrigation planning",
+                                                    _t(lang, "mode_forecast_badge1"),
                                                     color="warning",
                                                     text_color="dark",
                                                     className="mt-2 me-1",
                                                 ),
                                                 dbc.Badge(
-                                                    "4 sources (USA)",
+                                                    _t(lang, "mode_forecast_badge2"),
                                                     color="info",
                                                     className="mt-2",
                                                 ),
@@ -699,11 +702,8 @@ def _create_operation_modes_section():
                     dbc.Alert(
                         [
                             html.I(className="bi bi-info-circle-fill me-2"),
-                            html.Strong("Auto-Detection: "),
-                            "The system automatically selects the mode based on your dates. "
-                            "Historical mode has a 2-day delay (data not yet available). "
-                            "Recent mode covers up to today. "
-                            "Forecast mode is for future dates.",
+                            html.Strong(_t(lang, "modes_auto_title")),
+                            _t(lang, "modes_auto_desc"),
                         ],
                         color="light",
                         className="mt-2",
@@ -716,7 +716,7 @@ def _create_operation_modes_section():
     )
 
 
-def _create_usa_stations_section():
+def _create_usa_stations_section(lang):
     """USA NWS Stations automatic detection section."""
     return dbc.Row(
         [
@@ -728,7 +728,7 @@ def _create_usa_stations_section():
                                 src="/assets/images/Flag_of_the_United_States.svg",
                                 className="doc-flag-icon",
                             ),
-                            "USA Weather Stations (NOAA)",
+                            _t(lang, "usa_title"),
                         ],
                         id="usa-stations",
                         className="mb-4 doc-section-title",
@@ -742,17 +742,16 @@ def _create_usa_stations_section():
                                             dbc.Col(
                                                 [
                                                     html.H5(
-                                                        "Automatic NOAA Station Detection",
+                                                        _t(lang, "usa_subtitle"),
                                                         className="mb-3",
                                                     ),
                                                     html.P(
                                                         [
-                                                            "When you select a point in the ",
+                                                            _t(lang, "usa_intro_start"),
                                                             html.Strong(
-                                                                "Continental United States"
+                                                                _t(lang, "usa_intro_bold")
                                                             ),
-                                                            " (lat 24°–49°N, lon 66°–125°W), EVAonline "
-                                                            "automatically activates two additional data sources:",
+                                                            _t(lang, "usa_intro_end"),
                                                         ]
                                                     ),
                                                     html.Ol(
@@ -760,27 +759,27 @@ def _create_usa_stations_section():
                                                             html.Li(
                                                                 [
                                                                     html.Strong(
-                                                                        "NWS Forecast: "
+                                                                        _t(lang, "usa_item1_title")
                                                                     ),
-                                                                    "Official NOAA weather forecast for the grid point",
+                                                                    _t(lang, "usa_item1_desc"),
                                                                 ]
                                                             ),
                                                             html.Li(
                                                                 [
                                                                     html.Strong(
-                                                                        "NWS Stations: "
+                                                                        _t(lang, "usa_item2_title")
                                                                     ),
-                                                                    "Finds the nearest active station from ~1,800 NOAA stations",
+                                                                    _t(lang, "usa_item2_desc"),
                                                                 ]
                                                             ),
                                                             html.Li(
-                                                                "Fetches hourly real-time observations from that station"
+                                                                _t(lang, "usa_item3")
                                                             ),
                                                             html.Li(
-                                                                "Aggregates hourly data to daily values (Tmax, Tmin, RH, wind, etc.)"
+                                                                _t(lang, "usa_item4")
                                                             ),
                                                             html.Li(
-                                                                "Includes station data in the Kalman fusion as an additional source"
+                                                                _t(lang, "usa_item5")
                                                             ),
                                                         ]
                                                     ),
@@ -790,11 +789,9 @@ def _create_usa_stations_section():
                                                                 className="bi bi-broadcast-pin me-2"
                                                             ),
                                                             html.Strong(
-                                                                "Available in: "
+                                                                _t(lang, "usa_available_in")
                                                             ),
-                                                            "Forecast mode only. When activated, an info card "
-                                                            "displays station name, ID, distance, elevation, "
-                                                            "and the latest observation values.",
+                                                            _t(lang, "usa_available_desc"),
                                                         ],
                                                         color="info",
                                                     ),
@@ -804,7 +801,7 @@ def _create_usa_stations_section():
                                             dbc.Col(
                                                 [
                                                     html.H6(
-                                                        "Station Info Card Displays:",
+                                                        _t(lang, "usa_card_title"),
                                                         className="mb-3",
                                                     ),
                                                     dbc.ListGroup(
@@ -814,7 +811,7 @@ def _create_usa_stations_section():
                                                                     html.I(
                                                                         className="bi bi-building me-2 text-primary"
                                                                     ),
-                                                                    "Station name and ID (e.g., KDEN)",
+                                                                    _t(lang, "usa_card_name"),
                                                                 ]
                                                             ),
                                                             dbc.ListGroupItem(
@@ -822,7 +819,7 @@ def _create_usa_stations_section():
                                                                     html.I(
                                                                         className="bi bi-geo-alt me-2 text-danger"
                                                                     ),
-                                                                    "Distance to selected point (km)",
+                                                                    _t(lang, "usa_card_distance"),
                                                                 ]
                                                             ),
                                                             dbc.ListGroupItem(
@@ -830,7 +827,7 @@ def _create_usa_stations_section():
                                                                     html.I(
                                                                         className="bi bi-arrow-up me-2 text-success"
                                                                     ),
-                                                                    "Station elevation (m)",
+                                                                    _t(lang, "usa_card_elevation"),
                                                                 ]
                                                             ),
                                                             dbc.ListGroupItem(
@@ -838,7 +835,7 @@ def _create_usa_stations_section():
                                                                     html.I(
                                                                         className="bi bi-thermometer-half me-2 text-warning"
                                                                     ),
-                                                                    "Current temperature, humidity, wind",
+                                                                    _t(lang, "usa_card_temp"),
                                                                 ]
                                                             ),
                                                             dbc.ListGroupItem(
@@ -846,7 +843,7 @@ def _create_usa_stations_section():
                                                                     html.I(
                                                                         className="bi bi-clock me-2 text-info"
                                                                     ),
-                                                                    "Latest observation time (local)",
+                                                                    _t(lang, "usa_card_time"),
                                                                 ]
                                                             ),
                                                         ],
@@ -856,10 +853,9 @@ def _create_usa_stations_section():
                                                     html.Small(
                                                         [
                                                             html.Strong(
-                                                                "Coverage: "
+                                                                _t(lang, "usa_coverage_title")
                                                             ),
-                                                            "Continental USA (excluding Alaska, Hawaii). "
-                                                            "Bounding box: 24°N–49°N, 66°W–125°W.",
+                                                            _t(lang, "usa_coverage_desc"),
                                                         ],
                                                         className="text-muted",
                                                     ),
@@ -880,14 +876,14 @@ def _create_usa_stations_section():
     )
 
 
-def _create_results_section():
+def _create_results_section(lang):
     """Describes all result tabs, tables, charts and statistics."""
     return dbc.Row(
         [
             dbc.Col(
                 [
                     html.H2(
-                        "📈 Results & Visualizations",
+                        _t(lang, "results_title"),
                         id="resultados",
                         className="mb-4 doc-section-title",
                     ),
@@ -896,16 +892,16 @@ def _create_results_section():
                             dbc.CardBody(
                                 [
                                     html.H5(
-                                        "What You Get After Calculation",
+                                        _t(lang, "results_subtitle"),
                                         className="mb-4",
                                     ),
                                     # Result Tabs
                                     html.H6(
-                                        "🗂️ Result Tabs",
+                                        _t(lang, "results_tabs_title"),
                                         className="mb-2 text-primary",
                                     ),
                                     html.P(
-                                        "Results are organized in tabs for easy navigation:",
+                                        _t(lang, "results_tabs_desc"),
                                         className="text-muted mb-2",
                                     ),
                                     dbc.Row(
@@ -915,27 +911,27 @@ def _create_results_section():
                                                     dbc.CardBody(
                                                         [
                                                             html.Strong(
-                                                                "📋 Summary"
+                                                                _t(lang, "tab_summary")
                                                             ),
                                                             html.Ul(
                                                                 [
                                                                     html.Li(
-                                                                        "Total ETo accumulated (mm)"
+                                                                        _t(lang, "tab_summary_1")
                                                                     ),
                                                                     html.Li(
-                                                                        "Mean daily ETo (mm/day)"
+                                                                        _t(lang, "tab_summary_2")
                                                                     ),
                                                                     html.Li(
-                                                                        "Max and min daily values"
+                                                                        _t(lang, "tab_summary_3")
                                                                     ),
                                                                     html.Li(
-                                                                        "Days processed"
+                                                                        _t(lang, "tab_summary_4")
                                                                     ),
                                                                     html.Li(
-                                                                        "Irrigation recommendations"
+                                                                        _t(lang, "tab_summary_5")
                                                                     ),
                                                                     html.Li(
-                                                                        "Data sources used + fusion info"
+                                                                        _t(lang, "tab_summary_6")
                                                                     ),
                                                                 ],
                                                                 className="small mb-0",
@@ -952,27 +948,27 @@ def _create_results_section():
                                                     dbc.CardBody(
                                                         [
                                                             html.Strong(
-                                                                "📊 Data Tables"
+                                                                _t(lang, "tab_tables")
                                                             ),
                                                             html.Ul(
                                                                 [
                                                                     html.Li(
-                                                                        "Daily complete data (all variables)"
+                                                                        _t(lang, "tab_tables_1")
                                                                     ),
                                                                     html.Li(
-                                                                        "Tmax, Tmin, Tmean (°C)"
+                                                                        _t(lang, "tab_tables_2")
                                                                     ),
                                                                     html.Li(
-                                                                        "Relative humidity (%)"
+                                                                        _t(lang, "tab_tables_3")
                                                                     ),
                                                                     html.Li(
-                                                                        "Wind speed at 2m (m/s)"
+                                                                        _t(lang, "tab_tables_4")
                                                                     ),
                                                                     html.Li(
-                                                                        "Solar radiation (MJ/m²/day)"
+                                                                        _t(lang, "tab_tables_5")
                                                                     ),
                                                                     html.Li(
-                                                                        "Precipitation (mm), ETo (mm/day)"
+                                                                        _t(lang, "tab_tables_6")
                                                                     ),
                                                                 ],
                                                                 className="small mb-0",
@@ -989,27 +985,27 @@ def _create_results_section():
                                                     dbc.CardBody(
                                                         [
                                                             html.Strong(
-                                                                "📉 Charts"
+                                                                _t(lang, "tab_charts")
                                                             ),
                                                             html.Ul(
                                                                 [
                                                                     html.Li(
-                                                                        "ETo vs Temperature (time series)"
+                                                                        _t(lang, "tab_charts_1")
                                                                     ),
                                                                     html.Li(
-                                                                        "ETo vs Solar Radiation"
+                                                                        _t(lang, "tab_charts_2")
                                                                     ),
                                                                     html.Li(
-                                                                        "Temperature, Radiation & Precipitation"
+                                                                        _t(lang, "tab_charts_3")
                                                                     ),
                                                                     html.Li(
-                                                                        "ETo Heatmap (daily/weekly)"
+                                                                        _t(lang, "tab_charts_4")
                                                                     ),
                                                                     html.Li(
-                                                                        "Box Plot (variable distribution)"
+                                                                        _t(lang, "tab_charts_5")
                                                                     ),
                                                                     html.Li(
-                                                                        "Scatter plots (ETo correlations)"
+                                                                        _t(lang, "tab_charts_6")
                                                                     ),
                                                                 ],
                                                                 className="small mb-0",
@@ -1026,27 +1022,27 @@ def _create_results_section():
                                                     dbc.CardBody(
                                                         [
                                                             html.Strong(
-                                                                "📐 Statistics"
+                                                                _t(lang, "tab_stats")
                                                             ),
                                                             html.Ul(
                                                                 [
                                                                     html.Li(
-                                                                        "Mean, median, std deviation"
+                                                                        _t(lang, "tab_stats_1")
                                                                     ),
                                                                     html.Li(
-                                                                        "Quartiles (Q1, Q3)"
+                                                                        _t(lang, "tab_stats_2")
                                                                     ),
                                                                     html.Li(
-                                                                        "Normality test (Shapiro-Wilk)"
+                                                                        _t(lang, "tab_stats_3")
                                                                     ),
                                                                     html.Li(
-                                                                        "Trend analysis"
+                                                                        _t(lang, "tab_stats_4")
                                                                     ),
                                                                     html.Li(
-                                                                        "Seasonality analysis"
+                                                                        _t(lang, "tab_stats_5")
                                                                     ),
                                                                     html.Li(
-                                                                        "Correlation matrix"
+                                                                        _t(lang, "tab_stats_6")
                                                                     ),
                                                                 ],
                                                                 className="small mb-0",
@@ -1063,12 +1059,11 @@ def _create_results_section():
                                     html.Hr(),
                                     # Interactive Charts
                                     html.H6(
-                                        "📉 Interactive Charts (Plotly)",
+                                        _t(lang, "charts_title"),
                                         className="mt-3 mb-2 text-primary",
                                     ),
                                     html.P(
-                                        "All charts are fully interactive: zoom, pan, hover for values, "
-                                        "and download as PNG. Built with Plotly.",
+                                        _t(lang, "charts_desc"),
                                         className="text-muted small mb-3",
                                     ),
                                     dbc.Row(
@@ -1081,11 +1076,11 @@ def _create_results_section():
                                                                 className="bi bi-graph-up text-primary doc-icon-lg",
                                                             ),
                                                             html.P(
-                                                                "ETo vs Temperature",
+                                                                _t(lang, "chart_eto_temp"),
                                                                 className="mb-0 mt-2 small fw-bold",
                                                             ),
                                                             html.Small(
-                                                                "Time series: Tmax, Tmin, and ETo overlay",
+                                                                _t(lang, "chart_eto_temp_desc"),
                                                                 className="text-muted",
                                                             ),
                                                         ],
@@ -1104,11 +1099,11 @@ def _create_results_section():
                                                                 className="bi bi-sun text-warning doc-icon-lg",
                                                             ),
                                                             html.P(
-                                                                "ETo vs Radiation",
+                                                                _t(lang, "chart_eto_rad"),
                                                                 className="mb-0 mt-2 small fw-bold",
                                                             ),
                                                             html.Small(
-                                                                "Correlation between ETo and solar radiation",
+                                                                _t(lang, "chart_eto_rad_desc"),
                                                                 className="text-muted",
                                                             ),
                                                         ],
@@ -1127,11 +1122,11 @@ def _create_results_section():
                                                                 className="bi bi-droplet text-info doc-icon-lg",
                                                             ),
                                                             html.P(
-                                                                "Multivariate Panel",
+                                                                _t(lang, "chart_multi"),
                                                                 className="mb-0 mt-2 small fw-bold",
                                                             ),
                                                             html.Small(
-                                                                "Temp, Radiation & Precipitation combined",
+                                                                _t(lang, "chart_multi_desc"),
                                                                 className="text-muted",
                                                             ),
                                                         ],
@@ -1150,11 +1145,11 @@ def _create_results_section():
                                                                 className="bi bi-grid-3x3 text-danger doc-icon-lg",
                                                             ),
                                                             html.P(
-                                                                "ETo Heatmap",
+                                                                _t(lang, "chart_heatmap"),
                                                                 className="mb-0 mt-2 small fw-bold",
                                                             ),
                                                             html.Small(
-                                                                "Daily/weekly heat map of ETo values",
+                                                                _t(lang, "chart_heatmap_desc"),
                                                                 className="text-muted",
                                                             ),
                                                         ],
@@ -1170,7 +1165,7 @@ def _create_results_section():
                                     html.Hr(),
                                     # Downloads
                                     html.H6(
-                                        "💾 Data Export",
+                                        _t(lang, "export_title"),
                                         className="mt-3 mb-2 text-primary",
                                     ),
                                     html.Div(
@@ -1180,7 +1175,7 @@ def _create_results_section():
                                                     html.I(
                                                         className="bi bi-filetype-csv me-1"
                                                     ),
-                                                    "Download CSV",
+                                                    _t(lang, "export_csv"),
                                                 ],
                                                 color="success",
                                                 className="me-2 p-2",
@@ -1190,7 +1185,7 @@ def _create_results_section():
                                                     html.I(
                                                         className="bi bi-file-earmark-excel me-1"
                                                     ),
-                                                    "Download Excel",
+                                                    _t(lang, "export_excel"),
                                                 ],
                                                 color="success",
                                                 className="me-2 p-2",
@@ -1200,7 +1195,7 @@ def _create_results_section():
                                                     html.I(
                                                         className="bi bi-envelope me-1"
                                                     ),
-                                                    "Email (Historical mode)",
+                                                    _t(lang, "export_email"),
                                                 ],
                                                 color="info",
                                                 className="p-2",
@@ -1219,79 +1214,39 @@ def _create_results_section():
     )
 
 
-def _create_variables_section():
+def _create_variables_section(lang):
     """Explains each climate variable used in ETo calculation."""
-    variables = [
-        {
-            "symbol": "T2M",
-            "name": "Mean Temperature",
-            "unit": "°C",
-            "desc": "Air temperature at 2m height, daily mean",
-        },
-        {
-            "symbol": "T2M_MAX",
-            "name": "Maximum Temperature",
-            "unit": "°C",
-            "desc": "Daily maximum air temperature at 2m",
-        },
-        {
-            "symbol": "T2M_MIN",
-            "name": "Minimum Temperature",
-            "unit": "°C",
-            "desc": "Daily minimum air temperature at 2m",
-        },
-        {
-            "symbol": "RH2M",
-            "name": "Relative Humidity",
-            "unit": "%",
-            "desc": "Mean relative humidity at 2m height",
-        },
-        {
-            "symbol": "WS2M",
-            "name": "Wind Speed",
-            "unit": "m/s",
-            "desc": "Wind speed at 2m height (converted from 10m using FAO-56 Eq. 47, factor 0.748)",
-        },
-        {
-            "symbol": "ALLSKY_SFC_SW_DWN",
-            "name": "Solar Radiation",
-            "unit": "MJ/m²/day",
-            "desc": "All-sky surface downward shortwave radiation, adjusted for elevation",
-        },
-        {
-            "symbol": "PRECTOTCORR",
-            "name": "Precipitation",
-            "unit": "mm/day",
-            "desc": "Total corrected precipitation",
-        },
-        {
-            "symbol": "ETo",
-            "name": "Reference Evapotranspiration",
-            "unit": "mm/day",
-            "desc": "Calculated using FAO-56 Penman-Monteith equation",
-        },
+    _var_keys = [
+        ("T2M", "var_t2m_name", "°C", "var_t2m_desc"),
+        ("T2M_MAX", "var_tmax_name", "°C", "var_tmax_desc"),
+        ("T2M_MIN", "var_tmin_name", "°C", "var_tmin_desc"),
+        ("RH2M", "var_rh_name", "%", "var_rh_desc"),
+        ("WS2M", "var_ws_name", "m/s", "var_ws_desc"),
+        ("ALLSKY_SFC_SW_DWN", "var_rad_name", "MJ/m²/day", "var_rad_desc"),
+        ("PRECTOTCORR", "var_precip_name", "mm/day", "var_precip_desc"),
+        ("ETo", "var_eto_name", "mm/day", "var_eto_desc"),
     ]
 
     rows = []
-    for v in variables:
+    for symbol, name_key, unit, desc_key in _var_keys:
         rows.append(
             html.Tr(
                 [
                     html.Td(
-                        html.Code(v["symbol"]),
+                        html.Code(symbol),
                         className="fw-bold",
                     ),
-                    html.Td(v["name"]),
+                    html.Td(_t(lang, name_key)),
                     html.Td(
                         dbc.Badge(
-                            v["unit"],
+                            unit,
                             color="light",
                             text_color="dark",
                         )
                     ),
                     html.Td(
                         html.Small(
-                            v["desc"],
+                            _t(lang, desc_key),
                             className="text-muted",
                         )
                     ),
@@ -1304,7 +1259,7 @@ def _create_variables_section():
             dbc.Col(
                 [
                     html.H2(
-                        "🔬 Climate Variables",
+                        _t(lang, "variables_title"),
                         id="variables",
                         className="mb-4 doc-section-title",
                     ),
@@ -1313,8 +1268,7 @@ def _create_variables_section():
                             dbc.CardBody(
                                 [
                                     html.P(
-                                        "These are the climate variables used in the "
-                                        "FAO-56 Penman-Monteith ETo calculation:",
+                                        _t(lang, "variables_intro"),
                                         className="text-muted mb-3",
                                     ),
                                     dbc.Table(
@@ -1322,10 +1276,10 @@ def _create_variables_section():
                                             html.Thead(
                                                 html.Tr(
                                                     [
-                                                        html.Th("Symbol"),
-                                                        html.Th("Name"),
-                                                        html.Th("Unit"),
-                                                        html.Th("Description"),
+                                                        html.Th(_t(lang, "var_th_symbol")),
+                                                        html.Th(_t(lang, "var_th_name")),
+                                                        html.Th(_t(lang, "var_th_unit")),
+                                                        html.Th(_t(lang, "var_th_desc")),
                                                     ]
                                                 )
                                             ),
@@ -1348,16 +1302,16 @@ def _create_variables_section():
     )
 
 
-def _create_data_sources_section():
+def _create_data_sources_section(lang):
     """Data sources — updated with all 6 real sources."""
     sources = [
         {
             "icon": "bi-cloud-sun",
             "name": "Open-Meteo Archive",
-            "coverage": "Global (ERA5-Land reanalysis)",
-            "resolution": "0.1° (~11 km)",
-            "period": "1990 → present (2-day delay)",
-            "variables": "T, RH, Wind, Radiation, Precipitation",
+            "coverage_key": "src_openmeteo_archive_coverage",
+            "resolution_key": "src_openmeteo_archive_resolution",
+            "period_key": "src_openmeteo_archive_period",
+            "variables_key": "src_openmeteo_archive_vars",
             "license": "CC-BY 4.0",
             "color": "primary",
             "modes": ["Historical", "Recent"],
@@ -1366,10 +1320,10 @@ def _create_data_sources_section():
         {
             "icon": "bi-cloud-arrow-down",
             "name": "Open-Meteo Forecast",
-            "coverage": "Global (multi-model ensemble)",
-            "resolution": "0.1° (~11 km)",
-            "period": "today − 29d → today + 16d",
-            "variables": "T, RH, Wind, Radiation, Precipitation",
+            "coverage_key": "src_openmeteo_forecast_coverage",
+            "resolution_key": "src_openmeteo_forecast_resolution",
+            "period_key": "src_openmeteo_forecast_period",
+            "variables_key": "src_openmeteo_forecast_vars",
             "license": "CC-BY 4.0",
             "color": "success",
             "modes": ["Recent (gap fill)", "Forecast"],
@@ -1378,10 +1332,10 @@ def _create_data_sources_section():
         {
             "icon": "bi-rocket-takeoff",
             "name": "NASA POWER",
-            "coverage": "Global (MERRA-2 satellite + reanalysis)",
-            "resolution": "0.5° (~55 km)",
-            "period": "1981 → today (no delay)",
-            "variables": "T, RH, Wind, Radiation",
+            "coverage_key": "src_nasa_coverage",
+            "resolution_key": "src_nasa_resolution",
+            "period_key": "src_nasa_period",
+            "variables_key": "src_nasa_vars",
             "license": "Public Domain",
             "color": "danger",
             "modes": ["Historical", "Recent"],
@@ -1390,10 +1344,10 @@ def _create_data_sources_section():
         {
             "icon": "bi-snow2",
             "name": "MET Norway (YR.no)",
-            "coverage": "Global (Nordic focus)",
-            "resolution": "1 km (Nordic), 10 km (Global)",
-            "period": "today → today + 5 days",
-            "variables": "T, RH, Wind, Precipitation",
+            "coverage_key": "src_met_coverage",
+            "resolution_key": "src_met_resolution",
+            "period_key": "src_met_period",
+            "variables_key": "src_met_vars",
             "license": "CC-BY 4.0",
             "color": "info",
             "modes": ["Forecast"],
@@ -1407,11 +1361,11 @@ def _create_data_sources_section():
                     src="/assets/images/Flag_of_the_United_States.svg",
                     className="doc-flag-icon-sm",
                 ),
-                "Continental USA only",
             ],
-            "resolution": "2.5 km grid",
-            "period": "today → today + 6 days",
-            "variables": "T, RH, Wind, Precipitation",
+            "coverage_key": "src_nws_forecast_coverage",
+            "resolution_key": "src_nws_forecast_resolution",
+            "period_key": "src_nws_forecast_period",
+            "variables_key": "src_nws_forecast_vars",
             "license": "Public Domain",
             "color": "warning",
             "modes": ["Forecast (USA)"],
@@ -1425,11 +1379,11 @@ def _create_data_sources_section():
                     src="/assets/images/Flag_of_the_United_States.svg",
                     className="doc-flag-icon-sm",
                 ),
-                "~1,800 active stations",
             ],
-            "resolution": "Point observations",
-            "period": "Hourly real-time observations",
-            "variables": "T, RH, Wind, Radiation, Precipitation",
+            "coverage_key": "src_nws_stations_coverage",
+            "resolution_key": "src_nws_stations_resolution",
+            "period_key": "src_nws_stations_period",
+            "variables_key": "src_nws_stations_vars",
             "license": "Public Domain",
             "color": "dark",
             "modes": ["Forecast (USA)"],
@@ -1449,6 +1403,12 @@ def _create_data_sources_section():
             for m in src["modes"]
         ]
 
+        # Build coverage content
+        if "coverage" in src:
+            coverage_content = src["coverage"] + [_t(lang, src["coverage_key"])]
+        else:
+            coverage_content = _t(lang, src["coverage_key"])
+
         source_cards.append(
             dbc.Col(
                 dbc.Card(
@@ -1466,7 +1426,7 @@ def _create_data_sources_section():
                                 ),
                                 html.P(
                                     html.Small(
-                                        src["coverage"],
+                                        coverage_content,
                                         className="text-muted",
                                     ),
                                     className="mb-1",
@@ -1474,7 +1434,7 @@ def _create_data_sources_section():
                                 html.P(
                                     [
                                         html.I(className="bi bi-grid me-1"),
-                                        html.Small(src["resolution"]),
+                                        html.Small(_t(lang, src["resolution_key"])),
                                     ],
                                     className="mb-1",
                                 ),
@@ -1483,7 +1443,7 @@ def _create_data_sources_section():
                                         html.I(
                                             className="bi bi-calendar me-1"
                                         ),
-                                        html.Small(src["period"]),
+                                        html.Small(_t(lang, src["period_key"])),
                                     ],
                                     className="mb-1",
                                 ),
@@ -1492,14 +1452,14 @@ def _create_data_sources_section():
                                         html.I(
                                             className="bi bi-thermometer-half me-1"
                                         ),
-                                        html.Small(src["variables"]),
+                                        html.Small(_t(lang, src["variables_key"])),
                                     ],
                                     className="mb-2",
                                 ),
                                 html.Div(
                                     [
                                         html.Small(
-                                            "Modes: ",
+                                            _t(lang, "sources_label_modes"),
                                             className="text-muted me-1",
                                         ),
                                         *modes_badges,
@@ -1511,7 +1471,7 @@ def _create_data_sources_section():
                                         html.I(
                                             className="bi bi-box-arrow-up-right me-1"
                                         ),
-                                        "Official Website",
+                                        _t(lang, "sources_official_website"),
                                     ],
                                     href=src["url"],
                                     target="_blank",
@@ -1534,13 +1494,12 @@ def _create_data_sources_section():
             dbc.Col(
                 [
                     html.H2(
-                        "📡 Data Sources (6 APIs)",
+                        _t(lang, "sources_title"),
                         id="fontes-dados",
                         className="mb-4 doc-section-title",
                     ),
                     html.P(
-                        "EVAonline automatically integrates data from 6 sources. "
-                        "Source selection is based on the operation mode and geographic location.",
+                        _t(lang, "sources_intro"),
                         className="text-muted mb-3",
                     ),
                     dbc.Row(source_cards),
@@ -1548,17 +1507,15 @@ def _create_data_sources_section():
                     dbc.Alert(
                         [
                             html.I(className="bi bi-mountains me-2"),
-                            html.Strong("Elevation: "),
-                            "SRTM 30m via ",
+                            html.Strong(_t(lang, "sources_elevation_title")),
+                            _t(lang, "sources_elevation_desc_start"),
                             html.A(
                                 "OpenTopoData",
                                 href="https://www.opentopodata.org/",
                                 target="_blank",
                                 className="alert-link",
                             ),
-                            " (not a climate source, but essential for FAO-56 "
-                            "atmospheric pressure correction). "
-                            "Fallback: ASTER 30m for latitudes > 60°N or < 60°S.",
+                            _t(lang, "sources_elevation_desc_end"),
                         ],
                         color="light",
                     ),
@@ -1570,84 +1527,38 @@ def _create_data_sources_section():
     )
 
 
-def _create_features_section():
+def _create_features_section(lang):
     """Automatic features of the system."""
+    features = [
+        ("bi-geo-alt-fill", "feat_elevation_title", "feat_elevation_desc", "danger"),
+        ("bi-clock", "feat_timezone_title", "feat_timezone_desc", "primary"),
+        ("bi-shuffle", "feat_fusion_title", "feat_fusion_desc", "success"),
+        ("bi-activity", "feat_progress_title", "feat_progress_desc", "info"),
+        ("bi-water", "feat_ocean_title", "feat_ocean_desc", "warning"),
+        ("bi-wind", "feat_wind_title", "feat_wind_desc", "secondary"),
+        ("bi-shield-check", "feat_preprocess_title", "feat_preprocess_desc", "dark"),
+        ("bi-lightning-charge", "feat_cache_title", "feat_cache_desc", "primary"),
+        ("bi-flag", "feat_usa_title", "feat_usa_desc", "danger"),
+    ]
+
     return dbc.Row(
         [
             dbc.Col(
                 [
                     html.H2(
-                        "⚡ Automatic Features",
+                        _t(lang, "features_title"),
                         id="funcionalidades",
                         className="mb-4 doc-section-title",
                     ),
                     dbc.Row(
                         [
                             _feature_card(
-                                "bi-geo-alt-fill",
-                                "SRTM Elevation",
-                                "Altitude obtained automatically via OpenTopoData (SRTM 30m) "
-                                "for atmospheric pressure correction in FAO-56.",
-                                "danger",
-                            ),
-                            _feature_card(
-                                "bi-clock",
-                                "Timezone Detection",
-                                "Automatically detected from coordinates. "
-                                "All dates are adjusted to local time.",
-                                "primary",
-                            ),
-                            _feature_card(
-                                "bi-shuffle",
-                                "Multi-Source Fusion",
-                                "Adaptive Kalman Ensemble Filter fuses multiple sources "
-                                "with variance-based weighting. Two modes: Adaptive (Brazil, "
-                                "with Xavier climatology) and Simple (Global).",
-                                "success",
-                            ),
-                            _feature_card(
-                                "bi-activity",
-                                "Real-Time Progress",
-                                "Track calculation progress via WebSocket with progress bar "
-                                "and step-by-step messages.",
-                                "info",
-                            ),
-                            _feature_card(
-                                "bi-water",
-                                "Ocean Detection",
-                                "Points over the ocean are automatically detected "
-                                "and calculation is blocked with a clear warning.",
-                                "warning",
-                            ),
-                            _feature_card(
-                                "bi-wind",
-                                "Wind Height Conversion",
-                                "Wind converted from 10m to 2m height "
-                                "using FAO-56 Equation 47 (factor: 0.748).",
-                                "secondary",
-                            ),
-                            _feature_card(
-                                "bi-shield-check",
-                                "Data Preprocessing",
-                                "Automatic outlier detection (IQR method), gap filling, "
-                                "and regional validation limits (Brazil: Xavier et al.; "
-                                "Global: conservative world limits).",
-                                "dark",
-                            ),
-                            _feature_card(
-                                "bi-lightning-charge",
-                                "Redis Cache",
-                                "Results cached in Redis for fast repeated queries. "
-                                "API rate limiting to prevent abuse.",
-                                "primary",
-                            ),
-                            _feature_card(
-                                "bi-flag",
-                                "USA Auto-Detection",
-                                "Points in Continental USA automatically activate "
-                                "NWS Forecast + NWS Stations as additional data sources.",
-                                "danger",
-                            ),
+                                icon,
+                                _t(lang, title_key),
+                                _t(lang, desc_key),
+                                color,
+                            )
+                            for icon, title_key, desc_key, color in features
                         ]
                     ),
                 ],
@@ -1681,60 +1592,24 @@ def _feature_card(icon, title, description, color):
     )
 
 
-def _create_faq_section():
+def _create_faq_section(lang):
     """FAQ / Troubleshooting section."""
-    faqs = [
-        {
-            "q": "Why do I need to provide an email for Historical mode?",
-            "a": "Historical data requests can take 1-5 minutes to process "
-            "(fetching from multiple APIs, preprocessing, fusion, ETo calculation). "
-            "The task runs asynchronously via Celery, and results are delivered "
-            "by email with CSV/Excel attachment.",
-        },
-        {
-            "q": "Why is there a 2-day delay for recent data?",
-            "a": "Open-Meteo Archive (ERA5-Land reanalysis) has a ~2 day latency. "
-            "EVAonline automatically uses Open-Meteo Forecast to fill this gap, "
-            "so you always get complete data up to today.",
-        },
-        {
-            "q": "What happens if I click on the ocean?",
-            "a": "The system detects ocean points automatically and blocks the "
-            "calculation with a clear warning. Only land locations are supported.",
-        },
-        {
-            "q": "Why are there more sources available for USA locations?",
-            "a": "The Continental USA is covered by NOAA's NWS Forecast (gridded) "
-            "and ~1,800 active NWS Stations with real-time hourly observations. "
-            "These provide additional data for the Kalman fusion ensemble.",
-        },
-        {
-            "q": "What is the Kalman Ensemble Filter?",
-            "a": "An Adaptive Kalman Filter that fuses data from multiple sources, "
-            "weighting each by its estimated variance. For Brazil, it uses Xavier "
-            "BR-DWGD climatology (27 cities) as bias correction reference. "
-            "For other locations, a Simple mode operates without climatology.",
-        },
-        {
-            "q": "How accurate is EVAonline?",
-            "a": "Validated against 17 Brazilian weather stations (Xavier et al. 2016, 2022) "
-            "over 30 years. The Kalman fusion consistently outperforms any single "
-            "data source. Details available in the About page.",
-        },
-        {
-            "q": "What is the maximum period I can request?",
-            "a": "Historical: up to 90 days per request (1990→present, 2-day delay). "
-            "Recent: 7, 14, 21, or 30 days (instant). "
-            "Forecast: 6 days (today → today+5).",
-        },
+    faq_keys = [
+        ("faq_q1", "faq_a1"),
+        ("faq_q2", "faq_a2"),
+        ("faq_q3", "faq_a3"),
+        ("faq_q4", "faq_a4"),
+        ("faq_q5", "faq_a5"),
+        ("faq_q6", "faq_a6"),
+        ("faq_q7", "faq_a7"),
     ]
 
     accordion_items = []
-    for i, faq in enumerate(faqs):
+    for i, (q_key, a_key) in enumerate(faq_keys):
         accordion_items.append(
             dbc.AccordionItem(
-                html.P(faq["a"], className="mb-0"),
-                title=faq["q"],
+                html.P(_t(lang, a_key), className="mb-0"),
+                title=_t(lang, q_key),
                 item_id=f"faq-{i}",
             )
         )
@@ -1744,7 +1619,7 @@ def _create_faq_section():
             dbc.Col(
                 [
                     html.H2(
-                        "❓ FAQ",
+                        _t(lang, "faq_title"),
                         id="faq",
                         className="mb-4 doc-section-title",
                     ),
@@ -1760,14 +1635,14 @@ def _create_faq_section():
     )
 
 
-def _create_license_section():
+def _create_license_section(lang):
     """Software license."""
     return dbc.Row(
         [
             dbc.Col(
                 [
                     html.H2(
-                        "📄 License",
+                        _t(lang, "license_title"),
                         id="licenca",
                         className="mb-4 doc-section-title",
                     ),
@@ -1776,7 +1651,7 @@ def _create_license_section():
                             dbc.CardBody(
                                 [
                                     html.H5(
-                                        "GNU Affero General Public License v3.0",
+                                        _t(lang, "license_name"),
                                         className="mb-4",
                                     ),
                                     # 3 columns: Permissions, Limitations, Conditions
@@ -1786,7 +1661,7 @@ def _create_license_section():
                                             dbc.Col(
                                                 [
                                                     html.H6(
-                                                        "Permissions",
+                                                        _t(lang, "license_permissions"),
                                                         className="mb-3 text-success",
                                                     ),
                                                     html.Div(
@@ -1796,7 +1671,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-check-circle-fill text-success me-2"
                                                                     ),
-                                                                    "Commercial use",
+                                                                    _t(lang, "license_perm_commercial"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1805,7 +1680,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-check-circle-fill text-success me-2"
                                                                     ),
-                                                                    "Modification",
+                                                                    _t(lang, "license_perm_modification"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1814,7 +1689,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-check-circle-fill text-success me-2"
                                                                     ),
-                                                                    "Distribution",
+                                                                    _t(lang, "license_perm_distribution"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1823,7 +1698,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-check-circle-fill text-success me-2"
                                                                     ),
-                                                                    "Patent use",
+                                                                    _t(lang, "license_perm_patent"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1832,7 +1707,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-check-circle-fill text-success me-2"
                                                                     ),
-                                                                    "Private use",
+                                                                    _t(lang, "license_perm_private"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1846,7 +1721,7 @@ def _create_license_section():
                                             dbc.Col(
                                                 [
                                                     html.H6(
-                                                        "Limitations",
+                                                        _t(lang, "license_limitations"),
                                                         className="mb-3 text-danger",
                                                     ),
                                                     html.Div(
@@ -1856,7 +1731,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-x-circle-fill text-danger me-2"
                                                                     ),
-                                                                    "Liability",
+                                                                    _t(lang, "license_lim_liability"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1865,7 +1740,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-x-circle-fill text-danger me-2"
                                                                     ),
-                                                                    "Warranty",
+                                                                    _t(lang, "license_lim_warranty"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1879,7 +1754,7 @@ def _create_license_section():
                                             dbc.Col(
                                                 [
                                                     html.H6(
-                                                        "Conditions",
+                                                        _t(lang, "license_conditions"),
                                                         className="mb-3 text-primary",
                                                     ),
                                                     html.Div(
@@ -1889,7 +1764,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-info-circle-fill text-primary me-2"
                                                                     ),
-                                                                    "License and copyright notice",
+                                                                    _t(lang, "license_cond_notice"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1898,7 +1773,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-info-circle-fill text-primary me-2"
                                                                     ),
-                                                                    "State changes",
+                                                                    _t(lang, "license_cond_changes"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1907,7 +1782,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-info-circle-fill text-primary me-2"
                                                                     ),
-                                                                    "Disclose source",
+                                                                    _t(lang, "license_cond_disclose"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1916,7 +1791,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-info-circle-fill text-primary me-2"
                                                                     ),
-                                                                    "Network use is distribution",
+                                                                    _t(lang, "license_cond_network"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1925,7 +1800,7 @@ def _create_license_section():
                                                                     html.I(
                                                                         className="bi bi-info-circle-fill text-primary me-2"
                                                                     ),
-                                                                    "Same license",
+                                                                    _t(lang, "license_cond_same"),
                                                                 ],
                                                                 className="mb-2",
                                                             ),
@@ -1940,9 +1815,9 @@ def _create_license_section():
                                     html.Hr(className="my-3"),
                                     html.P(
                                         [
-                                            "Full license text available at ",
+                                            _t(lang, "license_full_text"),
                                             html.A(
-                                                "GitHub Repository",
+                                                _t(lang, "license_repo"),
                                                 href="https://github.com/silvianesoares/EVAONLINE/blob/main/LICENSE",
                                                 target="_blank",
                                                 className="text-primary",
@@ -1967,181 +1842,184 @@ def _create_license_section():
 # MAIN LAYOUT
 # =============================================================================
 
-documentation_layout = html.Div(
-    [
-        dbc.Container(
-            [
-                # Quick Nav
-                dbc.Card(
-                    [
-                        dbc.CardBody(
-                            [
-                                html.Div(
-                                    [
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "1",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-rocket-takeoff me-1"
-                                                ),
-                                                "Quick Start",
-                                            ],
-                                            href="#quick-start",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "2",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-map me-1"
-                                                ),
-                                                "Map",
-                                            ],
-                                            href="#interactive-map",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "3",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-sliders me-1"
-                                                ),
-                                                "Modes",
-                                            ],
-                                            href="#modos",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "4",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-geo-alt me-1"
-                                                ),
-                                                "USA",
-                                            ],
-                                            href="#usa-stations",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "5",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-graph-up me-1"
-                                                ),
-                                                "Results",
-                                            ],
-                                            href="#resultados",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "6",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-thermometer-half me-1"
-                                                ),
-                                                "Variables",
-                                            ],
-                                            href="#variables",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "7",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-cloud-download me-1"
-                                                ),
-                                                "Sources",
-                                            ],
-                                            href="#fontes-dados",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "8",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-lightning me-1"
-                                                ),
-                                                "Features",
-                                            ],
-                                            href="#funcionalidades",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "9",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-question-circle me-1"
-                                                ),
-                                                "FAQ",
-                                            ],
-                                            href="#faq",
-                                            className="doc-nav-link",
-                                        ),
-                                        html.A(
-                                            [
-                                                html.Span(
-                                                    "10",
-                                                    className="doc-nav-number",
-                                                ),
-                                                html.I(
-                                                    className="bi bi-file-earmark-text me-1"
-                                                ),
-                                                "License",
-                                            ],
-                                            href="#licenca",
-                                            className="doc-nav-link",
-                                        ),
-                                    ],
-                                    className="doc-nav-container",
-                                )
-                            ],
-                            className="py-2 px-3",
-                        )
-                    ],
-                    className="mb-4 shadow-sm doc-nav-card",
-                ),
-                # All sections
-                _create_quick_start_section(),
-                _create_interactive_map_section(),
-                _create_operation_modes_section(),
-                _create_usa_stations_section(),
-                _create_results_section(),
-                _create_variables_section(),
-                _create_data_sources_section(),
-                _create_features_section(),
-                _create_faq_section(),
-                _create_license_section(),
-            ],
-            fluid=False,
-            className="py-4",
-        )
-    ],
-    className="doc-page-container",
-)
+
+def create_documentation_layout(lang="en"):
+    """Cria o layout da página de documentação com suporte a idioma."""
+    return html.Div(
+        [
+            dbc.Container(
+                [
+                    # Quick Nav
+                    dbc.Card(
+                        [
+                            dbc.CardBody(
+                                [
+                                    html.Div(
+                                        [
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "1",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-rocket-takeoff me-1"
+                                                    ),
+                                                    _t(lang, "nav_quick_start"),
+                                                ],
+                                                href="#quick-start",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "2",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-map me-1"
+                                                    ),
+                                                    _t(lang, "nav_map"),
+                                                ],
+                                                href="#interactive-map",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "3",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-sliders me-1"
+                                                    ),
+                                                    _t(lang, "nav_modes"),
+                                                ],
+                                                href="#modos",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "4",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-geo-alt me-1"
+                                                    ),
+                                                    _t(lang, "nav_usa"),
+                                                ],
+                                                href="#usa-stations",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "5",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-graph-up me-1"
+                                                    ),
+                                                    _t(lang, "nav_results"),
+                                                ],
+                                                href="#resultados",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "6",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-thermometer-half me-1"
+                                                    ),
+                                                    _t(lang, "nav_variables"),
+                                                ],
+                                                href="#variables",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "7",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-cloud-download me-1"
+                                                    ),
+                                                    _t(lang, "nav_sources"),
+                                                ],
+                                                href="#fontes-dados",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "8",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-lightning me-1"
+                                                    ),
+                                                    _t(lang, "nav_features"),
+                                                ],
+                                                href="#funcionalidades",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "9",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-question-circle me-1"
+                                                    ),
+                                                    _t(lang, "nav_faq"),
+                                                ],
+                                                href="#faq",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "10",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
+                                                        className="bi bi-file-earmark-text me-1"
+                                                    ),
+                                                    _t(lang, "nav_license"),
+                                                ],
+                                                href="#licenca",
+                                                className="doc-nav-link",
+                                            ),
+                                        ],
+                                        className="doc-nav-container",
+                                    )
+                                ],
+                                className="py-2 px-3",
+                            )
+                        ],
+                        className="mb-4 shadow-sm doc-nav-card",
+                    ),
+                    # All sections
+                    _create_quick_start_section(lang),
+                    _create_interactive_map_section(lang),
+                    _create_operation_modes_section(lang),
+                    _create_usa_stations_section(lang),
+                    _create_results_section(lang),
+                    _create_variables_section(lang),
+                    _create_data_sources_section(lang),
+                    _create_features_section(lang),
+                    _create_faq_section(lang),
+                    _create_license_section(lang),
+                ],
+                fluid=False,
+                className="py-4",
+            )
+        ],
+        className="doc-page-container",
+    )
