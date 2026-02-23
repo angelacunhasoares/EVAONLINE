@@ -170,9 +170,12 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                         ),
                                     ],
                                     md=12,
-                                    lg=6,
                                     className="mb-3",
                                 ),
+                            ]
+                        ),
+                        dbc.Row(
+                            [
                                 dbc.Col(
                                     [
                                         html.H6(
@@ -188,7 +191,6 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                         ),
                                     ],
                                     md=12,
-                                    lg=6,
                                     className="mb-3",
                                 ),
                             ]

@@ -7,12 +7,12 @@ from shared_utils.get_translations import get_translations
 
 # ── Shared academic chart style constants ──
 _FONT_FAMILY = "Segoe UI, Roboto, Arial, sans-serif"
-_TITLE_SIZE = 22
-_AXIS_TITLE_SIZE = 17
-_TICK_SIZE = 14
-_LEGEND_SIZE = 15
-_ANNOTATION_SIZE = 14
-_BAR_TEXT_SIZE = 14
+_TITLE_SIZE = 26
+_AXIS_TITLE_SIZE = 20
+_TICK_SIZE = 16
+_LEGEND_SIZE = 17
+_ANNOTATION_SIZE = 16
+_BAR_TEXT_SIZE = 16
 _CHART_HEIGHT = 550
 _HEATMAP_HEIGHT = 550
 _BRAND_BLUE = "#005B99"
@@ -32,7 +32,7 @@ def _base_layout(**overrides):
         title_font=dict(size=_TITLE_SIZE, family=_FONT_FAMILY),
         template=_TEMPLATE,
         height=_CHART_HEIGHT,
-        hoverlabel=dict(font_size=15, font_family=_FONT_FAMILY),
+        hoverlabel=dict(font_size=17, font_family=_FONT_FAMILY),
     )
     layout.update(overrides)
     return layout
