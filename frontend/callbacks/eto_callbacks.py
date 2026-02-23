@@ -3005,6 +3005,7 @@ def _send_table(df_export, base_name, excel_clicked, sheet_name="Data"):
         excel_clicked: True when the Excel button was the trigger.
     """
     import io
+    import pandas as pd
     from datetime import datetime as _dt
 
     timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
@@ -3016,6 +3017,31 @@ def _send_table(df_export, base_name, excel_clicked, sheet_name="Data"):
         buf.seek(0)
         return dcc.send_bytes(buf.getvalue(), f"EVAonline_{base_name}_{timestamp}.xlsx")
     return dcc.send_data_frame(df_export.to_csv, f"EVAonline_{base_name}_{timestamp}.csv", index=False)
+
+
+# Map from serialized (store) column names to internal column names
+_STORE_TO_INTERNAL = {
+    "tmax_c": "T2M_MAX",
+    "tmin_c": "T2M_MIN",
+    "tmed_c": "T2M",
+    "humidity_pct": "RH2M",
+    "wind_ms": "WS2M",
+    "radiation_mj_m2": "ALLSKY_SFC_SW_DWN",
+    "precip_mm": "PRECTOTCORR",
+    "et0_mm_day": "eto_evaonline",
+}
+
+
+def _df_from_store(results_data):
+    """Build a DataFrame from store records, remapping column names."""
+    import pandas as pd
+    records = results_data.get("records", [])
+    if not records:
+        return None
+    df = pd.DataFrame(records)
+    # Remap serialised names → internal names used by display functions
+    df = df.rename(columns=_STORE_TO_INTERNAL)
+    return df
 
 
 def _is_excel_trigger():
@@ -3044,11 +3070,10 @@ def download_table_climate(csv_n, excel_n, results_data, lang_data):
     from shared_utils.get_translations import get_translations
 
     lang = lang_data if isinstance(lang_data, str) else "pt"
-    records = results_data.get("records", [])
-    if not records:
+    df = _df_from_store(results_data)
+    if df is None:
         return no_update
 
-    df = pd.DataFrame(records)
     t_dict = get_translations(lang)
     dv = t_dict.get("data_variables", {})
 
@@ -3088,11 +3113,9 @@ def download_table_stats(csv_n, excel_n, results_data, lang_data):
 
     lang = lang_data if isinstance(lang_data, str) else "pt"
     mode = results_data.get("mode", "")
-    records = results_data.get("records", [])
-    if not records:
+    df = _df_from_store(results_data)
+    if df is None:
         return no_update
-
-    df = pd.DataFrame(records)
     t_dict = get_translations(lang)
     dv = t_dict.get("data_variables", {})
     st = t_dict.get("statistics", {})
@@ -3156,11 +3179,10 @@ def download_table_eto_summary(csv_n, excel_n, results_data, lang_data):
     from shared_utils.get_translations import get_translations
 
     lang = lang_data if isinstance(lang_data, str) else "pt"
-    records = results_data.get("records", [])
-    if not records:
+    df = _df_from_store(results_data)
+    if df is None:
         return no_update
 
-    df = pd.DataFrame(records)
     t_dict = get_translations(lang)
     dv = t_dict.get("data_variables", {})
     st = t_dict.get("statistics", {})
@@ -3208,11 +3230,10 @@ def download_table_normality(csv_n, excel_n, results_data, lang_data):
     if mode == "DASHBOARD_FORECAST":
         return no_update
 
-    records = results_data.get("records", [])
-    if not records:
+    df = _df_from_store(results_data)
+    if df is None:
         return no_update
 
-    df = pd.DataFrame(records)
     t_dict = get_translations(lang)
     dv = t_dict.get("data_variables", {})
     st = t_dict.get("statistics", {})
