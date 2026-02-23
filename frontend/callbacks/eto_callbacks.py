@@ -1187,15 +1187,15 @@ def calculate_eto(
                     [
                         "As coordenadas selecionadas (",
                         html.Code(f"{lat:.4f}°, {lon:.4f}°"),
-                        ") estão sobre o oceano ou corpo d'água. ",
-                        "A evapotranspiração (ETo) é calculada apenas para ",
-                        html.Strong("áreas terrestres"),
+                        ") ", t(lang, "results", "over_ocean", default="are over the ocean or water body."), " ",
+                        t(lang, "results", "eto_land_only", default="Evapotranspiration (ETo) is calculated only for"), " ",
+                        html.Strong(t(lang, "results", "land_areas", default="land areas")),
                         ".",
                     ]
                 ),
                 html.Br(),
                 html.Small(
-                    "💡 Dica: Clique em um ponto sobre terra firme no mapa.",
+                    t(lang, "results", "ocean_click_tip", default="Tip: Click on a point over land on the map."),
                     className="text-muted mt-1 d-block",
                 ),
             ],
@@ -1404,9 +1404,9 @@ def calculate_eto(
 
         # Create user-friendly mode indicator card
         mode_names = {
-            "historical": "Histórico",
-            "recent": "Recente",
-            "forecast": "Previsão",
+            "historical": t(lang, "sidebar", "mode_historical", default="Historical"),
+            "recent": t(lang, "sidebar", "mode_recent", default="Recent"),
+            "forecast": t(lang, "sidebar", "mode_forecast", default="Forecast"),
         }
         mode_icons = {
             "historical": "bi-hourglass-split",
@@ -1420,20 +1420,22 @@ def calculate_eto(
         }
 
         # Build period description
+        date_to = t(lang, "results", "date_to", default="to")
         if ui_selection == "historical":
-            period_text = f"{start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}"
+            period_text = f"{start_date.strftime('%d/%m/%Y')} {date_to} {end_date.strftime('%d/%m/%Y')}"
             period_days_calc = (end_date - start_date).days + 1
-            period_extra = f"({period_days_calc} dias)"
+            n_days_text = t(lang, "results", "n_days", default="{n} days").replace("{n}", str(period_days_calc))
+            period_extra = f"({n_days_text})"
         elif ui_selection == "recent":
-            period_text = f"Últimos {period_days} dias"
-            period_extra = "(dados recentes)"
+            period_text = t(lang, "results", "last_n_days", default="Last {n} days").replace("{n}", str(period_days))
+            period_extra = t(lang, "results", "recent_data", default="(recent data)")
         else:  # forecast
             from datetime import timedelta
 
             location_today = get_today_for_location(lat, lon)
             forecast_end = location_today + timedelta(days=5)
-            period_text = f"{location_today.strftime('%d/%m/%Y')} até {forecast_end.strftime('%d/%m/%Y')}"
-            period_extra = "(previsão 5 dias)"
+            period_text = f"{location_today.strftime('%d/%m/%Y')} {date_to} {forecast_end.strftime('%d/%m/%Y')}"
+            period_extra = t(lang, "results", "forecast_days", default="(forecast 5 days)")
 
         # Get timezone for location
         try:
@@ -1467,7 +1469,7 @@ def calculate_eto(
                             className=f"bi {mode_icons.get(ui_selection, 'bi-info-circle')} me-2"
                         ),
                         html.Strong(
-                            f"Modo: {mode_names.get(ui_selection, ui_selection)}"
+                            f"{t(lang, 'results', 'mode_label', default='Mode')}: {mode_names.get(ui_selection, ui_selection)}"
                         ),
                     ],
                     style={
@@ -1480,7 +1482,7 @@ def calculate_eto(
                     [
                         html.I(className="bi bi-geo-alt me-2 text-muted"),
                         html.Span(
-                            f"Localização: {lat:.4f}°, {lon:.4f}°",
+                            f"{t(lang, 'results', 'location_label', default='Location')}: {lat:.4f}°, {lon:.4f}°",
                             className="text-muted",
                         ),
                     ],
@@ -1490,7 +1492,7 @@ def calculate_eto(
                     [
                         html.I(className="bi bi-clock me-2 text-muted"),
                         html.Span(
-                            f"Fuso horário: {tz_display}",
+                            f"{t(lang, 'results', 'timezone_label', default='Timezone')}: {tz_display}",
                             className="text-muted",
                         ),
                         html.Small(
@@ -1507,7 +1509,7 @@ def calculate_eto(
                             className="bi bi-calendar-range me-2 text-muted"
                         ),
                         html.Span(
-                            f"Período: {period_text} ", className="text-muted"
+                            f"{t(lang, 'results', 'period_label', default='Period')}: {period_text} ", className="text-muted"
                         ),
                         html.Small(period_extra, className="text-secondary"),
                     ],
@@ -1672,15 +1674,19 @@ def calculate_eto(
     [
         State("current-task-id", "data"),
         State("current-operation-mode", "data"),
+        State("language-store", "data"),
     ],
     prevent_initial_call=True,
 )
-def update_progress(n_intervals, task_id, operation_mode):
+def update_progress(n_intervals, task_id, operation_mode, lang=None):
     """Atualiza indicador de progresso consultando status da task no Redis.
 
     Para modo HISTORICAL_EMAIL: Não exibe dados na interface, apenas confirmação.
     Para outros modos (DASHBOARD_CURRENT, DASHBOARD_FORECAST): Exibe dados normalmente.
     """
+    if not lang:
+        lang = "en"
+
     if not task_id:
         return None, no_update, True, None, no_update, no_update, no_update
 
@@ -1796,7 +1802,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Button(
                             [
                                 html.I(className="bi bi-geo-alt me-2"),
-                                "Selecionar Outro Ponto",
+                                t(lang, "results", "select_another", default="Select Another Point"),
                             ],
                             id="btn-new-query",
                             color="primary",
@@ -1811,7 +1817,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                 html.I(
                                     className="bi bi-exclamation-triangle me-2"
                                 ),
-                                "Erro no processamento",
+                                t(lang, "results", "error_processing", default="Processing error"),
                             ],
                             color="danger",
                             className="py-2 px-3 mb-2 small",
@@ -1819,7 +1825,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Button(
                             [
                                 html.I(className="bi bi-geo-alt me-2"),
-                                "Selecionar Outro Ponto",
+                                t(lang, "results", "select_another", default="Select Another Point"),
                             ],
                             id="btn-new-query-sidebar",
                             color="primary",
@@ -2075,8 +2081,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                                 style={"color": "#006699"},
                                             ),
                                             html.Small(
-                                                "Verifique sua caixa de entrada e spam. "
-                                                "O arquivo está anexado no formato solicitado.",
+                                                t(lang, "results", "check_inbox", default="Check your inbox and spam folder. The file is attached in the requested format."),
                                                 className="text-muted",
                                             ),
                                         ],
@@ -2090,7 +2095,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                                 html.I(
                                                     className="bi bi-arrow-repeat me-2"
                                                 ),
-                                                "Nova Consulta",
+                                                t(lang, "results", "new_query", default="New Query"),
                                             ],
                                             id="btn-new-query",
                                             color="primary",
@@ -2133,7 +2138,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                     className="bi bi-check-circle-fill me-2"
                                 ),
                                 html.Strong(
-                                    f"✅ {days_calculated} dias processados"
+                                    f"✅ {days_calculated} {t(lang, 'results', 'days_processed', default='days processed')}"
                                 ),
                             ],
                             color="success",
@@ -2142,7 +2147,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Button(
                             [
                                 html.I(className="bi bi-geo-alt me-2"),
-                                "Selecionar Outro Ponto",
+                                t(lang, "results", "select_another", default="Select Another Point"),
                             ],
                             id="btn-new-query-sidebar",
                             color="primary",
@@ -2190,7 +2195,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                     className="bi bi-water me-2",
                                     style={"fontSize": "1.2rem"},
                                 ),
-                                html.Strong("Sem dados para esta localização"),
+                                html.Strong(t(lang, "results", "no_data_location", default="No data for this location")),
                             ],
                             color="info",
                             className="mb-3",
@@ -2202,30 +2207,31 @@ def update_progress(n_intervals, task_id, operation_mode):
                                         html.I(
                                             className="bi bi-info-circle me-2"
                                         ),
-                                        "A evapotranspiração (ETo) é calculada apenas para ",
-                                        html.Strong("áreas terrestres"),
+                                        t(lang, "results", "eto_land_only", default="Evapotranspiration (ETo) is calculated only for"),
+                                        " ",
+                                        html.Strong(t(lang, "results", "land_areas", default="land areas")),
                                         ".",
                                     ],
                                     className="mb-2",
                                 ),
                                 html.P(
                                     [
-                                        "Possíveis causas:",
+                                        t(lang, "results", "possible_causes", default="Possible causes:"),
                                     ],
                                     className="mb-1 fw-semibold small",
                                 ),
                                 html.Ul(
                                     [
                                         html.Li(
-                                            "Ponto selecionado sobre oceano, lago ou área aquática",
+                                            t(lang, "results", "cause_ocean", default="Point selected over ocean, lake, or water body"),
                                             className="small",
                                         ),
                                         html.Li(
-                                            "Região remota sem cobertura das fontes de dados",
+                                            t(lang, "results", "cause_remote", default="Remote region without data source coverage"),
                                             className="small",
                                         ),
                                         html.Li(
-                                            "Fonte de dados temporariamente indisponível",
+                                            t(lang, "results", "cause_unavailable", default="Data source temporarily unavailable"),
                                             className="small",
                                         ),
                                     ],
@@ -2237,7 +2243,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                             className="bi bi-lightbulb me-2 text-warning"
                                         ),
                                         html.Small(
-                                            "Dica: Selecione um ponto sobre terra firme para obter dados de ETo.",
+                                            t(lang, "results", "ocean_tip", default="Tip: Select a point on land to obtain ETo data."),
                                             className="text-muted",
                                         ),
                                     ],
@@ -2250,7 +2256,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Button(
                             [
                                 html.I(className="bi bi-geo-alt me-2"),
-                                "Selecionar Outro Ponto",
+                                t(lang, "results", "select_another", default="Select Another Point"),
                             ],
                             id="btn-new-query",
                             color="primary",
@@ -2264,7 +2270,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Alert(
                             [
                                 html.I(className="bi bi-water me-2"),
-                                "Sem dados (oceano/área remota)",
+                                t(lang, "results", "ocean_warning", default="No data (ocean/remote area)"),
                             ],
                             color="info",
                             className="py-2 px-3 mb-2 small",
@@ -2272,7 +2278,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Button(
                             [
                                 html.I(className="bi bi-geo-alt me-2"),
-                                "Selecionar Outro Ponto",
+                                t(lang, "results", "select_another", default="Select Another Point"),
                             ],
                             id="btn-new-query-sidebar",
                             color="primary",
@@ -2614,7 +2620,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                         html.I(
                                             className="bi bi-arrow-repeat me-2"
                                         ),
-                                        "Nova Consulta",
+                                        t(lang, "results", "new_query", default="New Query"),
                                     ],
                                     id="btn-new-query",
                                     color="outline-primary",
@@ -2630,7 +2636,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         nws_station_card,
                         # Tabs with results (success message moved to sidebar)
                         create_results_tabs(
-                            df, sources=sources_used, lang="pt"
+                            df, sources=sources_used, lang=lang
                         ),
                         # Download buttons
                         download_buttons,
@@ -2647,7 +2653,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                     className="bi bi-check-circle-fill me-2"
                                 ),
                                 html.Strong(
-                                    f"✅ Sucesso! {days_calculated} dias calculados"
+                                    f"✅ {t(lang, 'results', 'success_message', default='Success!')} {days_calculated} {t(lang, 'results', 'success_days', default='days calculated')}"
                                 ),
                             ],
                             color="success",
@@ -2656,7 +2662,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Button(
                             [
                                 html.I(className="bi bi-geo-alt me-2"),
-                                "Selecionar Outro Ponto",
+                                t(lang, "results", "select_another", default="Select Another Point"),
                             ],
                             id="btn-new-query-sidebar",
                             color="primary",
@@ -2734,7 +2740,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                             ),
                             html.Hr(),
                             html.P(
-                                "Por favor, tente novamente ou contate o suporte.",
+                                t(lang, "results", "please_try_again", default="Please try again or contact support."),
                                 className="mb-0 text-muted",
                             ),
                         ]
@@ -2764,7 +2770,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                     style={"fontSize": "1.2rem"},
                                 ),
                                 html.Strong(
-                                    "Não foi possível obter dados para esta localização"
+                                    t(lang, "results", "could_not_get_data", default="Could not get data for this location")
                                 ),
                             ],
                             color="warning",
@@ -2773,25 +2779,25 @@ def update_progress(n_intervals, task_id, operation_mode):
                         html.Div(
                             [
                                 html.P(
-                                    "Possíveis causas:",
+                                    t(lang, "results", "possible_causes", default="Possible causes:"),
                                     className="mb-1 fw-semibold small",
                                 ),
                                 html.Ul(
                                     [
                                         html.Li(
-                                            "Ponto selecionado sobre oceano, lago ou área aquática",
+                                            t(lang, "results", "cause_ocean", default="Point selected over ocean, lake, or water body"),
                                             className="small",
                                         ),
                                         html.Li(
-                                            "Fontes de dados climáticos temporariamente indisponíveis",
+                                            t(lang, "results", "cause_climate_unavailable", default="Climate data sources temporarily unavailable"),
                                             className="small",
                                         ),
                                         html.Li(
-                                            "Região remota sem cobertura suficiente",
+                                            t(lang, "results", "cause_remote", default="Remote region without data source coverage"),
                                             className="small",
                                         ),
                                         html.Li(
-                                            "Servidor sobrecarregado — tente novamente em alguns minutos",
+                                            t(lang, "results", "cause_server_overloaded", default="Server overloaded — try again in a few minutes"),
                                             className="small",
                                         ),
                                     ],
@@ -2803,7 +2809,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                             className="bi bi-lightbulb me-2 text-warning"
                                         ),
                                         html.Small(
-                                            "Dica: Tente novamente ou selecione outro ponto.",
+                                            t(lang, "results", "retry_tip", default="Tip: Try again or select another point."),
                                             className="text-muted",
                                         ),
                                     ],
@@ -2816,7 +2822,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Button(
                             [
                                 html.I(className="bi bi-geo-alt me-2"),
-                                "Selecionar Outro Ponto",
+                                t(lang, "results", "select_another", default="Select Another Point"),
                             ],
                             id="btn-new-query",
                             color="primary",
@@ -2831,7 +2837,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                                 html.I(
                                     className="bi bi-exclamation-triangle me-2"
                                 ),
-                                "Erro ao obter dados",
+                                t(lang, "results", "error_fetching", default="Error fetching data"),
                             ],
                             color="warning",
                             className="py-2 px-3 mb-2 small",
@@ -2839,7 +2845,7 @@ def update_progress(n_intervals, task_id, operation_mode):
                         dbc.Button(
                             [
                                 html.I(className="bi bi-geo-alt me-2"),
-                                "Selecionar Outro Ponto",
+                                t(lang, "results", "select_another", default="Select Another Point"),
                             ],
                             id="btn-new-query-sidebar",
                             color="primary",
