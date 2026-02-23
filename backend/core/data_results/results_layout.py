@@ -27,6 +27,32 @@ from backend.core.data_results.results_tables import (
 from shared_utils.get_translations import t
 
 
+def _table_download_buttons(table_id: str, lang: str = "pt"):
+    """Create compact CSV + Excel download buttons for a table section."""
+    return html.Div(
+        dbc.ButtonGroup(
+            [
+                dbc.Button(
+                    [html.I(className="bi bi-filetype-csv me-1"), "CSV"],
+                    id=f"btn-dl-{table_id}-csv",
+                    size="sm",
+                    color="success",
+                    outline=True,
+                ),
+                dbc.Button(
+                    [html.I(className="bi bi-file-earmark-spreadsheet me-1"), "Excel"],
+                    id=f"btn-dl-{table_id}-excel",
+                    size="sm",
+                    color="primary",
+                    outline=True,
+                ),
+            ],
+            size="sm",
+        ),
+        className="d-flex justify-content-end mt-2 mb-1",
+    )
+
+
 def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
     """
     Create results layout with two tabs.
@@ -66,6 +92,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                             className="results-table-title",
                         ),
                         display_results_table(df, lang),
+                        _table_download_buttons("climate", lang),
                     ],
                     className="mb-5",
                 ),
@@ -80,6 +107,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                             className="results-table-title",
                         ),
                         display_descriptive_stats(df, lang, mode=mode),
+                        _table_download_buttons("stats", lang),
                     ],
                     className="mb-5",
                 ),
@@ -94,6 +122,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                             className="results-table-title",
                         ),
                         display_eto_summary(df, lang),
+                        _table_download_buttons("eto-summary", lang),
                     ],
                     className="mb-5",
                 ),
@@ -108,7 +137,12 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                             className="results-table-title",
                         ),
                         display_normality_test(df, lang, mode=mode),
-                    ],
+                    ]
+                    + (
+                        [_table_download_buttons("normality", lang)]
+                        if mode != "DASHBOARD_FORECAST"
+                        else []
+                    ),
                     className="mb-4",
                 ),
             ]

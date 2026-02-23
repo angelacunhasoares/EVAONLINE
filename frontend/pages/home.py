@@ -479,6 +479,11 @@ home_layout = dbc.Container(
         dcc.Store(id="manual-elevation", storage_type="memory", data=None),
         dcc.Download(id="download-csv"),
         dcc.Download(id="download-excel"),
+        # Per-table download components
+        dcc.Download(id="download-table-climate"),
+        dcc.Download(id="download-table-stats"),
+        dcc.Download(id="download-table-eto-summary"),
+        dcc.Download(id="download-table-normality"),
         # Hidden button placeholders for callback registration
         html.Button(id="btn-new-query", style={"display": "none"}),
         html.Button(id="btn-new-query-sidebar", style={"display": "none"}),
@@ -503,6 +508,15 @@ home_layout = dbc.Container(
                 # Botões de download (renderizados dinamicamente nos resultados)
                 dbc.Button(id="btn-download-csv", n_clicks=0),
                 dbc.Button(id="btn-download-excel", n_clicks=0),
+                # Per-table download buttons (rendered inside results tabs)
+                dbc.Button(id="btn-dl-climate-csv", n_clicks=0),
+                dbc.Button(id="btn-dl-climate-excel", n_clicks=0),
+                dbc.Button(id="btn-dl-stats-csv", n_clicks=0),
+                dbc.Button(id="btn-dl-stats-excel", n_clicks=0),
+                dbc.Button(id="btn-dl-eto-summary-csv", n_clicks=0),
+                dbc.Button(id="btn-dl-eto-summary-excel", n_clicks=0),
+                dbc.Button(id="btn-dl-normality-csv", n_clicks=0),
+                dbc.Button(id="btn-dl-normality-excel", n_clicks=0),
             ],
             style={"display": "none"},
         ),

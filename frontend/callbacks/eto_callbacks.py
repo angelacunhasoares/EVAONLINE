@@ -2331,50 +2331,11 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                     "sources_used": sources_used,
                     "mode": operation_mode,
                     "days": days_calculated,
+                    "lang": lang,
                 }
 
-                # Botões de download
-                download_buttons = html.Div(
-                    [
-                        html.Hr(className="my-3"),
-                        html.Div(
-                            [
-                                html.I(className="bi bi-download me-2"),
-                                html.Strong(t(lang, "results", "download_data_label", default="Download Data:")),
-                            ],
-                            className="mb-2",
-                        ),
-                        dbc.ButtonGroup(
-                            [
-                                dbc.Button(
-                                    [
-                                        html.I(
-                                            className="bi bi-filetype-csv me-2"
-                                        ),
-                                        t(lang, "results", "download_csv", default="Download CSV"),
-                                    ],
-                                    id="btn-download-csv",
-                                    color="success",
-                                    outline=True,
-                                    className="me-2",
-                                ),
-                                dbc.Button(
-                                    [
-                                        html.I(
-                                            className="bi bi-file-earmark-spreadsheet me-2"
-                                        ),
-                                        t(lang, "results", "download_excel", default="Download Excel"),
-                                    ],
-                                    id="btn-download-excel",
-                                    color="primary",
-                                    outline=True,
-                                ),
-                            ],
-                            className="w-100",
-                        ),
-                    ],
-                    className="mt-3 p-3 bg-light rounded",
-                )
+                # Download buttons moved to individual tables
+                download_buttons = None
 
                 # 🌊 Ocean warning banner (if backend detected no elevation data)
                 ocean_warning_banner = None
@@ -3030,6 +2991,249 @@ def download_excel(n_clicks, results_data):
     output.seek(0)
 
     return dcc.send_bytes(output.getvalue(), filename)
+
+
+# ============================================================================
+# CALLBACKS DE DOWNLOAD POR TABELA
+# ============================================================================
+
+
+def _send_table(df_export, base_name, triggered_id, sheet_name="Data"):
+    """Helper: send a DataFrame as CSV or Excel based on triggered button."""
+    import io
+    from datetime import datetime as _dt
+
+    timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
+    is_excel = triggered_id and triggered_id.endswith("-excel")
+
+    if is_excel:
+        buf = io.BytesIO()
+        with pd.ExcelWriter(buf, engine="openpyxl") as w:
+            df_export.to_excel(w, index=False, sheet_name=sheet_name)
+        buf.seek(0)
+        return dcc.send_bytes(buf.getvalue(), f"EVAonline_{base_name}_{timestamp}.xlsx")
+    return dcc.send_data_frame(df_export.to_csv, f"EVAonline_{base_name}_{timestamp}.csv", index=False)
+
+
+@callback(
+    Output("download-table-climate", "data"),
+    Input("btn-dl-climate-csv", "n_clicks"),
+    Input("btn-dl-climate-excel", "n_clicks"),
+    State("eto-results-data", "data"),
+    State("language-store", "data"),
+    prevent_initial_call=True,
+)
+def download_table_climate(csv_n, excel_n, results_data, lang_data):
+    """Download da tabela Daily Climate Data."""
+    if not results_data:
+        return no_update
+
+    import pandas as pd
+    from shared_utils.get_translations import get_translations
+
+    lang = (lang_data or {}).get("language", "pt")
+    records = results_data.get("records", [])
+    if not records:
+        return no_update
+
+    df = pd.DataFrame(records)
+    t_dict = get_translations(lang)
+    dv = t_dict.get("data_variables", {})
+
+    eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
+    cols = ["date", "T2M_MAX", "T2M_MIN", "RH2M", "WS2M", "ALLSKY_SFC_SW_DWN", "PRECTOTCORR", eto_col]
+    df_export = df[[c for c in cols if c in df.columns]].copy()
+    df_export = df_export.rename(columns={
+        "date": dv.get("date", "Date"),
+        "T2M_MAX": dv.get("temp_max", "Max Temp (°C)"),
+        "T2M_MIN": dv.get("temp_min", "Min Temp (°C)"),
+        "RH2M": dv.get("humidity", "Humidity (%)"),
+        "WS2M": dv.get("wind_speed", "Wind Speed (m/s)"),
+        "ALLSKY_SFC_SW_DWN": dv.get("radiation", "Solar Radiation"),
+        "PRECTOTCORR": dv.get("precipitation", "Precipitation (mm)"),
+        eto_col: dv.get("eto_evaonline", "ETo EVAonline (mm/day)"),
+    })
+
+    return _send_table(df_export, "Climate", ctx.triggered_id, "Climate_Data")
+
+
+@callback(
+    Output("download-table-stats", "data"),
+    Input("btn-dl-stats-csv", "n_clicks"),
+    Input("btn-dl-stats-excel", "n_clicks"),
+    State("eto-results-data", "data"),
+    State("language-store", "data"),
+    prevent_initial_call=True,
+)
+def download_table_stats(csv_n, excel_n, results_data, lang_data):
+    """Download da tabela Descriptive Statistics."""
+    if not results_data:
+        return no_update
+
+    import pandas as pd
+    from scipy import stats as sp_stats
+    from shared_utils.get_translations import get_translations
+
+    lang = (lang_data or {}).get("language", "pt")
+    mode = results_data.get("mode", "")
+    records = results_data.get("records", [])
+    if not records:
+        return no_update
+
+    df = pd.DataFrame(records)
+    t_dict = get_translations(lang)
+    dv = t_dict.get("data_variables", {})
+    st = t_dict.get("statistics", {})
+
+    col_names = {
+        "T2M_MAX": dv.get("temp_max", "Max Temp"),
+        "T2M_MIN": dv.get("temp_min", "Min Temp"),
+        "RH2M": dv.get("humidity", "Humidity"),
+        "WS2M": dv.get("wind_speed", "Wind Speed"),
+        "ALLSKY_SFC_SW_DWN": dv.get("radiation", "Solar Radiation"),
+        "PRECTOTCORR": dv.get("precipitation", "Precipitation"),
+        "ETo": dv.get("eto", "ETo"),
+        "eto_evaonline": dv.get("eto_evaonline", "ETo EVAonline"),
+    }
+    expected = ["T2M_MAX", "T2M_MIN", "RH2M", "WS2M", "ALLSKY_SFC_SW_DWN", "PRECTOTCORR", "ETo", "eto_evaonline"]
+    num_cols = [c for c in expected if c in df.columns]
+    if not num_cols:
+        return no_update
+
+    data = {
+        st.get("mean", "Mean"): df[num_cols].mean().round(2),
+        st.get("max", "Max"): df[num_cols].max().round(2),
+        st.get("min", "Min"): df[num_cols].min().round(2),
+        st.get("median", "Median"): df[num_cols].median().round(2),
+        st.get("std_dev", "Std Dev"): df[num_cols].std().round(2),
+        st.get("percentile_25", "P25"): df[num_cols].quantile(0.25).round(2),
+        st.get("percentile_75", "P75"): df[num_cols].quantile(0.75).round(2),
+    }
+    if mode != "DASHBOARD_FORECAST":
+        data[st.get("coef_variation", "CV (%)")] = (
+            (df[num_cols].std() / df[num_cols].mean()) * 100
+        ).round(2)
+        data[st.get("skewness", "Skewness")] = df[num_cols].apply(
+            lambda x: sp_stats.skew(x.dropna())
+        ).round(2)
+        data[st.get("kurtosis", "Kurtosis")] = df[num_cols].apply(
+            lambda x: sp_stats.kurtosis(x.dropna())
+        ).round(2)
+
+    stats_df = pd.DataFrame(data).T
+    stats_df.insert(0, st.get("statistic", "Statistic"), stats_df.index)
+    stats_df = stats_df.rename(columns=col_names)
+
+    return _send_table(stats_df, "Statistics", ctx.triggered_id, "Descriptive_Stats")
+
+
+@callback(
+    Output("download-table-eto-summary", "data"),
+    Input("btn-dl-eto-summary-csv", "n_clicks"),
+    Input("btn-dl-eto-summary-excel", "n_clicks"),
+    State("eto-results-data", "data"),
+    State("language-store", "data"),
+    prevent_initial_call=True,
+)
+def download_table_eto_summary(csv_n, excel_n, results_data, lang_data):
+    """Download da tabela ETo Summary / Water Balance."""
+    if not results_data:
+        return no_update
+
+    import pandas as pd
+    from shared_utils.get_translations import get_translations
+
+    lang = (lang_data or {}).get("language", "pt")
+    records = results_data.get("records", [])
+    if not records:
+        return no_update
+
+    df = pd.DataFrame(records)
+    t_dict = get_translations(lang)
+    dv = t_dict.get("data_variables", {})
+    st = t_dict.get("statistics", {})
+
+    eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
+    if "date" not in df.columns or "PRECTOTCORR" not in df.columns or eto_col not in df.columns:
+        return no_update
+
+    df_exp = df[["date", "PRECTOTCORR", eto_col]].copy()
+    df_exp["date"] = pd.to_datetime(df_exp["date"]).dt.strftime("%d/%m/%Y")
+    deficit_label = st.get("water_deficit", "Water Deficit (mm)")
+    df_exp[deficit_label] = (df_exp["PRECTOTCORR"] - df_exp[eto_col]).round(2)
+
+    for col in [c for c in df_exp.columns if c != "date"]:
+        df_exp[col] = df_exp[col].round(2)
+
+    df_exp = df_exp.rename(columns={
+        "date": dv.get("date", "Date"),
+        "PRECTOTCORR": dv.get("precipitation", "Precipitation (mm)"),
+        eto_col: dv.get("eto_evaonline", "ETo EVAonline (mm/day)"),
+    })
+
+    return _send_table(df_exp, "WaterBalance", ctx.triggered_id, "Water_Balance")
+
+
+@callback(
+    Output("download-table-normality", "data"),
+    Input("btn-dl-normality-csv", "n_clicks"),
+    Input("btn-dl-normality-excel", "n_clicks"),
+    State("eto-results-data", "data"),
+    State("language-store", "data"),
+    prevent_initial_call=True,
+)
+def download_table_normality(csv_n, excel_n, results_data, lang_data):
+    """Download da tabela Normality Test (Shapiro-Wilk)."""
+    if not results_data:
+        return no_update
+
+    import pandas as pd
+    from scipy import stats as sp_stats
+    from shared_utils.get_translations import get_translations
+
+    lang = (lang_data or {}).get("language", "pt")
+    mode = results_data.get("mode", "")
+    if mode == "DASHBOARD_FORECAST":
+        return no_update
+
+    records = results_data.get("records", [])
+    if not records:
+        return no_update
+
+    df = pd.DataFrame(records)
+    t_dict = get_translations(lang)
+    dv = t_dict.get("data_variables", {})
+    st = t_dict.get("statistics", {})
+
+    col_names = {
+        "T2M_MAX": dv.get("temp_max", "Max Temp"),
+        "T2M_MIN": dv.get("temp_min", "Min Temp"),
+        "RH2M": dv.get("humidity", "Humidity"),
+        "WS2M": dv.get("wind_speed", "Wind Speed"),
+        "ALLSKY_SFC_SW_DWN": dv.get("radiation", "Solar Radiation"),
+        "PRECTOTCORR": dv.get("precipitation", "Precipitation"),
+        "ETo": dv.get("eto", "ETo"),
+        "eto_evaonline": dv.get("eto_evaonline", "ETo EVAonline"),
+    }
+    eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
+    expected = ["T2M_MAX", "T2M_MIN", "RH2M", "WS2M", "ALLSKY_SFC_SW_DWN", "PRECTOTCORR", eto_col]
+    num_cols = [c for c in expected if c in df.columns]
+    if not num_cols:
+        return no_update
+
+    rows = {}
+    for col in num_cols:
+        stat_val, p_val = sp_stats.shapiro(df[col].dropna())
+        display = col_names.get(col, col)
+        rows[display] = {
+            st.get("statistic", "Statistic"): round(stat_val, 4),
+            st.get("p_value", "P-Value"): round(p_val, 4),
+        }
+
+    norm_df = pd.DataFrame(rows).T
+    norm_df.insert(0, st.get("variable", "Variable"), norm_df.index)
+
+    return _send_table(norm_df, "Normality", ctx.triggered_id, "Shapiro_Wilk")
 
 
 logger.info("✅ Página ETo carregada com sucesso")
