@@ -20,27 +20,19 @@ _TEMPLATE = "plotly_white"
 
 
 def _base_layout(**overrides):
-    """Return a base layout dict for consistent academic styling."""
+    """Return a base layout dict for consistent academic styling.
+
+    NOTE: xaxis/yaxis are NOT included here because each chart
+    defines its own axis configuration.  Including them would cause
+    'got multiple values for keyword argument' when unpacked together
+    with per-chart xaxis/yaxis kwargs in update_layout().
+    """
     layout = dict(
         font=dict(family=_FONT_FAMILY, size=_TICK_SIZE),
         title_font=dict(size=_TITLE_SIZE, family=_FONT_FAMILY),
         template=_TEMPLATE,
         height=_CHART_HEIGHT,
         hoverlabel=dict(font_size=13, font_family=_FONT_FAMILY),
-        xaxis=dict(
-            title_font=dict(size=_AXIS_TITLE_SIZE),
-            tickfont=dict(size=_TICK_SIZE),
-            showgrid=True,
-            gridcolor="rgba(0,0,0,0.06)",
-            gridwidth=1,
-        ),
-        yaxis=dict(
-            title_font=dict(size=_AXIS_TITLE_SIZE),
-            tickfont=dict(size=_TICK_SIZE),
-            showgrid=True,
-            gridcolor="rgba(0,0,0,0.08)",
-            gridwidth=1,
-        ),
         legend=dict(
             font=dict(size=_LEGEND_SIZE),
             title_font=dict(size=_LEGEND_SIZE),
@@ -512,8 +504,10 @@ def plot_correlation(
 
         fig.update_layout(
             **_base_layout(),
-            xaxis_title={"text": x_var_translated, "font": {"size": _AXIS_TITLE_SIZE}},
-            yaxis_title={"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
+            xaxis={"title": {"text": x_var_translated, "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
+            yaxis={"title": {"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)"},
             title={
                 "text": (
                     f"{ch.get('correlation', 'Correlação')}: {x_var_translated} vs. {dv.get('eto', 'ETo (mm/dia)')}"
