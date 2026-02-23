@@ -200,7 +200,8 @@
         "surplus": "Surplus",
         "days_unit": "days",
         "mm_day_unit": "mm/day",
-        "mm_unit": "mm"
+        "mm_unit": "mm",
+        "forecast_sample_insufficient": "Test not performed: insufficient sample size for forecast mode (6 days). Statistics such as CV (%), Skewness, Kurtosis and Shapiro-Wilk require larger samples for reliable results."
     },
     "charts": {
         "eto_timeseries": "ETo Time Series",

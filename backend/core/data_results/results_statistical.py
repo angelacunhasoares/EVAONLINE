@@ -34,13 +34,15 @@ def display_daily_data(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         return html.Div(f"{t.get('results', {}).get('error', 'Erro')}: {str(e)}")
 
 
-def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
+def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt", mode: str = "") -> html.Div:
     """
     Exibe estatísticas descritivas para as variáveis numéricas.
 
     Parâmetros:
     - df: DataFrame com os dados.
     - lang: Idioma para traduções ('pt' ou 'en').
+    - mode: Modo de operação. Se 'DASHBOARD_FORECAST', oculta CV,
+            Skewness e Kurtosis (amostra insuficiente).
 
     Retorna:
     - html.Div contendo a tabela de estatísticas.
@@ -96,16 +98,18 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             st.get("std_dev", "Desvio Padrão"): df[numeric_cols].std().round(2),
             st.get("percentile_25", "Percentil 25%"): df[numeric_cols].quantile(0.25).round(2),
             st.get("percentile_75", "Percentil 75%"): df[numeric_cols].quantile(0.75).round(2),
-            st.get("coef_variation", "CV (%)"): (
-                (df[numeric_cols].std() / df[numeric_cols].mean()) * 100
-            ).round(2),
-            st.get("skewness", "Assimetria"): df[numeric_cols]
-            .apply(lambda x: stats.skew(x.dropna()))
-            .round(2),
-            st.get("kurtosis", "Curtose"): df[numeric_cols]
-            .apply(lambda x: stats.kurtosis(x.dropna()))
-            .round(2),
         }
+
+        # CV, Skewness e Kurtosis só para amostras maiores (não forecast)
+        is_forecast = mode == "DASHBOARD_FORECAST"
+        if not is_forecast:
+            stats_data[st.get("coef_variation", "CV (%)")] = (
+                (df[numeric_cols].std() / df[numeric_cols].mean()) * 100
+            ).round(2)
+            stats_data[st.get("skewness", "Assimetria")] = df[numeric_cols] \
+                .apply(lambda x: stats.skew(x.dropna())).round(2)
+            stats_data[st.get("kurtosis", "Curtose")] = df[numeric_cols] \
+                .apply(lambda x: stats.kurtosis(x.dropna())).round(2)
         stats_df = pd.DataFrame(stats_data).T
         stats_df.insert(0, st.get("statistic", "Estatística"), stats_df.index)
 
@@ -166,13 +170,15 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         return html.Div(f"{rs.get('error', 'Erro')}: {str(e)}")
 
 
-def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
+def display_normality_test(df: pd.DataFrame, lang: str = "pt", mode: str = "") -> html.Div:
     """
     Exibe o teste de normalidade Shapiro-Wilk.
 
     Parâmetros:
     - df: DataFrame com os dados.
     - lang: Idioma para traduções ('pt' ou 'en').
+    - mode: Modo de operação. Se 'DASHBOARD_FORECAST', exibe aviso
+            informando que a amostra é insuficiente.
 
     Retorna:
     - html.Div com a tabela e nota explicativa.
@@ -183,6 +189,21 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
                 "DataFrame vazio ou None fornecido para display_normality_test"
             )
             return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
+
+        # No modo forecast (n=6), amostra insuficiente para Shapiro-Wilk
+        if mode == "DASHBOARD_FORECAST":
+            t_fc = get_translations(lang)
+            st_fc = t_fc.get("statistics", {})
+            msg = st_fc.get(
+                "forecast_sample_insufficient",
+                "Test not performed: insufficient sample size for forecast mode (6 days)."
+                if lang == "en" else
+                "Teste não realizado: amostra insuficiente para o modo previsão (6 dias)."
+            )
+            return html.Div(
+                dbc.Alert(msg, color="info", className="mt-2"),
+                className="mb-4",
+            )
 
         t = get_translations(lang)
         dv = t.get("data_variables", {})

@@ -2633,7 +2633,8 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                         nws_station_card,
                         # Tabs with results (success message moved to sidebar)
                         create_results_tabs(
-                            df, sources=sources_used, lang=lang
+                            df, sources=sources_used, lang=lang,
+                            mode=operation_mode,
                         ),
                         # Download buttons
                         download_buttons,

@@ -27,7 +27,7 @@ from backend.core.data_results.results_tables import (
 from shared_utils.get_translations import t
 
 
-def create_results_tabs(df, sources=None, lang: str = "pt"):
+def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
     """
     Create results layout with two tabs.
 
@@ -35,6 +35,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
         df: DataFrame with results
         sources: List of data sources used
         lang: Language for translations
+        mode: Operation mode (e.g. 'DASHBOARD_FORECAST')
 
     Returns:
         dbc.Tabs component with two tabs
@@ -78,7 +79,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                             ],
                             className="results-table-title",
                         ),
-                        display_descriptive_stats(df, lang),
+                        display_descriptive_stats(df, lang, mode=mode),
                     ],
                     className="mb-5",
                 ),
@@ -106,7 +107,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                             ],
                             className="results-table-title",
                         ),
-                        display_normality_test(df, lang),
+                        display_normality_test(df, lang, mode=mode),
                     ],
                     className="mb-4",
                 ),
