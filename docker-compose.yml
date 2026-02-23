@@ -79,8 +79,11 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
+    # ✅ Porta interna apenas - Nginx faz proxy na porta 80
+    expose:
+      - "8000"
     ports:
-      - "8000:8000"
+      - "8000:8000" # Acesso direto para debug (remover em produção final)
     depends_on:
       postgres:
         condition: service_healthy
@@ -432,6 +435,30 @@ services:
     networks:
       - evaonline-network
     restart: unless-stopped
+
+  # =====================================================
+  # Nginx - Reverse Proxy & Static Assets
+  # =====================================================
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: evaonline-nginx
+    ports:
+      - "80:80"
+      # - "443:443"  # Descomentar quando SSL estiver configurado
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/nginx_status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - evaonline-network
 
   # =====================================================
   # Database Admin (Development Only)
