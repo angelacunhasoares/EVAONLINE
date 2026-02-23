@@ -33,10 +33,6 @@ def _base_layout(**overrides):
         template=_TEMPLATE,
         height=_CHART_HEIGHT,
         hoverlabel=dict(font_size=13, font_family=_FONT_FAMILY),
-        legend=dict(
-            font=dict(size=_LEGEND_SIZE),
-            title_font=dict(size=_LEGEND_SIZE),
-        ),
     )
     layout.update(overrides)
     return layout
