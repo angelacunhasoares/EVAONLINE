@@ -2998,21 +2998,33 @@ def download_excel(n_clicks, results_data):
 # ============================================================================
 
 
-def _send_table(df_export, base_name, triggered_id, sheet_name="Data"):
-    """Helper: send a DataFrame as CSV or Excel based on triggered button."""
+def _send_table(df_export, base_name, excel_clicked, sheet_name="Data"):
+    """Helper: send a DataFrame as CSV or Excel.
+
+    Args:
+        excel_clicked: True when the Excel button was the trigger.
+    """
     import io
     from datetime import datetime as _dt
 
     timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
-    is_excel = triggered_id and triggered_id.endswith("-excel")
 
-    if is_excel:
+    if excel_clicked:
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine="openpyxl") as w:
             df_export.to_excel(w, index=False, sheet_name=sheet_name)
         buf.seek(0)
         return dcc.send_bytes(buf.getvalue(), f"EVAonline_{base_name}_{timestamp}.xlsx")
     return dcc.send_data_frame(df_export.to_csv, f"EVAonline_{base_name}_{timestamp}.csv", index=False)
+
+
+def _is_excel_trigger():
+    """Return True if the callback was triggered by an Excel button."""
+    from dash import callback_context
+    triggered = callback_context.triggered
+    if triggered:
+        return triggered[0]["prop_id"].split(".")[0].endswith("-excel")
+    return False
 
 
 @callback(
@@ -3054,7 +3066,7 @@ def download_table_climate(csv_n, excel_n, results_data, lang_data):
         eto_col: dv.get("eto_evaonline", "ETo EVAonline (mm/day)"),
     })
 
-    return _send_table(df_export, "Climate", ctx.triggered_id, "Climate_Data")
+    return _send_table(df_export, "Climate", _is_excel_trigger(), "Climate_Data")
 
 
 @callback(
@@ -3124,7 +3136,7 @@ def download_table_stats(csv_n, excel_n, results_data, lang_data):
     stats_df.insert(0, st.get("statistic", "Statistic"), stats_df.index)
     stats_df = stats_df.rename(columns=col_names)
 
-    return _send_table(stats_df, "Statistics", ctx.triggered_id, "Descriptive_Stats")
+    return _send_table(stats_df, "Statistics", _is_excel_trigger(), "Descriptive_Stats")
 
 
 @callback(
@@ -3171,7 +3183,7 @@ def download_table_eto_summary(csv_n, excel_n, results_data, lang_data):
         eto_col: dv.get("eto_evaonline", "ETo EVAonline (mm/day)"),
     })
 
-    return _send_table(df_exp, "WaterBalance", ctx.triggered_id, "Water_Balance")
+    return _send_table(df_exp, "WaterBalance", _is_excel_trigger(), "Water_Balance")
 
 
 @callback(
@@ -3233,7 +3245,7 @@ def download_table_normality(csv_n, excel_n, results_data, lang_data):
     norm_df = pd.DataFrame(rows).T
     norm_df.insert(0, st.get("variable", "Variable"), norm_df.index)
 
-    return _send_table(norm_df, "Normality", ctx.triggered_id, "Shapiro_Wilk")
+    return _send_table(norm_df, "Normality", _is_excel_trigger(), "Shapiro_Wilk")
 
 
 logger.info("✅ Página ETo carregada com sucesso")
