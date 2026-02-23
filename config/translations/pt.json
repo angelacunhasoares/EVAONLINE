@@ -119,7 +119,20 @@
         "land_areas": "áreas terrestres",
         "ocean_click_tip": "💡 Dica: Clique em um ponto sobre terra firme no mapa.",
         "coordinates": "As coordenadas selecionadas",
-        "over_ocean": "estão sobre o oceano ou corpo d'água."
+        "over_ocean": "estão sobre o oceano ou corpo d'água.",
+        "tab_table_stats": "Tabela & Estatísticas",
+        "tab_charts": "Gráficos",
+        "data_table_title": "Resultados - Tabela de Dados",
+        "daily_climate_data": "Dados Climáticos Diários",
+        "eto_summary_title": "Resumo de ETo e Balanço Hídrico",
+        "normality_test_shapiro": "Teste de Normalidade (Shapiro-Wilk)",
+        "graphical_analysis": "Resultados - Análises Gráficas",
+        "climate_analysis": "Análises Climáticas",
+        "correlation_heatmap": "Mapa de Calor - Correlações",
+        "water_deficit_title": "Déficit Hídrico",
+        "download_data_label": "Download dos Dados:",
+        "ocean_elevation_warning": "O serviço de elevação (SRTM/ASTER) não retornou dados para este ponto. Ele pode estar sobre um corpo d'água ou área sem cobertura. A elevação foi assumida como 0 m (nível do mar).",
+        "warning_label": "Atenção:"
     },
     "data_variables": {
         "date": "Data",

@@ -24,6 +24,7 @@ from backend.core.data_results.results_statistical import (
 from backend.core.data_results.results_tables import (
     display_results_table,
 )
+from shared_utils.get_translations import t
 
 
 def create_results_tabs(df, sources=None, lang: str = "pt"):
@@ -49,7 +50,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                 html.H4(
                     [
                         html.I(className="bi bi-table me-2"),
-                        "Resultados - Tabela de Dados",
+                        t(lang, "results", "data_table_title", default="Results - Data Table"),
                     ],
                     className="results-section-title",
                 ),
@@ -59,7 +60,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                         html.H5(
                             [
                                 html.I(className="bi bi-table me-2"),
-                                "Dados Climáticos Diários",
+                                t(lang, "results", "daily_climate_data", default="Daily Climate Data"),
                             ],
                             className="results-table-title",
                         ),
@@ -73,7 +74,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                         html.H5(
                             [
                                 html.I(className="bi bi-calculator me-2"),
-                                "Estatísticas Descritivas",
+                                t(lang, "statistics", "descriptive", default="Descriptive Statistics"),
                             ],
                             className="results-table-title",
                         ),
@@ -87,7 +88,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                         html.H5(
                             [
                                 html.I(className="bi bi-droplet me-2"),
-                                "Resumo de ETo e Balanço Hídrico",
+                                t(lang, "results", "eto_summary_title", default="ETo Summary and Water Balance"),
                             ],
                             className="results-table-title",
                         ),
@@ -101,7 +102,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                         html.H5(
                             [
                                 html.I(className="bi bi-graph-up me-2"),
-                                "Teste de Normalidade (Shapiro-Wilk)",
+                                t(lang, "results", "normality_test_shapiro", default="Normality Test (Shapiro-Wilk)"),
                             ],
                             className="results-table-title",
                         ),
@@ -122,7 +123,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                 html.H4(
                     [
                         html.I(className="bi bi-graph-up me-2"),
-                        "Resultados - Análises Gráficas",
+                        t(lang, "results", "graphical_analysis", default="Results - Graphical Analysis"),
                     ],
                     className="results-section-title",
                 ),
@@ -132,7 +133,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                         html.H5(
                             [
                                 html.I(className="bi bi-droplet-half me-2"),
-                                "Déficit Hídrico",
+                                t(lang, "results", "water_deficit_title", default="Water Deficit"),
                             ],
                             className="results-table-title",
                         ),
@@ -148,7 +149,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                 html.I(
                                     className="bi bi-thermometer-half me-2"
                                 ),
-                                "Análises Climáticas",
+                                t(lang, "results", "climate_analysis", default="Climate Analysis"),
                             ],
                             className="results-table-title",
                         ),
@@ -157,7 +158,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                 dbc.Col(
                                     [
                                         html.H6(
-                                            "ETo vs Temperatura",
+                                            t(lang, "charts", "eto_vs_temp", default="ETo vs Temperature"),
                                             className="text-center mb-2",
                                         ),
                                         dcc.Graph(
@@ -175,7 +176,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                 dbc.Col(
                                     [
                                         html.H6(
-                                            "ETo vs Radiação",
+                                            t(lang, "charts", "eto_vs_rad", default="ETo vs Solar Radiation"),
                                             className="text-center mb-2",
                                         ),
                                         dcc.Graph(
@@ -197,7 +198,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                 dbc.Col(
                                     [
                                         html.H6(
-                                            "Temperatura, Radiação e Precipitação",
+                                            t(lang, "charts", "temp_rad_prec", default="Temperature, Radiation & Precipitation"),
                                             className="text-center mb-2",
                                         ),
                                         dcc.Graph(
@@ -222,7 +223,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                         html.H5(
                             [
                                 html.I(className="bi bi-grid-3x3 me-2"),
-                                "Mapa de Calor - Correlações",
+                                t(lang, "results", "correlation_heatmap", default="Heatmap - Correlations"),
                             ],
                             className="results-table-title",
                         ),
@@ -253,12 +254,12 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
         [
             dbc.Tab(
                 tab1_content,
-                label="📊 Tabela & Estatísticas",
+                label=f"\U0001f4ca {t(lang, 'results', 'tab_table_stats', default='Table & Statistics')}",
                 tab_id="tab-table",
             ),
             dbc.Tab(
                 tab2_content,
-                label="📈 Gráficos",
+                label=f"\U0001f4c8 {t(lang, 'results', 'tab_charts', default='Charts')}",
                 tab_id="tab-graphics",
             ),
         ],

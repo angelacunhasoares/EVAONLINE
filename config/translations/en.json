@@ -119,7 +119,20 @@
         "land_areas": "land areas",
         "ocean_click_tip": "Tip: Click on a point over land on the map.",
         "coordinates": "The selected coordinates",
-        "over_ocean": "are over the ocean or water body."
+        "over_ocean": "are over the ocean or water body.",
+        "tab_table_stats": "Table & Statistics",
+        "tab_charts": "Charts",
+        "data_table_title": "Results - Data Table",
+        "daily_climate_data": "Daily Climate Data",
+        "eto_summary_title": "ETo Summary and Water Balance",
+        "normality_test_shapiro": "Normality Test (Shapiro-Wilk)",
+        "graphical_analysis": "Results - Graphical Analysis",
+        "climate_analysis": "Climate Analysis",
+        "correlation_heatmap": "Heatmap - Correlations",
+        "water_deficit_title": "Water Deficit",
+        "download_data_label": "Download Data:",
+        "ocean_elevation_warning": "Warning: The elevation service (SRTM/ASTER) did not return data for this point. It may be over a water body or uncovered area. Elevation was assumed as 0 m (sea level).",
+        "warning_label": "Warning:"
     },
     "data_variables": {
         "date": "Date",

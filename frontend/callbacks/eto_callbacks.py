@@ -2340,7 +2340,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                         html.Div(
                             [
                                 html.I(className="bi bi-download me-2"),
-                                html.Strong("Download dos Dados:"),
+                                html.Strong(t(lang, "results", "download_data_label", default="Download Data:")),
                             ],
                             className="mb-2",
                         ),
@@ -2351,7 +2351,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                         html.I(
                                             className="bi bi-filetype-csv me-2"
                                         ),
-                                        "Download CSV",
+                                        t(lang, "results", "download_csv", default="Download CSV"),
                                     ],
                                     id="btn-download-csv",
                                     color="success",
@@ -2363,7 +2363,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                         html.I(
                                             className="bi bi-file-earmark-spreadsheet me-2"
                                         ),
-                                        "Download Excel",
+                                        t(lang, "results", "download_excel", default="Download Excel"),
                                     ],
                                     id="btn-download-excel",
                                     color="primary",
@@ -2385,11 +2385,8 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                 className="bi bi-exclamation-triangle me-2",
                                 style={"fontSize": "1.1rem"},
                             ),
-                            html.Strong("Atenção: "),
-                            "O serviço de elevação (SRTM/ASTER) não retornou "
-                            "dados para este ponto. Ele pode estar sobre "
-                            "um corpo d'água ou área sem cobertura. "
-                            "A elevação foi assumida como 0 m (nível do mar).",
+                            html.Strong(t(lang, "results", "warning_label", default="Warning:") + " "),
+                            t(lang, "results", "ocean_elevation_warning", default="The elevation service (SRTM/ASTER) did not return data for this point. It may be over a water body or uncovered area. Elevation was assumed as 0 m (sea level)."),
                         ],
                         color="warning",
                         className="mb-3",
