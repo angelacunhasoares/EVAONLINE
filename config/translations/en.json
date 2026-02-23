@@ -189,7 +189,18 @@
         "adf_test": "ADF Test (Augmented Dickey-Fuller)",
         "cumulative_eto": "Cumulative ETo (mm)",
         "cumulative_precipitation": "Cumulative Precipitation (mm)",
-        "cumulative_distribution": "Cumulative Distribution"
+        "cumulative_distribution": "Cumulative Distribution",
+        "deficit_mean": "Mean Deficit",
+        "deficit_total": "Total Deficit",
+        "days_with_deficit": "Days with Deficit",
+        "days_with_excess": "Days with Excess",
+        "daily_water_deficit": "Daily Water Deficit",
+        "water_deficit_mm_day": "Water Deficit (mm/day)",
+        "deficiency": "Deficiency",
+        "surplus": "Surplus",
+        "days_unit": "days",
+        "mm_day_unit": "mm/day",
+        "mm_unit": "mm"
     },
     "charts": {
         "eto_timeseries": "ETo Time Series",

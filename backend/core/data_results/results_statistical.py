@@ -506,11 +506,12 @@ def create_deficit_chart_section(
     """
     try:
         if df is None or df.empty:
-            return html.Div("Nenhum dado disponível")
+            return html.Div("No data available")
 
         t = get_translations(lang)
         dv = t.get("data_variables", {})
         st = t.get("statistics", {})
+        ch = t.get("charts", {})
 
         # Support both old 'ETo' and new 'eto_evaonline' column names
         eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
@@ -533,10 +534,12 @@ def create_deficit_chart_section(
         days_with_excess = len(df_display[df_display[deficit_col] > 0])
 
         # Preparar dados para gráfico
-        df_display["Deficiência"] = df_display[deficit_col].apply(
+        deficiency_label = st.get("deficiency", "Deficiency")
+        surplus_label = st.get("surplus", "Surplus")
+        df_display[deficiency_label] = df_display[deficit_col].apply(
             lambda x: min(0, x) if x < 0 else 0
         )
-        df_display["Excedente"] = df_display[deficit_col].apply(
+        df_display[surplus_label] = df_display[deficit_col].apply(
             lambda x: max(0, x) if x > 0 else 0
         )
 
@@ -544,26 +547,33 @@ def create_deficit_chart_section(
         fig_deficit = px.area(
             df_display,
             x="date",
-            y=["Deficiência", "Excedente"],
-            title="Déficit Hídrico Diário",
-            labels={"value": "mm/dia", "variable": "Componente"},
+            y=[deficiency_label, surplus_label],
+            title=st.get("daily_water_deficit", "Daily Water Deficit"),
+            labels={"value": st.get("mm_day_unit", "mm/day"), "variable": "Component"},
             color_discrete_map={
-                "Deficiência": "#dc3545",
-                "Excedente": "#28a745",
+                deficiency_label: "#dc3545",
+                surplus_label: "#27AE60",
             },
         )
         fig_deficit.update_layout(
-            yaxis_title="Déficit Hídrico (mm/dia)",
-            xaxis_title="Data",
-            legend_title="Legenda",
+            font=dict(family="Segoe UI, Roboto, Arial, sans-serif", size=12),
+            title_font=dict(size=18, family="Segoe UI, Roboto, Arial, sans-serif"),
+            yaxis_title=dict(text=st.get("water_deficit_mm_day", "Water Deficit (mm/day)"), font=dict(size=14)),
+            xaxis_title=dict(text=ch.get("date_label", "Date"), font=dict(size=14)),
+            xaxis=dict(tickfont=dict(size=12), showgrid=True, gridcolor="rgba(0,0,0,0.06)"),
+            yaxis=dict(tickfont=dict(size=12), showgrid=True, gridcolor="rgba(0,0,0,0.08)"),
+            legend_title=dict(text=ch.get("legend", "Legend"), font=dict(size=13)),
             template="plotly_white",
-            margin={"b": 80, "t": 50},
+            height=500,
+            margin={"b": 80, "t": 60, "l": 70, "r": 30},
+            hoverlabel=dict(font_size=13),
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
                 y=1.02,
                 xanchor="center",
                 x=0.5,
+                font=dict(size=13),
             ),
         )
 
@@ -577,11 +587,11 @@ def create_deficit_chart_section(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Déficit Médio",
+                                            st.get("deficit_mean", "Mean Deficit"),
                                             className="text-muted mb-1",
                                         ),
                                         html.H4(
-                                            f"{deficit_mean} mm/dia",
+                                            f"{deficit_mean} {st.get('mm_day_unit', 'mm/day')}",
                                             className="text-danger mb-0",
                                         ),
                                     ]
@@ -596,11 +606,11 @@ def create_deficit_chart_section(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Déficit Total",
+                                            st.get("deficit_total", "Total Deficit"),
                                             className="text-muted mb-1",
                                         ),
                                         html.H4(
-                                            f"{deficit_total} mm",
+                                            f"{deficit_total} {st.get('mm_unit', 'mm')}",
                                             className="text-danger mb-0",
                                         ),
                                     ]
@@ -615,11 +625,11 @@ def create_deficit_chart_section(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Dias com Déficit",
+                                            st.get("days_with_deficit", "Days with Deficit"),
                                             className="text-muted mb-1",
                                         ),
                                         html.H4(
-                                            f"{days_with_deficit} dias",
+                                            f"{days_with_deficit} {st.get('days_unit', 'days')}",
                                             className="text-warning mb-0",
                                         ),
                                     ]
@@ -634,11 +644,11 @@ def create_deficit_chart_section(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Dias com Excesso",
+                                            st.get("days_with_excess", "Days with Excess"),
                                             className="text-muted mb-1",
                                         ),
                                         html.H4(
-                                            f"{days_with_excess} dias",
+                                            f"{days_with_excess} {st.get('days_unit', 'days')}",
                                             className="text-success mb-0",
                                         ),
                                     ]
