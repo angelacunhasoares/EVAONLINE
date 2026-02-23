@@ -3031,7 +3031,7 @@ def download_table_climate(csv_n, excel_n, results_data, lang_data):
     import pandas as pd
     from shared_utils.get_translations import get_translations
 
-    lang = (lang_data or {}).get("language", "pt")
+    lang = lang_data if isinstance(lang_data, str) else "pt"
     records = results_data.get("records", [])
     if not records:
         return no_update
@@ -3074,7 +3074,7 @@ def download_table_stats(csv_n, excel_n, results_data, lang_data):
     from scipy import stats as sp_stats
     from shared_utils.get_translations import get_translations
 
-    lang = (lang_data or {}).get("language", "pt")
+    lang = lang_data if isinstance(lang_data, str) else "pt"
     mode = results_data.get("mode", "")
     records = results_data.get("records", [])
     if not records:
@@ -3143,7 +3143,7 @@ def download_table_eto_summary(csv_n, excel_n, results_data, lang_data):
     import pandas as pd
     from shared_utils.get_translations import get_translations
 
-    lang = (lang_data or {}).get("language", "pt")
+    lang = lang_data if isinstance(lang_data, str) else "pt"
     records = results_data.get("records", [])
     if not records:
         return no_update
@@ -3191,7 +3191,7 @@ def download_table_normality(csv_n, excel_n, results_data, lang_data):
     from scipy import stats as sp_stats
     from shared_utils.get_translations import get_translations
 
-    lang = (lang_data or {}).get("language", "pt")
+    lang = lang_data if isinstance(lang_data, str) else "pt"
     mode = results_data.get("mode", "")
     if mode == "DASHBOARD_FORECAST":
         return no_update
