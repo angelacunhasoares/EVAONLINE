@@ -1724,7 +1724,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                 spinner_class_name="me-2",
                             ),
                             html.Span(
-                                "Baixando dados e calculando ETo...",
+                                t(lang, "progress_ui", "downloading_calculating", default="Downloading data and calculating ETo..."),
                                 className="text-success fw-semibold",
                             ),
                         ],
@@ -2390,17 +2390,15 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                             delta = now_utc - obs_dt
                             minutes_ago = int(delta.total_seconds() / 60)
                             if minutes_ago < 1:
-                                obs_relative = "agora"
+                                obs_relative = t(lang, "nws_card", "time_now", default="now")
                             elif minutes_ago < 60:
-                                obs_relative = f"há {minutes_ago} min"
+                                obs_relative = t(lang, "nws_card", "time_minutes_ago", default="{minutes} min ago").format(minutes=minutes_ago)
                             elif minutes_ago < 1440:
                                 hours = minutes_ago // 60
-                                obs_relative = (
-                                    f"há {hours}h{minutes_ago % 60:02d}min"
-                                )
+                                obs_relative = t(lang, "nws_card", "time_hours_ago", default="{hours}h{minutes:02d}min ago").format(hours=hours, minutes=minutes_ago % 60)
                             else:
                                 days = minutes_ago // 1440
-                                obs_relative = f"há {days} dia(s)"
+                                obs_relative = t(lang, "nws_card", "time_days_ago", default="{days} day(s) ago").format(days=days)
                         except Exception:
                             obs_time_display = (
                                 obs_ts_raw[:16].replace("T", " ") + " UTC"
@@ -2413,7 +2411,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                         )
 
                         # Build observation time label
-                        time_label = f"Última leitura: {obs_time_display}"
+                        time_label = f"{t(lang, 'nws_card', 'last_reading', default='Last reading: ')}{obs_time_display}"
                         if obs_relative:
                             time_label += f" — {obs_relative}"
 
@@ -2424,7 +2422,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                     html.Small(time_label),
                                 ],
                                 className="mb-2 text-muted",
-                                title="Horário da leitura mais recente dos sensores desta estação. Os dados abaixo correspondem a esse momento.",
+                                title=t(lang, "nws_card", "reading_tooltip", default="Time of the most recent sensor reading from this station. The data below corresponds to that moment."),
                             ),
                             html.Div(
                                 [
@@ -2475,7 +2473,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                         className="bi bi-broadcast-pin me-2"
                                     ),
                                     html.Strong(
-                                        "📡 Estação Meteorológica Mais Próxima"
+                                        t(lang, "nws_card", "title", default="📡 Nearest Weather Station")
                                     ),
                                     dbc.Badge(
                                         "USA",
@@ -2513,12 +2511,12 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                                                 className="bi bi-geo-alt me-1"
                                                             ),
                                                             html.Strong(
-                                                                "Distância: "
+                                                                t(lang, "nws_card", "distance", default="Distance: ")
                                                             ),
                                                             f"{nws_station.get('distance_km', 0):.1f} km",
                                                         ],
                                                         className="me-3",
-                                                        title="Distância entre o ponto selecionado e a estação meteorológica",
+                                                        title=t(lang, "nws_card", "distance_tooltip", default="Distance between the selected point and the weather station"),
                                                     ),
                                                     html.Span(
                                                         [
@@ -2526,7 +2524,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                                                 className="bi bi-arrow-up me-1"
                                                             ),
                                                             html.Strong(
-                                                                "Elevação: "
+                                                                t(lang, "nws_card", "elevation", default="Elevation: ")
                                                             ),
                                                             f"{nws_station.get('elevation_m', 'N/A')} m",
                                                         ]
@@ -2539,7 +2537,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                                 html.Div(obs_content)
                                                 if obs_content
                                                 else html.Em(
-                                                    "Observação não disponível no momento",
+                                                    t(lang, "nws_card", "obs_unavailable", default="Observation not available at this time"),
                                                     className="text-muted",
                                                 )
                                             ),
@@ -2551,7 +2549,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                             html.I(
                                                 className="bi bi-info-circle me-1"
                                             ),
-                                            "Dados reais da estação NWS/NOAA. Página oficial: ",
+                                            t(lang, "nws_card", "nws_info", default="Real data from NWS/NOAA station. Official page: "),
                                             html.A(
                                                 "weather.gov",
                                                 href="https://www.weather.gov/",
@@ -2830,11 +2828,11 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
 
             # Mensagem diferente para RETRY
             if status == "RETRY":
-                progress_msg = "Tentando obter dados..."
-                time_remaining = f"Aguarde... ({elapsed}s)"
+                progress_msg = t(lang, "progress_ui", "retrying", default="Trying to get data...")
+                time_remaining = t(lang, "progress_ui", "please_wait", default="Please wait... ({seconds}s)").format(seconds=elapsed)
             else:
-                progress_msg = "Baixando dados e calculando ETo..."
-                time_remaining = f"Tempo estimado: {max(1, 30 - elapsed)}s"
+                progress_msg = t(lang, "progress_ui", "downloading_calculating", default="Downloading data and calculating ETo...")
+                time_remaining = t(lang, "progress_ui", "time_estimated", default="Estimated time: {seconds}s").format(seconds=max(1, 30 - elapsed))
 
             progress_indicator = html.Div(
                 [
@@ -3311,7 +3309,7 @@ _CHARTS = [
     ("deficit",       "chart-deficit",       "EVAonline_WaterDeficit"),
     ("eto-temp",      "chart-eto-temp",      "EVAonline_ETo_vs_Temp"),
     ("eto-rad",       "chart-eto-rad",       "EVAonline_ETo_vs_Radiation"),
-    ("temp-rad-prec", "chart-temp-rad-prec", "EVAonline_Temp_Rad_Prec"),
+    ("temp-rad-prec", "chart-temp-rad-prec", "EVAonline_Temp_Prec"),
     ("heatmap",       "chart-heatmap",       "EVAonline_Heatmap"),
 ]
 

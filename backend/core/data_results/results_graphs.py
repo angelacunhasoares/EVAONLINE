@@ -8,15 +8,23 @@ from shared_utils.get_translations import get_translations
 # ── Shared academic chart style constants ──
 _FONT_FAMILY = "Segoe UI, Roboto, Arial, sans-serif"
 _TITLE_SIZE = 26
-_AXIS_TITLE_SIZE = 20
-_TICK_SIZE = 16
-_LEGEND_SIZE = 19
-_ANNOTATION_SIZE = 16
-_BAR_TEXT_SIZE = 16
+_AXIS_TITLE_SIZE = 22
+_TICK_SIZE = 18
+_LEGEND_SIZE = 20
+_ANNOTATION_SIZE = 17
+_BAR_TEXT_SIZE = 17
 _CHART_HEIGHT = 550
 _HEATMAP_HEIGHT = 550
 _BRAND_BLUE = "#005B99"
 _TEMPLATE = "plotly_white"
+_GRID_Y_COLOR = "rgba(0,0,0,0.15)"
+_GRID_X_COLOR = "rgba(0,0,0,0.12)"
+_DATE_FORMAT = "%d/%m/%Y"
+
+
+def _bold(text: str) -> str:
+    """Wrap text in HTML bold tags for Plotly axis titles."""
+    return f"<b>{text}</b>"
 
 # ── Heatmap custom colorscale (pomegranate → cream → teal) ──
 _HEATMAP_COLORSCALE = [
@@ -36,8 +44,10 @@ _COLUMN_TO_VAR_KEY = {
     "WS2M": "wind_speed",
     "ALLSKY_SFC_SW_DWN": "radiation",
     "PRECTOTCORR": "precipitation",
+    "eto_evaonline": "eto_evaonline",
     "ETo EVAonline (mm/day)": "eto_evaonline",
     "ETo Open-Meteo (mm/day)": "eto_openmeteo",
+    "eto_openmeteo": "eto_openmeteo",
 }
 
 
@@ -130,10 +140,11 @@ def plot_eto_vs_temperature(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         )
         fig.update_layout(
             **_base_layout(),
-            yaxis={"title": {"text": ch.get("temperature", "Temperatura (°C)"), "font": {"size": _AXIS_TITLE_SIZE}},
-                   "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)", "tickfont": {"size": _TICK_SIZE}},
-            xaxis={"tickangle": -45, "title": {"text": ch.get("date_label", "Date"), "font": {"size": _AXIS_TITLE_SIZE}},
-                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
+            yaxis={"title": {"text": _bold(ch.get("temperature", "Temperatura (°C)")), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "showgrid": True, "gridcolor": _GRID_Y_COLOR, "tickfont": {"size": _TICK_SIZE}},
+            xaxis={"tickangle": -45, "title": {"text": _bold(ch.get("date_label", "Date")), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": _GRID_X_COLOR,
+                   "tickformat": _DATE_FORMAT},
             legend_title={"text": ch.get("legend", "Legenda"), "font": {"size": _LEGEND_SIZE}},
             barmode="group",
             legend={
@@ -214,17 +225,18 @@ def plot_eto_vs_radiation(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         )
         fig.update_layout(
             **_base_layout(),
-            yaxis={"title": {"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
-                   "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)", "tickfont": {"size": _TICK_SIZE}},
+            yaxis={"title": {"text": _bold(dv.get("eto", "ETo (mm/dia)")), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "showgrid": True, "gridcolor": _GRID_Y_COLOR, "tickfont": {"size": _TICK_SIZE}},
             yaxis2={
-                "title": {"text": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
+                "title": {"text": _bold(dv.get("radiation", "Radiação Solar (MJ/m²/dia)")), "font": {"size": _AXIS_TITLE_SIZE}},
                 "overlaying": "y",
                 "side": "right",
                 "tickfont": {"size": _TICK_SIZE},
                 "showgrid": False,
             },
-            xaxis={"title": {"text": ch.get("date_label", "Date"), "font": {"size": _AXIS_TITLE_SIZE}},
-                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
+            xaxis={"title": {"text": _bold(ch.get("date_label", "Date")), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": _GRID_X_COLOR,
+                   "tickformat": _DATE_FORMAT},
             legend_title={"text": ch.get("legend", "Legenda"), "font": {"size": _LEGEND_SIZE}},
             legend={
                 "x": 0.5,
@@ -251,7 +263,7 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
 
     Parâmetros:
     - df: DataFrame com os dados (espera colunas 'date', 'T2M_MAX',
-          'PRECTOTCORR', 'ETo').
+          'PRECTOTCORR', 'eto_evaonline').
     - lang: Idioma para traduções ('pt' ou 'en').
 
     Retorna:
@@ -331,19 +343,20 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
 
         fig.update_layout(
             **_base_layout(),
-            xaxis={"title": {"text": ch.get("date_label", "Date"), "font": {"size": _AXIS_TITLE_SIZE}},
+            xaxis={"title": {"text": _bold(ch.get("date_label", "Date")), "font": {"size": _AXIS_TITLE_SIZE}},
                    "tickangle": -45, "tickfont": {"size": _TICK_SIZE},
-                   "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
+                   "showgrid": True, "gridcolor": _GRID_X_COLOR,
+                   "tickformat": _DATE_FORMAT},
             yaxis={
-                "title": {"text": f"{dv.get('eto', 'ETo (mm/dia)')}/{dv.get('precipitation', 'Precipitação Total (mm)')}",
+                "title": {"text": _bold(f"{dv.get('eto', 'ETo (mm/dia)')}/{dv.get('precipitation', 'Precipitação Total (mm)')}"),
                          "font": {"size": _AXIS_TITLE_SIZE}},
                 "side": "left",
                 "range": [0, bar_max],
                 "tickfont": {"size": _TICK_SIZE},
-                "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)",
+                "showgrid": True, "gridcolor": _GRID_Y_COLOR,
             },
             yaxis2={
-                "title": {"text": dv.get("temp_max", "Temperatura Máxima (°C)"), "font": {"size": _AXIS_TITLE_SIZE}},
+                "title": {"text": _bold(dv.get("temp_max", "Temperatura Máxima (°C)")), "font": {"size": _AXIS_TITLE_SIZE}},
                 "overlaying": "y",
                 "side": "right",
                 "range": [0, temp_max_range],
@@ -391,7 +404,10 @@ def plot_heatmap(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         t = get_translations(lang)
         dv = t.get("data_variables", {})
         st = t.get("statistics", {})
-        columns_to_exclude = ["date", "PRECTOTCORR", "ETo Open-Meteo (mm/day)"]
+        columns_to_exclude = [
+            "date", "PRECTOTCORR",
+            "ETo Open-Meteo (mm/day)", "eto_openmeteo",
+        ]
         corr_columns = [
             col for col in df.columns if col not in columns_to_exclude
         ]
@@ -423,8 +439,8 @@ def plot_heatmap(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         )
         fig.update_layout(
             **_base_layout(height=_HEATMAP_HEIGHT),
-            xaxis={"tickfont": {"size": _TICK_SIZE}, "tickangle": -30},
-            yaxis={"tickfont": {"size": _TICK_SIZE}, "autorange": "reversed"},
+            xaxis={"tickfont": {"size": _TICK_SIZE, "family": _FONT_FAMILY}, "tickangle": -30},
+            yaxis={"tickfont": {"size": _TICK_SIZE, "family": _FONT_FAMILY}, "autorange": "reversed"},
             margin={"b": 120, "t": 40, "l": 160, "r": 30},
         )
         logger.info("Mapa de calor gerado com sucesso")
@@ -494,10 +510,10 @@ def plot_correlation(
 
         fig.update_layout(
             **_base_layout(),
-            xaxis={"title": {"text": x_var_translated, "font": {"size": _AXIS_TITLE_SIZE}},
-                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
-            yaxis={"title": {"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
-                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)"},
+            xaxis={"title": {"text": _bold(x_var_translated), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": _GRID_X_COLOR},
+            yaxis={"title": {"text": _bold(dv.get("eto", "ETo (mm/dia)")), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": _GRID_Y_COLOR},
             legend={
                 "x": 0.5,
                 "y": -0.2,

@@ -100,9 +100,10 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt", mode: str = ""
             st.get("percentile_75", "Percentil 75%"): df[numeric_cols].quantile(0.75).round(2),
         }
 
-        # CV, Skewness e Kurtosis só para amostras maiores (não forecast)
-        is_forecast = mode == "DASHBOARD_FORECAST"
-        if not is_forecast:
+        # CV, Skewness e Kurtosis só para amostras >= 30 dias
+        n_days = len(df)
+        has_enough_samples = n_days >= 30 and mode != "DASHBOARD_FORECAST"
+        if has_enough_samples:
             stats_data[st.get("coef_variation", "CV (%)")] = (
                 (df[numeric_cols].std() / df[numeric_cols].mean()) * 100
             ).round(2)
@@ -190,16 +191,23 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt", mode: str = "") -
             )
             return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
 
-        # No modo forecast (n=6), amostra insuficiente para Shapiro-Wilk
-        if mode == "DASHBOARD_FORECAST":
+        # Amostra insuficiente para Shapiro-Wilk (forecast ou < 30 dias)
+        n_days = len(df)
+        if mode == "DASHBOARD_FORECAST" or n_days < 30:
             t_fc = get_translations(lang)
             st_fc = t_fc.get("statistics", {})
-            msg = st_fc.get(
-                "forecast_sample_insufficient",
-                "Test not performed: insufficient sample size for forecast mode (6 days)."
-                if lang == "en" else
-                "Teste não realizado: amostra insuficiente para o modo previsão (6 dias)."
-            )
+            if mode == "DASHBOARD_FORECAST":
+                msg = st_fc.get(
+                    "forecast_sample_insufficient",
+                    "Test not performed: insufficient sample size for forecast mode (6 days)."
+                    if lang == "en" else
+                    "Teste não realizado: amostra insuficiente para o modo previsão (6 dias)."
+                )
+            else:
+                msg = st_fc.get(
+                    "sample_insufficient",
+                    "Not calculated: at least 30 days required. Currently: {days} days."
+                ).format(days=n_days)
             return html.Div(
                 dbc.Alert(msg, color="info", className="mt-2"),
                 className="mb-4",
@@ -577,13 +585,13 @@ def create_deficit_chart_section(
             },
         )
         fig_deficit.update_layout(
-            font=dict(family="Segoe UI, Roboto, Arial, sans-serif", size=16),
+            font=dict(family="Segoe UI, Roboto, Arial, sans-serif", size=18),
             title_font=dict(size=26, family="Segoe UI, Roboto, Arial, sans-serif"),
-            yaxis_title=dict(text=st.get("water_deficit_mm_day", "Water Deficit (mm/day)"), font=dict(size=20)),
-            xaxis_title=dict(text=ch.get("date_label", "Date"), font=dict(size=20)),
-            xaxis=dict(tickfont=dict(size=16), showgrid=True, gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(tickfont=dict(size=16), showgrid=True, gridcolor="rgba(0,0,0,0.08)"),
-            legend_title=dict(text=ch.get("legend", "Legend"), font=dict(size=19)),
+            yaxis_title=dict(text=f"<b>{st.get('water_deficit_mm_day', 'Water Deficit (mm/day)')}</b>", font=dict(size=22)),
+            xaxis_title=dict(text=f"<b>{ch.get('date_label', 'Date')}</b>", font=dict(size=22)),
+            xaxis=dict(tickfont=dict(size=18), showgrid=True, gridcolor="rgba(0,0,0,0.12)"),
+            yaxis=dict(tickfont=dict(size=18), showgrid=True, gridcolor="rgba(0,0,0,0.15)"),
+            legend_title=dict(text=ch.get("legend", "Legend"), font=dict(size=20)),
             template="plotly_white",
             height=500,
             margin={"b": 80, "t": 60, "l": 70, "r": 30},
@@ -594,7 +602,7 @@ def create_deficit_chart_section(
                 y=1.02,
                 xanchor="center",
                 x=0.5,
-                font=dict(size=19),
+                font=dict(size=20),
             ),
         )
 

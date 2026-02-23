@@ -877,7 +877,107 @@ def _create_usa_stations_section(lang):
 
 
 def _create_results_section(lang):
-    """Describes all result tabs, tables, charts and statistics."""
+    """Describes all result tabs, tables, charts, statistics, downloads,
+    water deficit, ETo comparison, NWS card and ocean detection."""
+
+    def _tab_card(title_key, items_keys, *, badge_indices=None):
+        """Build a single tab card with a list of items.
+
+        Parameters
+        ----------
+        badge_indices : set[int] | None
+            0-based indices that should get an ``≥30d`` badge appended.
+        """
+        badge_indices = badge_indices or set()
+        items = []
+        for idx, k in enumerate(items_keys):
+            content = _t(lang, k)
+            if idx in badge_indices:
+                content = html.Span(
+                    [
+                        content,
+                        dbc.Badge(
+                            "≥30d",
+                            color="warning",
+                            className="ms-1",
+                            pill=True,
+                        ),
+                    ]
+                )
+            items.append(html.Li(content))
+        return dbc.Card(
+            dbc.CardBody(
+                [
+                    html.Strong(_t(lang, title_key)),
+                    html.Ul(items, className="small mb-0"),
+                ]
+            ),
+            className="h-100",
+        )
+
+    def _icon_card(icon_cls, color_cls, title_key, desc_key, *, badge=None):
+        """Build a centred icon card for a chart entry."""
+        title_children: list = [_t(lang, title_key)]
+        if badge:
+            title_children.append(
+                dbc.Badge(badge, color="warning", className="ms-1", pill=True)
+            )
+        return dbc.Card(
+            dbc.CardBody(
+                [
+                    html.I(className=f"{icon_cls} {color_cls} doc-icon-lg"),
+                    html.P(
+                        title_children,
+                        className="mb-0 mt-2 small fw-bold",
+                    ),
+                    html.Small(
+                        _t(lang, desc_key), className="text-muted"
+                    ),
+                ],
+                className="text-center p-3",
+            ),
+            className="h-100",
+        )
+
+    def _download_card(icon_cls, color, title_key, desc_key):
+        """Build a download-option card."""
+        return dbc.Card(
+            dbc.CardBody(
+                [
+                    html.I(className=f"{icon_cls} doc-icon-lg text-{color}"),
+                    html.P(
+                        _t(lang, title_key),
+                        className="mb-1 mt-2 small fw-bold",
+                    ),
+                    html.Small(
+                        _t(lang, desc_key), className="text-muted"
+                    ),
+                ],
+                className="text-center p-3",
+            ),
+            className="h-100",
+        )
+
+    def _stats_rule_card(icon_cls, color, title_key, desc_key):
+        """Build a stats-rule card."""
+        return dbc.Card(
+            dbc.CardBody(
+                [
+                    html.I(className=f"{icon_cls} doc-icon-lg text-{color}"),
+                    html.P(
+                        _t(lang, title_key),
+                        className="mb-1 mt-2 small fw-bold",
+                    ),
+                    html.Small(
+                        _t(lang, desc_key), className="text-muted"
+                    ),
+                ],
+                className="text-center p-3",
+            ),
+            className="h-100",
+        )
+
+    # ── Main layout ──────────────────────────────────────────────
     return dbc.Row(
         [
             dbc.Col(
@@ -895,7 +995,7 @@ def _create_results_section(lang):
                                         _t(lang, "results_subtitle"),
                                         className="mb-4",
                                     ),
-                                    # Result Tabs
+                                    # ── 1. Result Tabs ───────────────
                                     html.H6(
                                         _t(lang, "results_tabs_title"),
                                         className="mb-2 text-primary",
@@ -907,149 +1007,35 @@ def _create_results_section(lang):
                                     dbc.Row(
                                         [
                                             dbc.Col(
-                                                dbc.Card(
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.Strong(
-                                                                _t(lang, "tab_summary")
-                                                            ),
-                                                            html.Ul(
-                                                                [
-                                                                    html.Li(
-                                                                        _t(lang, "tab_summary_1")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_summary_2")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_summary_3")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_summary_4")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_summary_5")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_summary_6")
-                                                                    ),
-                                                                ],
-                                                                className="small mb-0",
-                                                            ),
-                                                        ]
-                                                    ),
-                                                    className="h-100",
+                                                _tab_card(
+                                                    "tab_summary",
+                                                    [f"tab_summary_{i}" for i in range(1, 7)],
                                                 ),
                                                 md=3,
                                                 className="mb-2",
                                             ),
                                             dbc.Col(
-                                                dbc.Card(
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.Strong(
-                                                                _t(lang, "tab_tables")
-                                                            ),
-                                                            html.Ul(
-                                                                [
-                                                                    html.Li(
-                                                                        _t(lang, "tab_tables_1")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_tables_2")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_tables_3")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_tables_4")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_tables_5")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_tables_6")
-                                                                    ),
-                                                                ],
-                                                                className="small mb-0",
-                                                            ),
-                                                        ]
-                                                    ),
-                                                    className="h-100",
+                                                _tab_card(
+                                                    "tab_tables",
+                                                    [f"tab_tables_{i}" for i in range(1, 7)],
                                                 ),
                                                 md=3,
                                                 className="mb-2",
                                             ),
                                             dbc.Col(
-                                                dbc.Card(
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.Strong(
-                                                                _t(lang, "tab_charts")
-                                                            ),
-                                                            html.Ul(
-                                                                [
-                                                                    html.Li(
-                                                                        _t(lang, "tab_charts_1")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_charts_2")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_charts_3")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_charts_4")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_charts_5")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_charts_6")
-                                                                    ),
-                                                                ],
-                                                                className="small mb-0",
-                                                            ),
-                                                        ]
-                                                    ),
-                                                    className="h-100",
+                                                _tab_card(
+                                                    "tab_charts",
+                                                    [f"tab_charts_{i}" for i in range(1, 7)],
+                                                    badge_indices={3},  # heatmap ≥30d
                                                 ),
                                                 md=3,
                                                 className="mb-2",
                                             ),
                                             dbc.Col(
-                                                dbc.Card(
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.Strong(
-                                                                _t(lang, "tab_stats")
-                                                            ),
-                                                            html.Ul(
-                                                                [
-                                                                    html.Li(
-                                                                        _t(lang, "tab_stats_1")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_stats_2")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_stats_3")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_stats_4")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_stats_5")
-                                                                    ),
-                                                                    html.Li(
-                                                                        _t(lang, "tab_stats_6")
-                                                                    ),
-                                                                ],
-                                                                className="small mb-0",
-                                                            ),
-                                                        ]
-                                                    ),
-                                                    className="h-100",
+                                                _tab_card(
+                                                    "tab_stats",
+                                                    [f"tab_stats_{i}" for i in range(1, 7)],
+                                                    badge_indices={2, 4, 5},  # Shapiro, CV%, skew/kurt
                                                 ),
                                                 md=3,
                                                 className="mb-2",
@@ -1057,7 +1043,118 @@ def _create_results_section(lang):
                                         ]
                                     ),
                                     html.Hr(),
-                                    # Interactive Charts
+                                    # ── 2. Statistical Analysis Rules ─
+                                    html.H6(
+                                        _t(lang, "stats_rules_title"),
+                                        className="mt-3 mb-2 text-primary",
+                                    ),
+                                    html.P(
+                                        _t(lang, "stats_rules_intro"),
+                                        className="text-muted small mb-3",
+                                    ),
+                                    dbc.Row(
+                                        [
+                                            dbc.Col(
+                                                _stats_rule_card(
+                                                    "bi bi-calendar-check",
+                                                    "warning",
+                                                    "stats_rule_30days_title",
+                                                    "stats_rule_30days_desc",
+                                                ),
+                                                md=4,
+                                                className="mb-2",
+                                            ),
+                                            dbc.Col(
+                                                _stats_rule_card(
+                                                    "bi bi-cloud-sun",
+                                                    "info",
+                                                    "stats_rule_forecast_title",
+                                                    "stats_rule_forecast_desc",
+                                                ),
+                                                md=4,
+                                                className="mb-2",
+                                            ),
+                                            dbc.Col(
+                                                _stats_rule_card(
+                                                    "bi bi-grid-3x3",
+                                                    "danger",
+                                                    "stats_rule_heatmap_title",
+                                                    "stats_rule_heatmap_desc",
+                                                ),
+                                                md=4,
+                                                className="mb-2",
+                                            ),
+                                        ]
+                                    ),
+                                    html.Hr(),
+                                    # ── 3. Water Deficit Analysis ─────
+                                    html.H6(
+                                        _t(lang, "water_deficit_title"),
+                                        className="mt-3 mb-2 text-primary",
+                                    ),
+                                    html.P(
+                                        _t(lang, "water_deficit_intro"),
+                                        className="text-muted small mb-2",
+                                    ),
+                                    dbc.Alert(
+                                        [
+                                            html.I(className="bi bi-calculator me-2"),
+                                            html.Code(
+                                                _t(lang, "water_deficit_formula"),
+                                                className="fs-6",
+                                            ),
+                                        ],
+                                        color="light",
+                                        className="border mb-2",
+                                    ),
+                                    html.Ul(
+                                        [
+                                            html.Li(
+                                                [
+                                                    html.I(
+                                                        className="bi bi-arrow-down-circle text-danger me-1"
+                                                    ),
+                                                    _t(lang, "water_deficit_negative"),
+                                                ]
+                                            ),
+                                            html.Li(
+                                                [
+                                                    html.I(
+                                                        className="bi bi-arrow-up-circle text-success me-1"
+                                                    ),
+                                                    _t(lang, "water_deficit_positive"),
+                                                ]
+                                            ),
+                                        ],
+                                        className="small mb-2",
+                                    ),
+                                    html.P(
+                                        _t(lang, "water_deficit_metrics_title"),
+                                        className="small fw-bold mb-1",
+                                    ),
+                                    html.Ul(
+                                        [
+                                            html.Li(_t(lang, f"water_deficit_metric{i}"))
+                                            for i in range(1, 6)
+                                        ],
+                                        className="small mb-0",
+                                    ),
+                                    html.Hr(),
+                                    # ── 4. ETo Comparison ────────────
+                                    html.H6(
+                                        _t(lang, "eto_comparison_title"),
+                                        className="mt-3 mb-2 text-primary",
+                                    ),
+                                    dbc.Alert(
+                                        [
+                                            html.I(className="bi bi-arrow-left-right me-2"),
+                                            _t(lang, "eto_comparison_desc"),
+                                        ],
+                                        color="info",
+                                        className="small",
+                                    ),
+                                    html.Hr(),
+                                    # ── 5. Interactive Charts ─────────
                                     html.H6(
                                         _t(lang, "charts_title"),
                                         className="mt-3 mb-2 text-primary",
@@ -1069,93 +1166,42 @@ def _create_results_section(lang):
                                     dbc.Row(
                                         [
                                             dbc.Col(
-                                                dbc.Card(
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.I(
-                                                                className="bi bi-graph-up text-primary doc-icon-lg",
-                                                            ),
-                                                            html.P(
-                                                                _t(lang, "chart_eto_temp"),
-                                                                className="mb-0 mt-2 small fw-bold",
-                                                            ),
-                                                            html.Small(
-                                                                _t(lang, "chart_eto_temp_desc"),
-                                                                className="text-muted",
-                                                            ),
-                                                        ],
-                                                        className="text-center p-3",
-                                                    ),
-                                                    className="h-100",
+                                                _icon_card(
+                                                    "bi bi-graph-up",
+                                                    "text-primary",
+                                                    "chart_eto_temp",
+                                                    "chart_eto_temp_desc",
                                                 ),
                                                 md=3,
                                                 className="mb-2",
                                             ),
                                             dbc.Col(
-                                                dbc.Card(
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.I(
-                                                                className="bi bi-sun text-warning doc-icon-lg",
-                                                            ),
-                                                            html.P(
-                                                                _t(lang, "chart_eto_rad"),
-                                                                className="mb-0 mt-2 small fw-bold",
-                                                            ),
-                                                            html.Small(
-                                                                _t(lang, "chart_eto_rad_desc"),
-                                                                className="text-muted",
-                                                            ),
-                                                        ],
-                                                        className="text-center p-3",
-                                                    ),
-                                                    className="h-100",
+                                                _icon_card(
+                                                    "bi bi-sun",
+                                                    "text-warning",
+                                                    "chart_eto_rad",
+                                                    "chart_eto_rad_desc",
                                                 ),
                                                 md=3,
                                                 className="mb-2",
                                             ),
                                             dbc.Col(
-                                                dbc.Card(
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.I(
-                                                                className="bi bi-droplet text-info doc-icon-lg",
-                                                            ),
-                                                            html.P(
-                                                                _t(lang, "chart_multi"),
-                                                                className="mb-0 mt-2 small fw-bold",
-                                                            ),
-                                                            html.Small(
-                                                                _t(lang, "chart_multi_desc"),
-                                                                className="text-muted",
-                                                            ),
-                                                        ],
-                                                        className="text-center p-3",
-                                                    ),
-                                                    className="h-100",
+                                                _icon_card(
+                                                    "bi bi-droplet",
+                                                    "text-info",
+                                                    "chart_multi",
+                                                    "chart_multi_desc",
                                                 ),
                                                 md=3,
                                                 className="mb-2",
                                             ),
                                             dbc.Col(
-                                                dbc.Card(
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.I(
-                                                                className="bi bi-grid-3x3 text-danger doc-icon-lg",
-                                                            ),
-                                                            html.P(
-                                                                _t(lang, "chart_heatmap"),
-                                                                className="mb-0 mt-2 small fw-bold",
-                                                            ),
-                                                            html.Small(
-                                                                _t(lang, "chart_heatmap_desc"),
-                                                                className="text-muted",
-                                                            ),
-                                                        ],
-                                                        className="text-center p-3",
-                                                    ),
-                                                    className="h-100",
+                                                _icon_card(
+                                                    "bi bi-grid-3x3",
+                                                    "text-danger",
+                                                    "chart_heatmap",
+                                                    "chart_heatmap_desc",
+                                                    badge="≥30d",
                                                 ),
                                                 md=3,
                                                 className="mb-2",
@@ -1163,44 +1209,89 @@ def _create_results_section(lang):
                                         ]
                                     ),
                                     html.Hr(),
-                                    # Downloads
+                                    # ── 6. Download Options ──────────
                                     html.H6(
-                                        _t(lang, "export_title"),
+                                        _t(lang, "downloads_title"),
                                         className="mt-3 mb-2 text-primary",
                                     ),
-                                    html.Div(
+                                    html.P(
+                                        _t(lang, "downloads_intro"),
+                                        className="text-muted small mb-3",
+                                    ),
+                                    dbc.Row(
                                         [
-                                            dbc.Badge(
-                                                [
-                                                    html.I(
-                                                        className="bi bi-filetype-csv me-1"
-                                                    ),
-                                                    _t(lang, "export_csv"),
-                                                ],
-                                                color="success",
-                                                className="me-2 p-2",
+                                            dbc.Col(
+                                                _download_card(
+                                                    "bi bi-table",
+                                                    "success",
+                                                    "downloads_per_table_title",
+                                                    "downloads_per_table_desc",
+                                                ),
+                                                md=3,
+                                                className="mb-2",
                                             ),
-                                            dbc.Badge(
-                                                [
-                                                    html.I(
-                                                        className="bi bi-file-earmark-excel me-1"
-                                                    ),
-                                                    _t(lang, "export_excel"),
-                                                ],
-                                                color="success",
-                                                className="me-2 p-2",
+                                            dbc.Col(
+                                                _download_card(
+                                                    "bi bi-image",
+                                                    "primary",
+                                                    "downloads_per_chart_title",
+                                                    "downloads_per_chart_desc",
+                                                ),
+                                                md=3,
+                                                className="mb-2",
                                             ),
-                                            dbc.Badge(
-                                                [
-                                                    html.I(
-                                                        className="bi bi-envelope me-1"
-                                                    ),
-                                                    _t(lang, "export_email"),
-                                                ],
-                                                color="info",
-                                                className="p-2",
+                                            dbc.Col(
+                                                _download_card(
+                                                    "bi bi-download",
+                                                    "success",
+                                                    "downloads_global_title",
+                                                    "downloads_global_desc",
+                                                ),
+                                                md=3,
+                                                className="mb-2",
+                                            ),
+                                            dbc.Col(
+                                                _download_card(
+                                                    "bi bi-envelope",
+                                                    "info",
+                                                    "downloads_email_title",
+                                                    "downloads_email_desc",
+                                                ),
+                                                md=3,
+                                                className="mb-2",
                                             ),
                                         ]
+                                    ),
+                                    html.Hr(),
+                                    # ── 7. USA NWS Station Card ──────
+                                    html.H6(
+                                        _t(lang, "usa_results_title"),
+                                        className="mt-3 mb-2 text-primary",
+                                    ),
+                                    html.P(
+                                        _t(lang, "usa_results_desc"),
+                                        className="text-muted small mb-2",
+                                    ),
+                                    html.Ul(
+                                        [
+                                            html.Li(_t(lang, f"usa_results_item{i}"))
+                                            for i in range(1, 6)
+                                        ],
+                                        className="small mb-0",
+                                    ),
+                                    html.Hr(),
+                                    # ── 8. Ocean Detection ───────────
+                                    html.H6(
+                                        _t(lang, "ocean_detection_title"),
+                                        className="mt-3 mb-2 text-primary",
+                                    ),
+                                    dbc.Alert(
+                                        [
+                                            html.I(className="bi bi-exclamation-triangle me-2"),
+                                            _t(lang, "ocean_detection_desc"),
+                                        ],
+                                        color="warning",
+                                        className="small",
                                     ),
                                 ]
                             )

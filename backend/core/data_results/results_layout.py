@@ -166,7 +166,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                     ]
                     + (
                         [_table_download_buttons("normality", lang)]
-                        if mode != "DASHBOARD_FORECAST"
+                        if mode != "DASHBOARD_FORECAST" and len(df) >= 30
                         else []
                     ),
                     className="mb-4",
@@ -266,7 +266,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                                 dbc.Col(
                                     [
                                         html.H6(
-                                            t(lang, "charts", "temp_rad_prec", default="Temperature, Radiation & Precipitation"),
+                                            t(lang, "charts", "temp_rad_prec", default="Temperature & Precipitation"),
                                             className="text-center mb-2",
                                         ),
                                         dcc.Graph(
@@ -287,18 +287,23 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                     ],
                     className="mb-5",
                 ),
-                # Correlation heatmap (hidden in forecast – too few samples)
+                # Correlation heatmap (hidden when < 30 days or forecast)
                 (
                     dbc.Alert(
                         [
                             html.I(className="bi bi-info-circle me-2"),
-                            t(lang, "statistics", "forecast_heatmap_insufficient",
-                              default="Heatmap not shown: insufficient sample for reliable correlations in forecast mode (6 days)."),
+                            (
+                                t(lang, "statistics", "forecast_heatmap_insufficient",
+                                  default="Heatmap not shown: insufficient sample for reliable correlations in forecast mode (6 days).")
+                                if mode == "DASHBOARD_FORECAST"
+                                else t(lang, "statistics", "heatmap_insufficient",
+                                       default="Heatmap not shown: at least 30 days required. Currently: {days} days.").format(days=len(df))
+                            ),
                         ],
                         color="info",
                         className="mb-4",
                     )
-                    if mode == "DASHBOARD_FORECAST"
+                    if mode == "DASHBOARD_FORECAST" or len(df) < 30
                     else html.Div(
                         [
                             html.H5(
