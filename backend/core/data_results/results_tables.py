@@ -84,16 +84,17 @@ def display_results_table(df: pd.DataFrame, lang: str = "pt") -> html.Div:
 
         # Obter traduções (translations already include units)
         t = get_translations(lang)
+        dv = t.get("data_variables", {})
         column_names = {
-            "date": t["date"],
-            "T2M_MAX": t["temp_max"],
-            "T2M_MIN": t["temp_min"],
-            "RH2M": t["humidity"],
-            "WS2M": t["wind_speed"],
-            "ALLSKY_SFC_SW_DWN": t["radiation"],
-            "PRECTOTCORR": t["precipitation"],
-            "ETo": t["eto"],
-            "eto_evaonline": "ETo EVAonline (mm/dia)",
+            "date": dv.get("date", "Data"),
+            "T2M_MAX": dv.get("temp_max", "Temperatura Máxima (°C)"),
+            "T2M_MIN": dv.get("temp_min", "Temperatura Mínima (°C)"),
+            "RH2M": dv.get("humidity", "Umidade Relativa (%)"),
+            "WS2M": dv.get("wind_speed", "Velocidade do Vento (m/s)"),
+            "ALLSKY_SFC_SW_DWN": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"),
+            "PRECTOTCORR": dv.get("precipitation", "Precipitação Total (mm)"),
+            "ETo": dv.get("eto", "ETo (mm/dia)"),
+            "eto_evaonline": dv.get("eto_evaonline", "ETo EVAonline (mm/dia)"),
         }
 
         # Formatar a coluna de data ANTES de renomear

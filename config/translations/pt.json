@@ -129,7 +129,24 @@
         "total_eto": "ETo Total",
         "avg_daily_eto": "ETo Média Diária",
         "max_daily_eto": "ETo Máxima Diária",
-        "min_daily_eto": "ETo Mínima Diária"
+        "min_daily_eto": "ETo Mínima Diária",
+        "std_dev": "Desvio Padrão",
+        "percentile_25": "Percentil 25%",
+        "percentile_75": "Percentil 75%",
+        "coef_variation": "CV (%)",
+        "skewness": "Assimetria",
+        "kurtosis": "Curtose",
+        "normality_note": "Nota: Teste de Shapiro-Wilk. P-valor < 0.05 indica distribuição não normal.",
+        "water_deficit": "Déficit Hídrico (mm)",
+        "deficit_note": "Valores negativos indicam déficit hídrico (ETo > Precipitação). Valores positivos indicam excesso.",
+        "trend_analysis": "Análise de Tendência",
+        "eto_trend": "Tendência da ETo",
+        "per_day": "por dia",
+        "seasonality_test": "Teste de Estacionalidade",
+        "adf_test": "Teste ADF (Dickey-Fuller Aumentado)",
+        "cumulative_eto": "ETo Acumulada (mm)",
+        "cumulative_precipitation": "Precipitação Acumulada (mm)",
+        "cumulative_distribution": "Distribuição Acumulada"
     },
     "charts": {
         "eto_timeseries": "Série Temporal da ETo",
@@ -139,7 +156,14 @@
         "scatter_title": "Correlação: {var} vs ETo",
         "eto_label": "ETo (mm/dia)",
         "date_label": "Data",
-        "precipitation_label": "Precipitação (mm)"
+        "precipitation_label": "Precipitação (mm)",
+        "eto_vs_temp": "ETo vs Temperatura",
+        "eto_vs_rad": "ETo vs Radiação Solar",
+        "temp_rad_prec": "Temperatura, Radiação e Precipitação",
+        "temperature": "Temperatura (°C)",
+        "legend": "Legenda",
+        "trend_line": "Linha de Tendência",
+        "correlation": "Correlação"
     },
     "footer": {
         "developers": "Desenvolvedores",

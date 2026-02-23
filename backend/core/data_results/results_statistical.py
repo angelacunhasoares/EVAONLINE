@@ -30,7 +30,8 @@ def display_daily_data(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         return display_results_table(df, lang=lang)
     except Exception as e:
         logger.error(f"Erro ao exibir dados diários: {str(e)}")
-        return html.Div(f"{get_translations(lang)['error']}: {str(e)}")
+        t = get_translations(lang)
+        return html.Div(f"{t.get('results', {}).get('error', 'Erro')}: {str(e)}")
 
 
 def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
@@ -50,24 +51,26 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
                 "DataFrame vazio ou None fornecido para "
                 "display_descriptive_stats"
             )
-            return html.Div(get_translations(lang)["no_data"])
+            return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         t = get_translations(lang)
+        dv = t.get("data_variables", {})
+        st = t.get("statistics", {})
 
         # Mapeamento de nomes de colunas para nomes formatados
         column_display_names = {
-            "T2M_MAX": t.get("temp_max", "Temperatura Máxima (°C)"),
-            "T2M_MIN": t.get("temp_min", "Temperatura Mínima (°C)"),
-            "T2M": t.get("temp_mean", "Temperatura Média (°C)"),
-            "RH2M": t.get("humidity", "Umidade Relativa (%)"),
-            "WS2M": t.get("wind_speed", "Velocidade do Vento (m/s)"),
-            "ALLSKY_SFC_SW_DWN": t.get(
+            "T2M_MAX": dv.get("temp_max", "Temperatura Máxima (°C)"),
+            "T2M_MIN": dv.get("temp_min", "Temperatura Mínima (°C)"),
+            "T2M": dv.get("temp_mean", "Temperatura Média (°C)"),
+            "RH2M": dv.get("humidity", "Umidade Relativa (%)"),
+            "WS2M": dv.get("wind_speed", "Velocidade do Vento (m/s)"),
+            "ALLSKY_SFC_SW_DWN": dv.get(
                 "radiation", "Radiação Solar (MJ/m²/dia)"
             ),
-            "PRECTOTCORR": t.get("precipitation", "Precipitação Total (mm)"),
-            "ETo": t.get("eto", "ETo (mm/dia)"),
-            "eto_evaonline": "ETo EVAonline (mm/dia)",
-            "eto_openmeteo": "ETo Open-Meteo (mm/dia)",
+            "PRECTOTCORR": dv.get("precipitation", "Precipitação Total (mm)"),
+            "ETo": dv.get("eto", "ETo (mm/dia)"),
+            "eto_evaonline": dv.get("eto_evaonline", "ETo EVAonline (mm/dia)"),
+            "eto_openmeteo": dv.get("eto_openmeteo", "ETo Open-Meteo (mm/dia)"),
         }
 
         expected_columns = [
@@ -86,32 +89,33 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             raise ValueError("Nenhuma coluna numérica válida encontrada")
 
         stats_data = {
-            t["mean"]: df[numeric_cols].mean().round(2),
-            t["max"]: df[numeric_cols].max().round(2),
-            t["min"]: df[numeric_cols].min().round(2),
-            t["median"]: df[numeric_cols].median().round(2),
-            t["std_dev"]: df[numeric_cols].std().round(2),
-            t["percentile_25"]: df[numeric_cols].quantile(0.25).round(2),
-            t["percentile_75"]: df[numeric_cols].quantile(0.75).round(2),
-            t["coef_variation"]: (
+            st.get("mean", "Média"): df[numeric_cols].mean().round(2),
+            st.get("max", "Máximo"): df[numeric_cols].max().round(2),
+            st.get("min", "Mínimo"): df[numeric_cols].min().round(2),
+            st.get("median", "Mediana"): df[numeric_cols].median().round(2),
+            st.get("std_dev", "Desvio Padrão"): df[numeric_cols].std().round(2),
+            st.get("percentile_25", "Percentil 25%"): df[numeric_cols].quantile(0.25).round(2),
+            st.get("percentile_75", "Percentil 75%"): df[numeric_cols].quantile(0.75).round(2),
+            st.get("coef_variation", "CV (%)"): (
                 (df[numeric_cols].std() / df[numeric_cols].mean()) * 100
             ).round(2),
-            t["skewness"]: df[numeric_cols]
+            st.get("skewness", "Assimetria"): df[numeric_cols]
             .apply(lambda x: stats.skew(x.dropna()))
             .round(2),
-            t["kurtosis"]: df[numeric_cols]
+            st.get("kurtosis", "Curtose"): df[numeric_cols]
             .apply(lambda x: stats.kurtosis(x.dropna()))
             .round(2),
         }
         stats_df = pd.DataFrame(stats_data).T
-        stats_df.insert(0, t["statistic"], stats_df.index)
+        stats_df.insert(0, st.get("statistic", "Estatística"), stats_df.index)
 
         # Renomear colunas com nomes formatados
         stats_df = stats_df.rename(columns=column_display_names)
 
         # Formatar valores numéricos com ponto decimal
+        statistic_col = st.get("statistic", "Estatística")
         for col in stats_df.columns:
-            if col != t["statistic"]:
+            if col != statistic_col:
                 stats_df[col] = stats_df[col].apply(
                     lambda x: format_number(x, 2)
                 )
@@ -158,7 +162,8 @@ def display_descriptive_stats(df: pd.DataFrame, lang: str = "pt") -> html.Div:
 
     except Exception as e:
         logger.error(f"Erro ao gerar estatísticas descritivas: {str(e)}")
-        return html.Div(f"{t['error']}: {str(e)}")
+        rs = get_translations(lang).get("results", {})
+        return html.Div(f"{rs.get('error', 'Erro')}: {str(e)}")
 
 
 def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
@@ -177,24 +182,26 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             logger.warning(
                 "DataFrame vazio ou None fornecido para display_normality_test"
             )
-            return html.Div(get_translations(lang)["no_data"])
+            return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         t = get_translations(lang)
+        dv = t.get("data_variables", {})
+        st = t.get("statistics", {})
 
         # Mapeamento de nomes de colunas para nomes formatados
         column_display_names = {
-            "T2M_MAX": t.get("temp_max", "Temperatura Máxima (°C)"),
-            "T2M_MIN": t.get("temp_min", "Temperatura Mínima (°C)"),
-            "T2M": t.get("temp_mean", "Temperatura Média (°C)"),
-            "RH2M": t.get("humidity", "Umidade Relativa (%)"),
-            "WS2M": t.get("wind_speed", "Velocidade do Vento (m/s)"),
-            "ALLSKY_SFC_SW_DWN": t.get(
+            "T2M_MAX": dv.get("temp_max", "Temperatura Máxima (°C)"),
+            "T2M_MIN": dv.get("temp_min", "Temperatura Mínima (°C)"),
+            "T2M": dv.get("temp_mean", "Temperatura Média (°C)"),
+            "RH2M": dv.get("humidity", "Umidade Relativa (%)"),
+            "WS2M": dv.get("wind_speed", "Velocidade do Vento (m/s)"),
+            "ALLSKY_SFC_SW_DWN": dv.get(
                 "radiation", "Radiação Solar (MJ/m²/dia)"
             ),
-            "PRECTOTCORR": t.get("precipitation", "Precipitação Total (mm)"),
-            "ETo": t.get("eto", "ETo (mm/dia)"),
-            "eto_evaonline": "ETo EVAonline (mm/dia)",
-            "eto_openmeteo": "ETo Open-Meteo (mm/dia)",
+            "PRECTOTCORR": dv.get("precipitation", "Precipitação Total (mm)"),
+            "ETo": dv.get("eto", "ETo (mm/dia)"),
+            "eto_evaonline": dv.get("eto_evaonline", "ETo EVAonline (mm/dia)"),
+            "eto_openmeteo": dv.get("eto_openmeteo", "ETo Open-Meteo (mm/dia)"),
         }
 
         # Support both old 'ETo' and new 'eto_evaonline' column names
@@ -219,11 +226,11 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             # Usar nome formatado da coluna
             display_name = column_display_names.get(col, col)
             normality_tests[display_name] = {
-                t["statistic"]: format_number(stat, 2),
-                t["p_value"]: format_number(p_value, 4),
+                st.get("statistic", "Estatística"): format_number(stat, 2),
+                st.get("p_value", "P-Valor"): format_number(p_value, 4),
             }
         normality_df = pd.DataFrame(normality_tests).T
-        normality_df.insert(0, t["variable"], normality_df.index)
+        normality_df.insert(0, st.get("variable", "Variável"), normality_df.index)
 
         # Criar tabela com estilo profissional
         table = dbc.Table(
@@ -266,14 +273,15 @@ def display_normality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         return html.Div(
             [
                 table,
-                html.P(t["normality_note"], className="text-muted small mt-2"),
+                html.P(st.get("normality_note", ""), className="text-muted small mt-2"),
             ],
             className="mb-4",
         )
 
     except Exception as e:
         logger.error(f"Erro ao gerar teste de normalidade: {str(e)}")
-        return html.Div(f"{t['error']}: {str(e)}")
+        rs = get_translations(lang).get("results", {})
+        return html.Div(f"{rs.get('error', 'Erro')}: {str(e)}")
 
 
 def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
@@ -293,9 +301,10 @@ def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
                 "DataFrame vazio ou None fornecido para "
                 "display_correlation_matrix"
             )
-            return html.Div(get_translations(lang)["no_data"])
+            return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         t = get_translations(lang)
+        dv = t.get("data_variables", {})
         # Support both old 'ETo' and new 'eto_evaonline' column names
         eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
         expected_columns = [
@@ -314,8 +323,8 @@ def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
 
         corr_df = df[numeric_cols].corr().round(2)
         corr_df = corr_df.rename(
-            columns=lambda x: t.get(x.lower(), x),
-            index=lambda x: t.get(x.lower(), x),
+            columns=lambda x: dv.get(x.lower(), x),
+            index=lambda x: dv.get(x.lower(), x),
         )
 
         # Criar tabela manualmente
@@ -345,7 +354,8 @@ def display_correlation_matrix(df: pd.DataFrame, lang: str = "pt") -> html.Div:
 
     except Exception as e:
         logger.error(f"Erro ao gerar matriz de correlação: {str(e)}")
-        return html.Div(f"{t['error']}: {str(e)}")
+        rs = get_translations(lang).get("results", {})
+        return html.Div(f"{rs.get('error', 'Erro')}: {str(e)}")
 
 
 def display_eto_summary(df: pd.DataFrame, lang: str = "pt") -> html.Div:
@@ -364,9 +374,11 @@ def display_eto_summary(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             logger.warning(
                 "DataFrame vazio ou None fornecido para display_eto_summary"
             )
-            return html.Div(get_translations(lang)["no_data"])
+            return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         t = get_translations(lang)
+        dv = t.get("data_variables", {})
+        st = t.get("statistics", {})
 
         # Support both old 'ETo' and new 'eto_evaonline' column names
         eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
@@ -376,7 +388,7 @@ def display_eto_summary(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         ]
         if missing_columns:
             logger.error(f"Colunas ausentes no DataFrame: {missing_columns}")
-            return html.Div(t["no_data"])
+            return html.Div(t.get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         df_display = df[["date", "PRECTOTCORR", eto_col]].copy()
         df_display["date"] = pd.to_datetime(df_display["date"]).dt.strftime(
@@ -384,7 +396,7 @@ def display_eto_summary(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         )
 
         # Calcular déficit hídrico
-        deficit_col = t["water_deficit"]
+        deficit_col = st.get("water_deficit", "Déficit Hídrico (mm)")
         df_display[deficit_col] = (
             df_display["PRECTOTCORR"] - df_display[eto_col]
         )
@@ -396,11 +408,11 @@ def display_eto_summary(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             )
 
         # Renomear colunas para exibição
-        eto_display_name = "ETo EVAonline (mm/dia)"
+        eto_display_name = dv.get("eto_evaonline", "ETo EVAonline (mm/dia)")
         df_renamed = df_display.rename(
             columns={
-                "date": t["date"],
-                "PRECTOTCORR": t["precipitation"],
+                "date": dv.get("date", "Data"),
+                "PRECTOTCORR": dv.get("precipitation", "Precipitação Total (mm)"),
                 eto_col: eto_display_name,
             }
         )
@@ -475,8 +487,8 @@ def display_eto_summary(df: pd.DataFrame, lang: str = "pt") -> html.Div:
 
     except Exception as e:
         logger.error(f"Erro ao gerar resumo de ETo: {str(e)}")
-        t = get_translations(lang)
-        return html.Div(f"{t['error']}: {str(e)}")
+        rs = get_translations(lang).get("results", {})
+        return html.Div(f"{rs.get('error', 'Erro')}: {str(e)}")
 
 
 def create_deficit_chart_section(
@@ -497,6 +509,8 @@ def create_deficit_chart_section(
             return html.Div("Nenhum dado disponível")
 
         t = get_translations(lang)
+        dv = t.get("data_variables", {})
+        st = t.get("statistics", {})
 
         # Support both old 'ETo' and new 'eto_evaonline' column names
         eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
@@ -507,7 +521,7 @@ def create_deficit_chart_section(
         )
 
         # Calcular déficit hídrico
-        deficit_col = t["water_deficit"]
+        deficit_col = st.get("water_deficit", "Déficit Hídrico (mm)")
         df_display[deficit_col] = (
             df_display["PRECTOTCORR"] - df_display[eto_col]
         ).round(2)
@@ -645,7 +659,7 @@ def create_deficit_chart_section(
                 ),
                 # Nota explicativa
                 html.P(
-                    t["deficit_note"],
+                    st.get("deficit_note", ""),
                     className="text-muted small fst-italic mt-2",
                 ),
             ]
@@ -672,9 +686,10 @@ def display_trend_analysis(df: pd.DataFrame, lang: str = "pt") -> html.Div:
             logger.warning(
                 "DataFrame vazio ou None fornecido para display_trend_analysis"
             )
-            return html.Div(get_translations(lang)["no_data"])
+            return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         t = get_translations(lang)
+        st = t.get("statistics", {})
         if "date" not in df.columns or "ETo" not in df.columns:
             logger.error("Colunas 'date' ou 'ETo' ausentes no DataFrame")
             raise ValueError("Colunas 'date' ou 'ETo' ausentes no DataFrame")
@@ -686,16 +701,17 @@ def display_trend_analysis(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         logger.info("Análise de tendência gerada com sucesso")
         return html.Div(
             [
-                html.H5(t["trend_analysis"]),
+                html.H5(st.get("trend_analysis", "Análise de Tendência")),
                 html.P(
-                    f"{t['eto_trend']}: {slope.round(4)} mm/dia {t['per_day']}"
+                    f"{st.get('eto_trend', 'Tendência da ETo')}: {slope.round(4)} mm/dia {st.get('per_day', 'por dia')}"
                 ),
             ]
         )
 
     except Exception as e:
         logger.error(f"Erro ao gerar análise de tendência: {str(e)}")
-        return html.Div(f"{t['error']}: {str(e)}")
+        rs = get_translations(lang).get("results", {})
+        return html.Div(f"{rs.get('error', 'Erro')}: {str(e)}")
 
 
 def display_seasonality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
@@ -715,9 +731,10 @@ def display_seasonality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
                 "DataFrame vazio ou None fornecido para "
                 "display_seasonality_test"
             )
-            return html.Div(get_translations(lang)["no_data"])
+            return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         t = get_translations(lang)
+        st = t.get("statistics", {})
         if "ETo" not in df.columns:
             logger.error("Coluna 'ETo' ausente no DataFrame")
             raise ValueError("Coluna 'ETo' ausente no DataFrame")
@@ -730,14 +747,15 @@ def display_seasonality_test(df: pd.DataFrame, lang: str = "pt") -> html.Div:
         )
         return html.Div(
             [
-                html.H5(t["seasonality_test"]),
-                html.P(f"{t['adf_test']}: p-valor = {p_value:.4f}"),
+                html.H5(st.get("seasonality_test", "Teste de Estacionalidade")),
+                html.P(f"{st.get('adf_test', 'Teste ADF')}: p-valor = {p_value:.4f}"),
             ]
         )
 
     except Exception as e:
         logger.error(f"Erro ao gerar teste de estacionalidade: {str(e)}")
-        return html.Div(f"{t['error']}: {str(e)}")
+        rs = get_translations(lang).get("results", {})
+        return html.Div(f"{rs.get('error', 'Erro')}: {str(e)}")
 
 
 def display_cumulative_distribution(
@@ -759,9 +777,11 @@ def display_cumulative_distribution(
                 "DataFrame vazio ou None fornecido para "
                 "display_cumulative_distribution"
             )
-            return html.Div(get_translations(lang)["no_data"])
+            return html.Div(get_translations(lang).get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         t = get_translations(lang)
+        dv = t.get("data_variables", {})
+        st = t.get("statistics", {})
 
         # Support both old 'ETo' and new 'eto_evaonline' column names
         eto_col = "eto_evaonline" if "eto_evaonline" in df.columns else "ETo"
@@ -771,23 +791,23 @@ def display_cumulative_distribution(
         ]
         if missing_columns:
             logger.error(f"Colunas ausentes no DataFrame: {missing_columns}")
-            return html.Div(t["no_data"])
+            return html.Div(t.get("results", {}).get("no_data", "Sem dados disponíveis"))
 
         df_display = df[["date", "PRECTOTCORR", eto_col]].copy()
         df_display["date"] = pd.to_datetime(df_display["date"]).dt.strftime(
             "%d/%m/%Y"
         )
-        df_display[t["cumulative_eto"]] = df_display[eto_col].cumsum().round(2)
-        df_display[t["cumulative_precipitation"]] = (
+        df_display[st.get("cumulative_eto", "ETo Acumulada (mm)")] = df_display[eto_col].cumsum().round(2)
+        df_display[st.get("cumulative_precipitation", "Precipitação Acumulada (mm)")] = (
             df_display["PRECTOTCORR"].cumsum().round(2)
         )
 
         # Renomear colunas para exibição
         df_renamed = df_display.rename(
             columns={
-                "date": t["date"],
-                "PRECTOTCORR": t["precipitation"],
-                eto_col: t["eto"],
+                "date": dv.get("date", "Data"),
+                "PRECTOTCORR": dv.get("precipitation", "Precipitação Total (mm)"),
+                eto_col: dv.get("eto", "ETo (mm/dia)"),
             }
         )
 
@@ -814,8 +834,9 @@ def display_cumulative_distribution(
             className="table table-sm",
         )
         logger.info("Tabela de distribuição acumulada gerada com sucesso")
-        return html.Div([html.H5(t["cumulative_distribution"]), table])
+        return html.Div([html.H5(st.get("cumulative_distribution", "Distribuição Acumulada")), table])
 
     except Exception as e:
         logger.error(f"Erro ao gerar distribuição acumulada: {str(e)}")
-        return html.Div(f"{t['error']}: {str(e)}")
+        rs = get_translations(lang).get("results", {})
+        return html.Div(f"{rs.get('error', 'Erro')}: {str(e)}")

@@ -129,7 +129,24 @@
         "total_eto": "Total ETo",
         "avg_daily_eto": "Average Daily ETo",
         "max_daily_eto": "Maximum Daily ETo",
-        "min_daily_eto": "Minimum Daily ETo"
+        "min_daily_eto": "Minimum Daily ETo",
+        "std_dev": "Std Dev",
+        "percentile_25": "25th Percentile",
+        "percentile_75": "75th Percentile",
+        "coef_variation": "CV (%)",
+        "skewness": "Skewness",
+        "kurtosis": "Kurtosis",
+        "normality_note": "Note: Shapiro-Wilk test. P-value < 0.05 indicates non-normal distribution.",
+        "water_deficit": "Water Deficit (mm)",
+        "deficit_note": "Negative values indicate water deficit (ETo > Precipitation). Positive values indicate surplus.",
+        "trend_analysis": "Trend Analysis",
+        "eto_trend": "ETo Trend",
+        "per_day": "per day",
+        "seasonality_test": "Seasonality Test",
+        "adf_test": "ADF Test (Augmented Dickey-Fuller)",
+        "cumulative_eto": "Cumulative ETo (mm)",
+        "cumulative_precipitation": "Cumulative Precipitation (mm)",
+        "cumulative_distribution": "Cumulative Distribution"
     },
     "charts": {
         "eto_timeseries": "ETo Time Series",
@@ -139,7 +156,14 @@
         "scatter_title": "Correlation: {var} vs ETo",
         "eto_label": "ETo (mm/day)",
         "date_label": "Date",
-        "precipitation_label": "Precipitation (mm)"
+        "precipitation_label": "Precipitation (mm)",
+        "eto_vs_temp": "ETo vs Temperature",
+        "eto_vs_rad": "ETo vs Solar Radiation",
+        "temp_rad_prec": "Temperature, Radiation & Precipitation",
+        "temperature": "Temperature (°C)",
+        "legend": "Legend",
+        "trend_line": "Trend Line",
+        "correlation": "Correlation"
     },
     "footer": {
         "developers": "Developers",
