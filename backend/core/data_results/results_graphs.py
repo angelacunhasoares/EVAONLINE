@@ -224,12 +224,12 @@ def plot_eto_vs_radiation(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
 
 def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
     """
-    Gera um gráfico combinado de barras (ETo, precipitação) e linhas
-    (temp. máx., radiação).
+    Gera um gráfico combinado de barras (ETo, precipitação) e linha
+    (temp. máx.).
 
     Parâmetros:
     - df: DataFrame com os dados (espera colunas 'date', 'T2M_MAX',
-          'ALLSKY_SFC_SW_DWN', 'PRECTOTCORR', 'ETo').
+          'PRECTOTCORR', 'ETo').
     - lang: Idioma para traduções ('pt' ou 'en').
 
     Retorna:
@@ -251,7 +251,6 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         expected_columns = [
             "date",
             "T2M_MAX",
-            "ALLSKY_SFC_SW_DWN",
             "PRECTOTCORR",
             eto_col,
         ]
@@ -286,17 +285,6 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
             )
         )
         fig.add_trace(
-            go.Scatter(
-                x=df["date"],
-                y=df["ALLSKY_SFC_SW_DWN"],
-                mode="lines+markers",
-                name=dv.get("radiation", "Radiação Solar (MJ/m²/dia)"),
-                line={"color": "#27AE60", "width": 2.5},
-                marker={"size": 5},
-                yaxis="y3",
-            )
-        )
-        fig.add_trace(
             go.Bar(
                 x=df["date"],
                 y=df["PRECTOTCORR"],
@@ -310,9 +298,6 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
 
         temp_max = df["T2M_MAX"].max()
         temp_max_range = temp_max * 1.2 if temp_max > 0 else 10
-
-        rad_max = df["ALLSKY_SFC_SW_DWN"].max()
-        rad_range = rad_max * 1.2 if rad_max > 0 else 10
 
         eto_max = df[eto_col].max()
         precip_max = df["PRECTOTCORR"].max()
@@ -336,20 +321,10 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)",
             },
             yaxis2={
-                "title": {"text": dv.get("temp_max", "Temperatura Máxima (°C)"), "font": {"size": 16}},
+                "title": {"text": dv.get("temp_max", "Temperatura Máxima (°C)"), "font": {"size": _AXIS_TITLE_SIZE}},
                 "overlaying": "y",
                 "side": "right",
                 "range": [0, temp_max_range],
-                "tickfont": {"size": _TICK_SIZE},
-                "showgrid": False,
-            },
-            yaxis3={
-                "title": {"text": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"), "font": {"size": 16}},
-                "overlaying": "y",
-                "side": "right",
-                "range": [0, rad_range],
-                "anchor": "free",
-                "position": 0.82,
                 "tickfont": {"size": _TICK_SIZE},
                 "showgrid": False,
             },
@@ -362,7 +337,7 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 "font": {"size": _LEGEND_SIZE},
             },
             barmode="group",
-            margin={"b": 120, "t": 40, "l": 80, "r": 160},
+            margin={"b": 120, "t": 40, "l": 80, "r": 80},
         )
         logger.info("Gráfico combinado gerado com sucesso")
         return fig

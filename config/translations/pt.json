@@ -213,7 +213,7 @@
         "precipitation_label": "Precipitação (mm)",
         "eto_vs_temp": "ETo vs Temperatura",
         "eto_vs_rad": "ETo vs Radiação Solar",
-        "temp_rad_prec": "Temperatura, Radiação e Precipitação",
+        "temp_rad_prec": "Temperatura e Precipitação",
         "temperature": "Temperatura (°C)",
         "legend": "Legenda",
         "trend_line": "Linha de Tendência",
