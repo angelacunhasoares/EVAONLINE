@@ -166,7 +166,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                                 df, lang
                                             ),
                                             config={"displayModeBar": False},
-                                            style={"height": "400px"},
+                                            style={"height": "550px"},
                                         ),
                                     ],
                                     md=12,
@@ -184,7 +184,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                                 df, lang
                                             ),
                                             config={"displayModeBar": False},
-                                            style={"height": "400px"},
+                                            style={"height": "550px"},
                                         ),
                                     ],
                                     md=12,
@@ -206,7 +206,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                                 df, lang
                                             ),
                                             config={"displayModeBar": False},
-                                            style={"height": "400px"},
+                                            style={"height": "550px"},
                                         ),
                                     ],
                                     md=12,
@@ -234,7 +234,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                         dcc.Graph(
                                             figure=plot_heatmap(df, lang),
                                             config={"displayModeBar": False},
-                                            style={"height": "450px"},
+                                            style={"height": "600px"},
                                         ),
                                     ],
                                     md=12,

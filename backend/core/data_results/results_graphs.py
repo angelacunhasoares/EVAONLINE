@@ -5,6 +5,50 @@ from loguru import logger
 
 from shared_utils.get_translations import get_translations
 
+# ── Shared academic chart style constants ──
+_FONT_FAMILY = "Segoe UI, Roboto, Arial, sans-serif"
+_TITLE_SIZE = 18
+_AXIS_TITLE_SIZE = 14
+_TICK_SIZE = 12
+_LEGEND_SIZE = 13
+_ANNOTATION_SIZE = 12
+_BAR_TEXT_SIZE = 12
+_CHART_HEIGHT = 550
+_HEATMAP_HEIGHT = 550
+_BRAND_BLUE = "#005B99"
+_TEMPLATE = "plotly_white"
+
+
+def _base_layout(**overrides):
+    """Return a base layout dict for consistent academic styling."""
+    layout = dict(
+        font=dict(family=_FONT_FAMILY, size=_TICK_SIZE),
+        title_font=dict(size=_TITLE_SIZE, family=_FONT_FAMILY),
+        template=_TEMPLATE,
+        height=_CHART_HEIGHT,
+        hoverlabel=dict(font_size=13, font_family=_FONT_FAMILY),
+        xaxis=dict(
+            title_font=dict(size=_AXIS_TITLE_SIZE),
+            tickfont=dict(size=_TICK_SIZE),
+            showgrid=True,
+            gridcolor="rgba(0,0,0,0.06)",
+            gridwidth=1,
+        ),
+        yaxis=dict(
+            title_font=dict(size=_AXIS_TITLE_SIZE),
+            tickfont=dict(size=_TICK_SIZE),
+            showgrid=True,
+            gridcolor="rgba(0,0,0,0.08)",
+            gridwidth=1,
+        ),
+        legend=dict(
+            font=dict(size=_LEGEND_SIZE),
+            title_font=dict(size=_LEGEND_SIZE),
+        ),
+    )
+    layout.update(overrides)
+    return layout
+
 
 def plot_eto_vs_temperature(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
     """
@@ -48,49 +92,50 @@ def plot_eto_vs_temperature(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 x=df["date"],
                 y=df[eto_col],
                 name=dv.get("eto", "ETo (mm/dia)"),
-                marker_color="#005B99",  # Cor alinhada com o tema
+                marker_color=_BRAND_BLUE,
                 text=df[eto_col].round(2),
                 textposition="outside",
-                textfont={"size": 12},
+                textfont={"size": _BAR_TEXT_SIZE},
             )
         )
         fig.add_trace(
             go.Scatter(
                 x=df["date"],
                 y=df["T2M_MAX"],
-                mode="lines",
+                mode="lines+markers",
                 name=dv.get("temp_max", "Temperatura Máxima (°C)"),
-                line={"color": "red"},
-                textfont={"size": 12},
+                line={"color": "#C0392B", "width": 2.5},
+                marker={"size": 5},
             )
         )
         fig.add_trace(
             go.Scatter(
                 x=df["date"],
                 y=df["T2M_MIN"],
-                mode="lines",
+                mode="lines+markers",
                 name=dv.get("temp_min", "Temperatura Mínima (°C)"),
-                line={"color": "green"},
-                textfont={"size": 12},
+                line={"color": "#27AE60", "width": 2.5},
+                marker={"size": 5},
             )
         )
         fig.update_layout(
+            **_base_layout(),
             title={"text": ch.get("eto_vs_temp", "ETo vs Temperatura"), "x": 0.5, "xanchor": "center"},
-            xaxis_tickfont_size=12,
-            yaxis={"title": {"text": ch.get("temperature", "Temperatura (°C)"), "font": {"size": 12}}},
-            xaxis={"tickangle": 45, "title": dv.get("date", "Data")},
-            legend_title=ch.get("legend", "Legenda"),
+            yaxis={"title": {"text": ch.get("temperature", "Temperatura (°C)"), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)", "tickfont": {"size": _TICK_SIZE}},
+            xaxis={"tickangle": -45, "title": {"text": ch.get("date_label", "Date"), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
+            legend_title={"text": ch.get("legend", "Legenda"), "font": {"size": _LEGEND_SIZE}},
             barmode="group",
             legend={
-                "x": 1.0,
-                "y": -0.3,
-                "xanchor": "right",
+                "x": 0.5,
+                "y": -0.25,
+                "xanchor": "center",
                 "yanchor": "top",
                 "orientation": "h",
+                "font": {"size": _LEGEND_SIZE},
             },
-            template="plotly_white",
-            margin={"b": 150},
-            height=500,  # Fixed height to prevent infinite growth
+            margin={"b": 120, "t": 60, "l": 70, "r": 30},
         )
         logger.info("Gráfico ET₀ vs. Temperatura gerado com sucesso")
         return fig
@@ -140,44 +185,48 @@ def plot_eto_vs_radiation(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
             go.Scatter(
                 x=df["date"],
                 y=df[eto_col],
-                mode="lines",
+                mode="lines+markers",
                 name=dv.get("eto", "ETo (mm/dia)"),
                 yaxis="y1",
-                line={"color": "#005B99"},
-                textfont={"size": 12},
+                line={"color": _BRAND_BLUE, "width": 2.5},
+                marker={"size": 5},
             )
         )
         fig.add_trace(
             go.Scatter(
                 x=df["date"],
                 y=df["ALLSKY_SFC_SW_DWN"],
-                mode="lines",
+                mode="lines+markers",
                 name=dv.get("radiation", "Radiação Solar (MJ/m²/dia)"),
                 yaxis="y2",
-                line={"color": "orange"},
-                textfont={"size": 12},
+                line={"color": "#E67E22", "width": 2.5},
+                marker={"size": 5},
             )
         )
         fig.update_layout(
+            **_base_layout(),
             title={"text": ch.get("eto_vs_rad", "ETo vs Radiação Solar"), "x": 0.5, "xanchor": "center"},
-            xaxis_tickfont_size=12,
-            yaxis={"title": {"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": 12}}},
+            yaxis={"title": {"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)", "tickfont": {"size": _TICK_SIZE}},
             yaxis2={
-                "title": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"),
+                "title": {"text": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
                 "overlaying": "y",
                 "side": "right",
+                "tickfont": {"size": _TICK_SIZE},
+                "showgrid": False,
             },
-            legend_title=ch.get("legend", "Legenda"),
+            xaxis={"title": {"text": ch.get("date_label", "Date"), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
+            legend_title={"text": ch.get("legend", "Legenda"), "font": {"size": _LEGEND_SIZE}},
             legend={
-                "x": 1.0,
-                "y": -0.3,
-                "xanchor": "right",
+                "x": 0.5,
+                "y": -0.2,
+                "xanchor": "center",
                 "yanchor": "top",
                 "orientation": "h",
+                "font": {"size": _LEGEND_SIZE},
             },
-            template="plotly_white",
-            margin={"b": 150},
-            height=500,  # Fixed height to prevent infinite growth
+            margin={"b": 110, "t": 60, "l": 70, "r": 80},
         )
         logger.info("Gráfico ET₀ vs. Radiação gerado com sucesso")
         return fig
@@ -233,19 +282,20 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 x=df["date"],
                 y=df[eto_col],
                 name=dv.get("eto", "ETo (mm/dia)"),
-                marker_color="#005B99",
+                marker_color=_BRAND_BLUE,
                 text=df[eto_col].round(2),
                 textposition="outside",
-                textfont={"size": 12},
+                textfont={"size": _BAR_TEXT_SIZE},
             )
         )
         fig.add_trace(
             go.Scatter(
                 x=df["date"],
                 y=df["T2M_MAX"],
-                mode="lines",
+                mode="lines+markers",
                 name=dv.get("temp_max", "Temperatura Máxima (°C)"),
-                line={"color": "red"},
+                line={"color": "#C0392B", "width": 2.5},
+                marker={"size": 5},
                 yaxis="y2",
             )
         )
@@ -253,9 +303,10 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
             go.Scatter(
                 x=df["date"],
                 y=df["ALLSKY_SFC_SW_DWN"],
-                mode="lines",
+                mode="lines+markers",
                 name=dv.get("radiation", "Radiação Solar (MJ/m²/dia)"),
-                line={"color": "green"},
+                line={"color": "#27AE60", "width": 2.5},
+                marker={"size": 5},
                 yaxis="y3",
             )
         )
@@ -264,10 +315,10 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 x=df["date"],
                 y=df["PRECTOTCORR"],
                 name=dv.get("precipitation", "Precipitação Total (mm)"),
-                marker_color="purple",
+                marker_color="#8E44AD",
                 text=df["PRECTOTCORR"].round(2),
                 textposition="outside",
-                textfont={"size": 12},
+                textfont={"size": _BAR_TEXT_SIZE},
             )
         )
 
@@ -286,38 +337,47 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         )
 
         fig.update_layout(
+            **_base_layout(),
             title={"text": ch.get("temp_rad_prec", "Temperatura, Radiação e Precipitação"), "x": 0.5, "xanchor": "center"},
-            xaxis={"title": dv.get("date", "Data"), "tickangle": -45},
+            xaxis={"title": {"text": ch.get("date_label", "Date"), "font": {"size": _AXIS_TITLE_SIZE}},
+                   "tickangle": -45, "tickfont": {"size": _TICK_SIZE},
+                   "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
             yaxis={
-                "title": f"{dv.get('eto', 'ETo (mm/dia)')}/{dv.get('precipitation', 'Precipitação Total (mm)')} (mm/dia)",
+                "title": {"text": f"{dv.get('eto', 'ETo (mm/dia)')}/{dv.get('precipitation', 'Precipitação Total (mm)')}",
+                         "font": {"size": _AXIS_TITLE_SIZE}},
                 "side": "left",
                 "range": [0, bar_max],
+                "tickfont": {"size": _TICK_SIZE},
+                "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)",
             },
             yaxis2={
-                "title": dv.get("temp_max", "Temperatura Máxima (°C)"),
+                "title": {"text": dv.get("temp_max", "Temperatura Máxima (°C)"), "font": {"size": _AXIS_TITLE_SIZE}},
                 "overlaying": "y",
                 "side": "right",
                 "range": [0, temp_max_range],
+                "tickfont": {"size": _TICK_SIZE},
+                "showgrid": False,
             },
             yaxis3={
-                "title": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"),
+                "title": {"text": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
                 "overlaying": "y",
                 "side": "right",
                 "range": [0, rad_range],
                 "anchor": "free",
-                "position": 0.85,
+                "position": 0.88,
+                "tickfont": {"size": _TICK_SIZE},
+                "showgrid": False,
             },
             legend={
-                "x": 1.0,
-                "y": -0.3,
-                "xanchor": "right",
+                "x": 0.5,
+                "y": -0.25,
+                "xanchor": "center",
                 "yanchor": "top",
                 "orientation": "h",
+                "font": {"size": _LEGEND_SIZE},
             },
             barmode="group",
-            template="plotly_white",
-            margin={"b": 150},
-            height=500,  # Fixed height to prevent infinite growth
+            margin={"b": 120, "t": 60, "l": 70, "r": 100},
         )
         logger.info("Gráfico combinado gerado com sucesso")
         return fig
@@ -376,13 +436,14 @@ def plot_heatmap(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
             zmax=1,
             text=corr_matrix.values,
             texttemplate="%{text}",
-            textfont={"size": 10},
+            textfont={"size": 13},
         )
         fig.update_layout(
+            **_base_layout(height=_HEATMAP_HEIGHT),
             title={"text": st.get("heatmap", "Mapa de Calor de Correlação"), "x": 0.5, "xanchor": "center"},
-            template="plotly_white",
-            margin={"b": 100},
-            height=500,  # Fixed height to prevent infinite growth
+            xaxis={"tickfont": {"size": _TICK_SIZE}, "tickangle": -30},
+            yaxis={"tickfont": {"size": _TICK_SIZE}, "autorange": "reversed"},
+            margin={"b": 120, "t": 60, "l": 160, "r": 30},
         )
         logger.info("Mapa de calor gerado com sucesso")
         return fig
@@ -433,7 +494,7 @@ def plot_correlation(
                 y=df["ETo"],
                 mode="markers",
                 name=f"{x_var_translated} vs. {dv.get('eto', 'ETo (mm/dia)')}",
-                marker={"color": "#005B99"},
+                marker={"color": _BRAND_BLUE, "size": 8, "opacity": 0.7},
             )
         )
         slope, intercept = np.polyfit(df[x_var], df["ETo"], 1)
@@ -445,13 +506,14 @@ def plot_correlation(
                 y=line,
                 mode="lines",
                 name=ch.get("trend_line", "Linha de Tendência"),
-                line={"color": "red", "dash": "dash"},
+                line={"color": "#C0392B", "dash": "dash", "width": 2},
             )
         )
 
         fig.update_layout(
-            xaxis_title=x_var_translated,
-            yaxis_title=dv.get("eto", "ETo (mm/dia)"),
+            **_base_layout(),
+            xaxis_title={"text": x_var_translated, "font": {"size": _AXIS_TITLE_SIZE}},
+            yaxis_title={"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
             title={
                 "text": (
                     f"{ch.get('correlation', 'Correlação')}: {x_var_translated} vs. {dv.get('eto', 'ETo (mm/dia)')}"
@@ -460,16 +522,14 @@ def plot_correlation(
                 "xanchor": "center",
             },
             legend={
-                "x": 1.0,
-                "y": -0.3,
-                "xanchor": "right",
+                "x": 0.5,
+                "y": -0.2,
+                "xanchor": "center",
                 "yanchor": "top",
                 "orientation": "h",
-                "font": {"size": 12},
+                "font": {"size": _LEGEND_SIZE},
             },
-            template="plotly_white",
-            margin={"b": 100},
-            height=500,  # Fixed height to prevent infinite growth
+            margin={"b": 100, "t": 60, "l": 70, "r": 30},
         )
         logger.info(
             f"Gráfico de correlação gerado com sucesso: {x_var} vs. ETo"
