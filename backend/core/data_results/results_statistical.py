@@ -562,7 +562,7 @@ def create_deficit_chart_section(
             xaxis_title=dict(text=ch.get("date_label", "Date"), font=dict(size=20)),
             xaxis=dict(tickfont=dict(size=16), showgrid=True, gridcolor="rgba(0,0,0,0.06)"),
             yaxis=dict(tickfont=dict(size=16), showgrid=True, gridcolor="rgba(0,0,0,0.08)"),
-            legend_title=dict(text=ch.get("legend", "Legend"), font=dict(size=17)),
+            legend_title=dict(text=ch.get("legend", "Legend"), font=dict(size=19)),
             template="plotly_white",
             height=500,
             margin={"b": 80, "t": 60, "l": 70, "r": 30},
@@ -573,7 +573,7 @@ def create_deficit_chart_section(
                 y=1.02,
                 xanchor="center",
                 x=0.5,
-                font=dict(size=17),
+                font=dict(size=19),
             ),
         )
 

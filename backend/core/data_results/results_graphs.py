@@ -10,7 +10,7 @@ _FONT_FAMILY = "Segoe UI, Roboto, Arial, sans-serif"
 _TITLE_SIZE = 26
 _AXIS_TITLE_SIZE = 20
 _TICK_SIZE = 16
-_LEGEND_SIZE = 17
+_LEGEND_SIZE = 19
 _ANNOTATION_SIZE = 16
 _BAR_TEXT_SIZE = 16
 _CHART_HEIGHT = 550
@@ -336,7 +336,7 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)",
             },
             yaxis2={
-                "title": {"text": dv.get("temp_max", "Temperatura Máxima (°C)"), "font": {"size": _AXIS_TITLE_SIZE}},
+                "title": {"text": dv.get("temp_max", "Temperatura Máxima (°C)"), "font": {"size": 16}},
                 "overlaying": "y",
                 "side": "right",
                 "range": [0, temp_max_range],
@@ -344,12 +344,12 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 "showgrid": False,
             },
             yaxis3={
-                "title": {"text": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
+                "title": {"text": dv.get("radiation", "Radiação Solar (MJ/m²/dia)"), "font": {"size": 16}},
                 "overlaying": "y",
                 "side": "right",
                 "range": [0, rad_range],
                 "anchor": "free",
-                "position": 0.88,
+                "position": 0.82,
                 "tickfont": {"size": _TICK_SIZE},
                 "showgrid": False,
             },
@@ -362,7 +362,7 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 "font": {"size": _LEGEND_SIZE},
             },
             barmode="group",
-            margin={"b": 120, "t": 40, "l": 70, "r": 100},
+            margin={"b": 120, "t": 40, "l": 80, "r": 160},
         )
         logger.info("Gráfico combinado gerado com sucesso")
         return fig

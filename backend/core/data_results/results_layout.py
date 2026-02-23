@@ -170,7 +170,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                         ),
                                     ],
                                     md=12,
-                                    className="mb-3",
+                                    className="mb-5",
                                 ),
                             ]
                         ),
@@ -191,7 +191,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                         ),
                                     ],
                                     md=12,
-                                    className="mb-3",
+                                    className="mb-5",
                                 ),
                             ]
                         ),
@@ -212,7 +212,7 @@ def create_results_tabs(df, sources=None, lang: str = "pt"):
                                         ),
                                     ],
                                     md=12,
-                                    className="mb-3",
+                                    className="mb-5",
                                 ),
                             ]
                         ),
