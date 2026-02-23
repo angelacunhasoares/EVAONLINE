@@ -556,24 +556,24 @@ def create_deficit_chart_section(
             },
         )
         fig_deficit.update_layout(
-            font=dict(family="Segoe UI, Roboto, Arial, sans-serif", size=12),
-            title_font=dict(size=18, family="Segoe UI, Roboto, Arial, sans-serif"),
-            yaxis_title=dict(text=st.get("water_deficit_mm_day", "Water Deficit (mm/day)"), font=dict(size=14)),
-            xaxis_title=dict(text=ch.get("date_label", "Date"), font=dict(size=14)),
-            xaxis=dict(tickfont=dict(size=12), showgrid=True, gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(tickfont=dict(size=12), showgrid=True, gridcolor="rgba(0,0,0,0.08)"),
-            legend_title=dict(text=ch.get("legend", "Legend"), font=dict(size=13)),
+            font=dict(family="Segoe UI, Roboto, Arial, sans-serif", size=14),
+            title_font=dict(size=22, family="Segoe UI, Roboto, Arial, sans-serif"),
+            yaxis_title=dict(text=st.get("water_deficit_mm_day", "Water Deficit (mm/day)"), font=dict(size=17)),
+            xaxis_title=dict(text=ch.get("date_label", "Date"), font=dict(size=17)),
+            xaxis=dict(tickfont=dict(size=14), showgrid=True, gridcolor="rgba(0,0,0,0.06)"),
+            yaxis=dict(tickfont=dict(size=14), showgrid=True, gridcolor="rgba(0,0,0,0.08)"),
+            legend_title=dict(text=ch.get("legend", "Legend"), font=dict(size=15)),
             template="plotly_white",
             height=500,
             margin={"b": 80, "t": 60, "l": 70, "r": 30},
-            hoverlabel=dict(font_size=13),
+            hoverlabel=dict(font_size=15),
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
                 y=1.02,
                 xanchor="center",
                 x=0.5,
-                font=dict(size=13),
+                font=dict(size=15),
             ),
         )
 

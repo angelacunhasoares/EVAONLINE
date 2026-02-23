@@ -7,12 +7,12 @@ from shared_utils.get_translations import get_translations
 
 # ── Shared academic chart style constants ──
 _FONT_FAMILY = "Segoe UI, Roboto, Arial, sans-serif"
-_TITLE_SIZE = 18
-_AXIS_TITLE_SIZE = 14
-_TICK_SIZE = 12
-_LEGEND_SIZE = 13
-_ANNOTATION_SIZE = 12
-_BAR_TEXT_SIZE = 12
+_TITLE_SIZE = 22
+_AXIS_TITLE_SIZE = 17
+_TICK_SIZE = 14
+_LEGEND_SIZE = 15
+_ANNOTATION_SIZE = 14
+_BAR_TEXT_SIZE = 14
 _CHART_HEIGHT = 550
 _HEATMAP_HEIGHT = 550
 _BRAND_BLUE = "#005B99"
@@ -32,7 +32,7 @@ def _base_layout(**overrides):
         title_font=dict(size=_TITLE_SIZE, family=_FONT_FAMILY),
         template=_TEMPLATE,
         height=_CHART_HEIGHT,
-        hoverlabel=dict(font_size=13, font_family=_FONT_FAMILY),
+        hoverlabel=dict(font_size=15, font_family=_FONT_FAMILY),
     )
     layout.update(overrides)
     return layout
@@ -108,7 +108,6 @@ def plot_eto_vs_temperature(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         )
         fig.update_layout(
             **_base_layout(),
-            title={"text": ch.get("eto_vs_temp", "ETo vs Temperatura"), "x": 0.5, "xanchor": "center"},
             yaxis={"title": {"text": ch.get("temperature", "Temperatura (°C)"), "font": {"size": _AXIS_TITLE_SIZE}},
                    "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)", "tickfont": {"size": _TICK_SIZE}},
             xaxis={"tickangle": -45, "title": {"text": ch.get("date_label", "Date"), "font": {"size": _AXIS_TITLE_SIZE}},
@@ -123,7 +122,7 @@ def plot_eto_vs_temperature(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 "orientation": "h",
                 "font": {"size": _LEGEND_SIZE},
             },
-            margin={"b": 120, "t": 60, "l": 70, "r": 30},
+            margin={"b": 120, "t": 40, "l": 70, "r": 30},
         )
         logger.info("Gráfico ET₀ vs. Temperatura gerado com sucesso")
         return fig
@@ -193,7 +192,6 @@ def plot_eto_vs_radiation(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         )
         fig.update_layout(
             **_base_layout(),
-            title={"text": ch.get("eto_vs_rad", "ETo vs Radiação Solar"), "x": 0.5, "xanchor": "center"},
             yaxis={"title": {"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
                    "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)", "tickfont": {"size": _TICK_SIZE}},
             yaxis2={
@@ -214,7 +212,7 @@ def plot_eto_vs_radiation(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 "orientation": "h",
                 "font": {"size": _LEGEND_SIZE},
             },
-            margin={"b": 110, "t": 60, "l": 70, "r": 80},
+            margin={"b": 110, "t": 40, "l": 70, "r": 80},
         )
         logger.info("Gráfico ET₀ vs. Radiação gerado com sucesso")
         return fig
@@ -326,7 +324,6 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
 
         fig.update_layout(
             **_base_layout(),
-            title={"text": ch.get("temp_rad_prec", "Temperatura, Radiação e Precipitação"), "x": 0.5, "xanchor": "center"},
             xaxis={"title": {"text": ch.get("date_label", "Date"), "font": {"size": _AXIS_TITLE_SIZE}},
                    "tickangle": -45, "tickfont": {"size": _TICK_SIZE},
                    "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
@@ -365,7 +362,7 @@ def plot_temp_rad_prec(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
                 "font": {"size": _LEGEND_SIZE},
             },
             barmode="group",
-            margin={"b": 120, "t": 60, "l": 70, "r": 100},
+            margin={"b": 120, "t": 40, "l": 70, "r": 100},
         )
         logger.info("Gráfico combinado gerado com sucesso")
         return fig
@@ -424,14 +421,13 @@ def plot_heatmap(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
             zmax=1,
             text=corr_matrix.values,
             texttemplate="%{text}",
-            textfont={"size": 13},
+            textfont={"size": _ANNOTATION_SIZE},
         )
         fig.update_layout(
             **_base_layout(height=_HEATMAP_HEIGHT),
-            title={"text": st.get("heatmap", "Mapa de Calor de Correlação"), "x": 0.5, "xanchor": "center"},
             xaxis={"tickfont": {"size": _TICK_SIZE}, "tickangle": -30},
             yaxis={"tickfont": {"size": _TICK_SIZE}, "autorange": "reversed"},
-            margin={"b": 120, "t": 60, "l": 160, "r": 30},
+            margin={"b": 120, "t": 40, "l": 160, "r": 30},
         )
         logger.info("Mapa de calor gerado com sucesso")
         return fig
@@ -504,13 +500,6 @@ def plot_correlation(
                    "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.06)"},
             yaxis={"title": {"text": dv.get("eto", "ETo (mm/dia)"), "font": {"size": _AXIS_TITLE_SIZE}},
                    "tickfont": {"size": _TICK_SIZE}, "showgrid": True, "gridcolor": "rgba(0,0,0,0.08)"},
-            title={
-                "text": (
-                    f"{ch.get('correlation', 'Correlação')}: {x_var_translated} vs. {dv.get('eto', 'ETo (mm/dia)')}"
-                ),
-                "x": 0.5,
-                "xanchor": "center",
-            },
             legend={
                 "x": 0.5,
                 "y": -0.2,
@@ -519,7 +508,7 @@ def plot_correlation(
                 "orientation": "h",
                 "font": {"size": _LEGEND_SIZE},
             },
-            margin={"b": 100, "t": 60, "l": 70, "r": 30},
+            margin={"b": 100, "t": 40, "l": 70, "r": 30},
         )
         logger.info(
             f"Gráfico de correlação gerado com sucesso: {x_var} vs. ETo"
