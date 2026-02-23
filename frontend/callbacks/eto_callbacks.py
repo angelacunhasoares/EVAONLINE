@@ -1,18 +1,18 @@
-﻿"""
+"""
 Callbacks para página ETo.
 
-Integração com 6 fontes climáticas do backend:
-- Open-Meteo Archive: Histórico (1990 → hoje-2d)
-- Open-Meteo Forecast: Previsão/Recent (hoje-29d → hoje+5d)
-- NASA POWER: Histórico global (1990 → hoje-2d)
-- MET Norway: Previsão global (hoje → hoje+5d)
-- NWS Forecast: Previsão USA (hoje → hoje+5d)
-- NWS Stations: Observações USA (hoje-2d → hoje)
+Integração com 6 fontes climaticas do backend:
+- Open-Meteo Archive: Historico (1990 -> hoje-2d)
+- Open-Meteo Forecast: Previsao/Recent (hoje-29d -> hoje+5d)
+- NASA POWER: Historico global (1990 -> hoje-2d)
+- MET Norway: Previsao global (hoje -> hoje+5d)
+- NWS Forecast: Previsao USA (hoje -> hoje+5d)
+- NWS Stations: Observacoes USA (hoje-2d -> hoje)
 
-Validações (api_limits.py):
-- Histórico: 1990-01-01 (padrão EVA), min 1 dia e máx 90 dias
-- Real-time: min 7 dias e máx 30 dias
-- Forecast: até +5 dias
+Validacoes (api_limits.py):
+- Historico: 1990-01-01 (padrao EVA), min 1 dia e max 90 dias
+- Real-time: min 7 dias e max 30 dias
+- Forecast: ate +5 dias
 """
 
 import logging
