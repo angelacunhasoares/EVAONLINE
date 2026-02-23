@@ -3323,10 +3323,12 @@ for _cid, _gid, _fname in _CHARTS:
                 if (!n_clicks) {{
                     return window.dash_clientside.no_update;
                 }}
-                var graphDiv = document.getElementById("{_gid}");
-                if (!graphDiv) {{
+                var wrapper = document.getElementById("{_gid}");
+                if (!wrapper) {{
                     return window.dash_clientside.no_update;
                 }}
+                // dcc.Graph wraps the Plotly div; find the actual plot element
+                var graphDiv = wrapper.querySelector(".js-plotly-plot") || wrapper;
                 Plotly.downloadImage(graphDiv, {{
                     format: "{_plotly_fmt}",
                     width: 1920,
