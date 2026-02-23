@@ -140,12 +140,8 @@ html {
     padding: 0 !important;
 }
 
-/* Smooth transitions for interactive elements */
-* {
-    transition-property: background-color, border-color, box-shadow, transform;
-    transition-duration: 0.2s;
-    transition-timing-function: ease;
-}
+/* Transitions are applied per-component (buttons, cards, links)
+   instead of universally on * for better rendering performance. */
 
 
 /* ==============================================
