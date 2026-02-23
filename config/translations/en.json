@@ -201,7 +201,8 @@
         "days_unit": "days",
         "mm_day_unit": "mm/day",
         "mm_unit": "mm",
-        "forecast_sample_insufficient": "Test not performed: insufficient sample size for forecast mode (6 days). Statistics such as CV (%), Skewness, Kurtosis and Shapiro-Wilk require larger samples for reliable results."
+        "forecast_sample_insufficient": "Test not performed: insufficient sample size for forecast mode (6 days). Statistics such as CV (%), Skewness, Kurtosis and Shapiro-Wilk require larger samples for reliable results.",
+        "forecast_heatmap_insufficient": "Correlation heatmap not shown: insufficient sample for reliable correlations in forecast mode (6 days)."
     },
     "charts": {
         "eto_timeseries": "ETo Time Series",

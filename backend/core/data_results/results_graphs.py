@@ -18,6 +18,28 @@ _HEATMAP_HEIGHT = 550
 _BRAND_BLUE = "#005B99"
 _TEMPLATE = "plotly_white"
 
+# ── Heatmap custom colorscale (pomegranate → cream → teal) ──
+_HEATMAP_COLORSCALE = [
+    [0.0, "#9B2335"],
+    [0.25, "#E8927C"],
+    [0.5, "#FDF5E6"],
+    [0.75, "#5DADE2"],
+    [1.0, "#14505C"],
+]
+
+# Map API column names → translation keys in data_variables
+_COLUMN_TO_VAR_KEY = {
+    "T2M_MAX": "temp_max",
+    "T2M_MIN": "temp_min",
+    "T2M": "temp_mean",
+    "RH2M": "humidity",
+    "WS2M": "wind_speed",
+    "ALLSKY_SFC_SW_DWN": "radiation",
+    "PRECTOTCORR": "precipitation",
+    "ETo EVAonline (mm/day)": "eto_evaonline",
+    "ETo Open-Meteo (mm/day)": "eto_openmeteo",
+}
+
 
 def _base_layout(**overrides):
     """Return a base layout dict for consistent academic styling.
@@ -369,7 +391,7 @@ def plot_heatmap(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
         t = get_translations(lang)
         dv = t.get("data_variables", {})
         st = t.get("statistics", {})
-        columns_to_exclude = ["date", "PRECTOTCORR"]
+        columns_to_exclude = ["date", "PRECTOTCORR", "ETo Open-Meteo (mm/day)"]
         corr_columns = [
             col for col in df.columns if col not in columns_to_exclude
         ]
@@ -378,9 +400,10 @@ def plot_heatmap(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
             raise ValueError("Nenhuma coluna válida para calcular correlação")
 
         corr_matrix = df[corr_columns].corr().round(2)
-        # Renomear colunas para traduções
+        # Renomear colunas usando mapeamento API → chave de tradução
         translated_columns = {
-            col: dv.get(col.lower(), col) for col in corr_matrix.columns
+            col: dv.get(_COLUMN_TO_VAR_KEY.get(col, ""), col)
+            for col in corr_matrix.columns
         }
         corr_matrix = corr_matrix.rename(
             columns=translated_columns, index=translated_columns
@@ -391,7 +414,7 @@ def plot_heatmap(df: pd.DataFrame, lang: str = "pt") -> go.Figure:
             z=corr_matrix.values,
             x=corr_matrix.columns,
             y=corr_matrix.index,
-            colorscale="RdBu",
+            colorscale=_HEATMAP_COLORSCALE,
             zmin=-1,
             zmax=1,
             text=corr_matrix.values,
@@ -445,7 +468,7 @@ def plot_correlation(
                 f"Colunas inválidas para correlação: x_var={x_var}, ETo"
             )
 
-        x_var_translated = dv.get(x_var.lower(), x_var)
+        x_var_translated = dv.get(_COLUMN_TO_VAR_KEY.get(x_var, ""), x_var)
         fig = go.Figure()
         fig.add_trace(
             go.Scatter(

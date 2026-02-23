@@ -220,32 +220,44 @@ def create_results_tabs(df, sources=None, lang: str = "pt", mode: str = ""):
                     ],
                     className="mb-5",
                 ),
-                # Correlation heatmap
-                html.Div(
-                    [
-                        html.H5(
-                            [
-                                html.I(className="bi bi-grid-3x3 me-2"),
-                                t(lang, "results", "correlation_heatmap", default="Heatmap - Correlations"),
-                            ],
-                            className="results-table-title",
-                        ),
-                        dbc.Row(
-                            [
-                                dbc.Col(
-                                    [
-                                        dcc.Graph(
-                                            figure=plot_heatmap(df, lang),
-                                            config={"displayModeBar": False},
-                                            style={"height": "600px"},
-                                        ),
-                                    ],
-                                    md=12,
-                                ),
-                            ]
-                        ),
-                    ],
-                    className="mb-4",
+                # Correlation heatmap (hidden in forecast – too few samples)
+                (
+                    dbc.Alert(
+                        [
+                            html.I(className="bi bi-info-circle me-2"),
+                            t(lang, "statistics", "forecast_heatmap_insufficient",
+                              default="Heatmap not shown: insufficient sample for reliable correlations in forecast mode (6 days)."),
+                        ],
+                        color="info",
+                        className="mb-4",
+                    )
+                    if mode == "DASHBOARD_FORECAST"
+                    else html.Div(
+                        [
+                            html.H5(
+                                [
+                                    html.I(className="bi bi-grid-3x3 me-2"),
+                                    t(lang, "results", "correlation_heatmap", default="Heatmap - Correlations"),
+                                ],
+                                className="results-table-title",
+                            ),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        [
+                                            dcc.Graph(
+                                                figure=plot_heatmap(df, lang),
+                                                config={"displayModeBar": False},
+                                                style={"height": "600px"},
+                                            ),
+                                        ],
+                                        md=12,
+                                    ),
+                                ]
+                            ),
+                        ],
+                        className="mb-4",
+                    )
                 ),
             ]
         ),

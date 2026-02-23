@@ -201,7 +201,8 @@
         "days_unit": "dias",
         "mm_day_unit": "mm/dia",
         "mm_unit": "mm",
-        "forecast_sample_insufficient": "Teste não realizado: amostra insuficiente para o modo previsão (6 dias). Estatísticas como CV (%), Assimetria, Curtose e Shapiro-Wilk requerem amostras maiores para resultados confiáveis."
+        "forecast_sample_insufficient": "Teste não realizado: amostra insuficiente para o modo previsão (6 dias). Estatísticas como CV (%), Assimetria, Curtose e Shapiro-Wilk requerem amostras maiores para resultados confiáveis.",
+        "forecast_heatmap_insufficient": "Mapa de calor não exibido: amostra insuficiente para correlações confiáveis no modo previsão (6 dias)."
     },
     "charts": {
         "eto_timeseries": "Série Temporal da ETo",
