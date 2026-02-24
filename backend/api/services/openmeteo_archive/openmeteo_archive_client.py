@@ -45,6 +45,10 @@ from backend.api.services.geographic_utils import GeographicUtils
 from backend.api.services.weather_utils import (
     WeatherConversionUtils,
 )
+from backend.infrastructure.cache.api_usage_tracker import (
+    check_api_quota,
+    track_api_call,
+)
 
 
 class OpenMeteoArchiveConfig:
@@ -192,14 +196,24 @@ class OpenMeteoArchiveClient:
             )
             return await self._fetch_in_chunks(lat, lng, start_date, end_date)
 
-        # 4. Fetch data from Archive API (normal flow for < 10 years)
+        # 4. Check API quota before making request
+        if not check_api_quota("openmeteo_archive"):
+            raise RuntimeError(
+                "Open-Meteo Archive daily API quota exceeded (10000/day). "
+                "Try again tomorrow."
+            )
+
+        # 5. Fetch data from Archive API (normal flow for < 10 years)
         try:
             responses = self.client.weather_api(
                 self.config.BASE_URL, params=params
             )
             response = responses[0]  # Single location
 
-            # 4. Extract location metadata
+            # Track successful API call
+            track_api_call("openmeteo_archive")
+
+            # 5a. Extract location metadata
             location = {
                 "latitude": response.Latitude(),
                 "longitude": response.Longitude(),
@@ -359,10 +373,19 @@ class OpenMeteoArchiveClient:
             }
 
             try:
+                # Check quota before each chunk request
+                if not check_api_quota("openmeteo_archive"):
+                    raise RuntimeError(
+                        "Open-Meteo Archive API quota exceeded during chunked fetch."
+                    )
+
                 responses = self.client.weather_api(
                     self.config.BASE_URL, params=params
                 )
                 response = responses[0]
+
+                # Track successful API call
+                track_api_call("openmeteo_archive")
 
                 # Extract data
                 daily = response.Daily()

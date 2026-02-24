@@ -21,6 +21,7 @@ from backend.infrastructure.celery.celery_config import celery_app
     bind=True,
     name="backend.infrastructure.celery.tasks.calculate_eto_task",
     max_retries=2,
+    rate_limit="10/m",  # Max 10 calculations/minute globally
     retry_backoff=True,
     retry_backoff_max=60,  # Max 1 minuto entre retries
     retry_jitter=True,

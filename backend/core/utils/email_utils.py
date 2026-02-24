@@ -263,6 +263,15 @@ def _send_via_resend(
     Funciona em qualquer servidor, incluindo DigitalOcean.
     """
     import resend
+    from backend.infrastructure.cache.api_usage_tracker import (
+        check_api_quota,
+        track_api_call,
+    )
+
+    # Check Resend daily quota (100/day free tier)
+    if not check_api_quota("resend"):
+        logger.error("🚫 Resend daily email quota exceeded (100/day)")
+        return False
 
     resend.api_key = RESEND_API_KEY
     sender = from_email or RESEND_FROM
@@ -293,6 +302,7 @@ def _send_via_resend(
             ]
 
         email_response = resend.Emails.send(params)
+        track_api_call("resend")
         logger.info(
             f"📧 Email enviado via Resend para {to}: {subject} "
             f"(id: {email_response.get('id', 'N/A')})"

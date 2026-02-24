@@ -65,6 +65,10 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from backend.api.services.geographic_utils import GeographicUtils
+from backend.infrastructure.cache.api_usage_tracker import (
+    check_api_quota,
+    track_api_call,
+)
 
 
 class NASAPowerConfig(BaseModel):
@@ -197,6 +201,13 @@ class NASAPowerClient:
             "format": "JSON",
         }
 
+        # Check API quota before making request
+        if not check_api_quota("nasa_power"):
+            raise RuntimeError(
+                "NASA POWER daily API quota exceeded (1000/day). "
+                "Try again tomorrow."
+            )
+
         # Request with retry
         for attempt in range(self.config.retry_attempts):
             try:
@@ -209,6 +220,9 @@ class NASAPowerClient:
                     self.config.base_url, params=params
                 )
                 response.raise_for_status()
+
+                # Track successful API call
+                track_api_call("nasa_power")
 
                 data = response.json()
                 parsed_data = self._parse_response(data)

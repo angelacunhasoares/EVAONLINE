@@ -27,7 +27,9 @@ from datetime import datetime
 from loguru import logger
 from redis import Redis
 
-from backend.core.config import settings
+from config.settings.app_config import get_settings
+
+settings = get_settings()
 
 # API Limits (requests per day)
 API_LIMITS = {
@@ -37,6 +39,8 @@ API_LIMITS = {
     "openmeteo_forecast": 10000,  # Open-Meteo: 10k/dia free tier
     "openmeteo_archive": 10000,  # Open-Meteo: 10k/dia free tier
     "met_norway": None,  # MET Norway: fair use (sem limite rígido)
+    "opentopo": 1000,  # OpenTopoData: 1000 req/dia
+    "resend": 100,  # Resend: 100 emails/dia (free tier)
 }
 
 # Warning thresholds (% of limit)

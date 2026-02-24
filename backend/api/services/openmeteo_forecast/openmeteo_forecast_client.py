@@ -46,6 +46,10 @@ from loguru import logger
 from retry_requests import retry
 
 from backend.api.services.geographic_utils import GeographicUtils
+from backend.infrastructure.cache.api_usage_tracker import (
+    check_api_quota,
+    track_api_call,
+)
 
 
 class OpenMeteoForecastConfig:
@@ -237,14 +241,24 @@ class OpenMeteoForecastClient:
         )
         logger.info(f"API params: {params}")
 
-        # 4. Fetch data from Forecast API
+        # 4. Check API quota before making request
+        if not check_api_quota("openmeteo_forecast"):
+            raise RuntimeError(
+                "Open-Meteo Forecast daily API quota exceeded (10000/day). "
+                "Try again tomorrow."
+            )
+
+        # 5. Fetch data from Forecast API
         try:
             responses = self.client.weather_api(
                 self.config.BASE_URL, params=params
             )
             response = responses[0]  # Single location
 
-            # 5. Extract location metadata
+            # Track successful API call
+            track_api_call("openmeteo_forecast")
+
+            # 5a. Extract location metadata
             location = {
                 "latitude": response.Latitude(),
                 "longitude": response.Longitude(),

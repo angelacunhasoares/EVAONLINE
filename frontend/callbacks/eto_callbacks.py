@@ -1631,6 +1631,29 @@ def calculate_eto(
             )
             return None, mode_indicator, error_alert, None, True, None, None
 
+        elif response.status_code == 429:
+            # Rate limit exceeded - show friendly message
+            logger.warning(f"🚫 Rate limit: {response.text[:200]}")
+            try:
+                detail = response.json().get("detail", "")
+            except Exception:
+                detail = response.text[:200]
+
+            rate_msg = {
+                "en": "Daily calculation limit reached. Please try again tomorrow.",
+                "pt": "Limite diário de cálculos atingido. Tente novamente amanhã.",
+            }.get(lang, detail or "Rate limit exceeded.")
+
+            error_alert = dbc.Alert(
+                [
+                    html.I(className="bi bi-hourglass-split me-2"),
+                    html.Strong("Limit: " if lang == "en" else "Limite: "),
+                    rate_msg,
+                ],
+                color="warning",
+            )
+            return None, mode_indicator, error_alert, None, True, None, None
+
         else:
             logger.error(f"❌ Backend error {response.status_code}")
             error_alert = dbc.Alert(

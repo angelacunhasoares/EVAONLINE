@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# EVAonline - DigitalOcean Droplet Deployment Script
+# EVAonline - DigitalOcean Droplet Deploym  ent Script
 # =============================================================================
 # Run this script on a fresh Ubuntu 22.04+ Droplet with Docker pre-installed
 # Usage: bash deploy_digitalocean.sh

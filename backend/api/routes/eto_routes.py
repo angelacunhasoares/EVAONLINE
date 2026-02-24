@@ -4,7 +4,7 @@ ETo Calculation Routes
 
 import time
 from typing import Any, Dict, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from loguru import logger
@@ -17,6 +17,12 @@ from backend.api.services.climate_source_availability import (
     OperationMode,
 )
 from backend.api.services.climate_source_manager import ClimateSourceManager
+
+# Rate limiter per-IP
+from backend.api.middleware.rate_limiter import (
+    check_calculation_limit,
+    track_calculation,
+)
 
 # Importar task Celery para cálculos assíncronos
 from backend.infrastructure.celery.tasks.eto_calculation import (
@@ -83,6 +89,7 @@ class LocationInfoRequest(BaseModel):
 @eto_router.post("/calculate")
 async def calculate_eto(
     request: EToCalculationRequest,
+    fastapi_request: Request,
     db: Session = Depends(get_db),  # type: ignore[arg-type] # noqa: B008
 ) -> Dict[str, Any]:
     """
@@ -114,8 +121,20 @@ async def calculate_eto(
     Monitore progresso: WebSocket /ws/task_status/{task_id}
     """
     try:
-        # 0. Normalizar period_type para OperationMode
+        # 0. Rate limiting per-IP
+        client_ip = (
+            fastapi_request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+            or fastapi_request.headers.get("X-Real-IP", "")
+            or fastapi_request.client.host  # type: ignore[union-attr]
+            or "unknown"
+        )
         period_type_str = (request.period_type or "dashboard_current").lower()
+
+        allowed, rate_msg = check_calculation_limit(client_ip, period_type_str)
+        if not allowed:
+            raise HTTPException(status_code=429, detail=rate_msg)
+
+        # 0b. Normalizar period_type para OperationMode
 
         # Usar mapeamento centralizado
         operation_mode = OPERATION_MODE_MAPPING.get(
@@ -203,6 +222,9 @@ async def calculate_eto(
             f"Task ETo iniciada: {task_id} para "
             f"({request.lat}, {request.lng}) - Fontes: {selected_sources}"
         )
+
+        # 5b. Track calculation for rate limiting
+        track_calculation(client_ip, period_type_str)
 
         # 6. Retornar task_id para monitoramento via WebSocket
         return {

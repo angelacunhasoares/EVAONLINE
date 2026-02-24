@@ -54,6 +54,10 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from backend.api.services.geographic_utils import GeographicUtils
+from backend.infrastructure.cache.api_usage_tracker import (
+    check_api_quota,
+    track_api_call,
+)
 
 
 class OpenTopoConfig(BaseModel):
@@ -161,11 +165,19 @@ class OpenTopoClient:
 
         # Fetch from API
         try:
+            # Check quota before request
+            if not check_api_quota("opentopo"):
+                logger.warning("OpenTopoData daily quota exceeded")
+                return None
+
             url = f"/{dataset}"
             params = {"locations": f"{lat},{lon}"}
 
             response = await self.client.get(url, params=params)
             response.raise_for_status()
+
+            # Track successful API call
+            track_api_call("opentopo")
 
             data = response.json()
 

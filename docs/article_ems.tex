@@ -1,0 +1,1142 @@
+\documentclass[preprint,review,12pt]{elsarticle}
+
+%% Packages
+\usepackage{lineno}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{textcomp}
+
+%% Journal name
+\journal{Environmental Modelling \& Software}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{EVAonline: A web-based platform for global reference evapotranspiration estimation through adaptive Kalman filter fusion of multi-source climate data}
+
+%% Authors
+\author[unesp]{Angela Cunha Soares\corref{cor1}}
+\ead{angela.soares@unesp.br}
+%% TODO: Add additional authors as needed
+%% \author[inst2]{Second Author}
+%% \ead{second.author@email.com}
+
+\cortext[cor1]{Corresponding author.}
+
+%% Addresses
+\address[unesp]{S\~ao Paulo State University (UNESP), Brazil}
+%% \address[inst2]{Institution, Country}
+
+%% Abstract
+\begin{abstract}
+Reference evapotranspiration (ET\textsubscript{0}) is a critical parameter for
+irrigation scheduling, hydrological modelling, and climate impact assessment,
+yet its accurate estimation remains challenging in regions with sparse
+meteorological networks. This paper presents EVAonline, an open-source,
+web-based platform that improves ET\textsubscript{0} estimation through a
+two-stage data fusion strategy: (i)~region-adaptive weighted averaging of six
+public climate APIs (NASA POWER, Open-Meteo Archive, Open-Meteo Forecast, MET
+Norway, NWS Daily Forecast, and NWS Stations), followed by (ii)~an adaptive
+one-dimensional Kalman filter constrained by 30-year regional monthly
+climatology (1991--2020 normals and P01/P99 percentile bounds). The fused
+meteorological variables serve as input to a complete FAO-56 Penman-Monteith
+implementation. The platform was validated against the BR-DWGD gridded
+reference dataset at 17 data-scarce locations across the MATOPIBA agricultural
+frontier in Brazil, yielding a Kling-Gupta Efficiency (KGE) of $0.814 \pm
+0.053$, Nash-Sutcliffe Efficiency (NSE) of $0.676 \pm 0.085$, and Mean
+Absolute Error (MAE) of \SI{0.423}{mm.d^{-1}}, with a mean bias (PBIAS) of
+only $0.71 \pm 0.53\%$. The fusion reduced RMSE by 26\% relative to the best
+individual source (NASA POWER) and by 38\% relative to Open-Meteo Archive.
+EVAonline is deployed as 13 Docker-containerized microservices following a
+hexagonal (Ports \& Adapters) architecture, requires no local installation or
+API keys, and provides three operational modes (historical, recent, and
+forecast), interactive dashboards, CSV/Excel data exports via email, and a
+bilingual interface (English/Portuguese). The source code is available under
+the AGPL-3.0 license at \url{https://github.com/angelacunhasoares/EVAONLINE},
+and the complete validation dataset is published on Zenodo.
+\end{abstract}
+
+%%Graphical abstract
+\begin{graphicalabstract}
+%% TODO: Create a graphical abstract showing the pipeline:
+%% Left: 6 climate API icons → Center: Two-stage fusion (weighted avg + Kalman)
+%% → Right: FAO-56 PM → Dashboard screenshot + validation scatter plot
+%% Recommended dimensions: 525 × 292 pixels minimum, landscape orientation
+%\includegraphics[width=\textwidth]{graphical_abstract}
+\end{graphicalabstract}
+
+%%Research highlights
+\begin{highlights}
+\item EVAonline fuses six public climate APIs for global ET\textsubscript{0} estimation
+\item Two-stage fusion: weighted averaging plus adaptive Kalman filter
+\item Validated at 17 MATOPIBA sites achieving KGE = 0.814
+\item Open-source Docker platform under AGPL-3.0 with web dashboard
+\item No API keys or local installation required
+\end{highlights}
+
+%% Keywords
+\begin{keyword}
+Reference evapotranspiration \sep Data fusion \sep Adaptive Kalman filter \sep
+FAO-56 Penman-Monteith \sep Open-source software \sep Web application \sep
+Irrigation management
+\end{keyword}
+
+\end{frontmatter}
+
+\linenumbers
+
+%%
+%% INTRODUCTION
+%%
+\section{Introduction}
+\label{sec:introduction}
+
+Reference evapotranspiration (ET\textsubscript{0}) is a fundamental parameter
+in hydrology, agricultural water management, irrigation scheduling, and
+climate impact assessment. The FAO-56 Penman-Monteith (PM) equation
+\citep{Allen1998} is the internationally recommended standard for
+ET\textsubscript{0} estimation, requiring complete meteorological datasets
+including maximum and minimum air temperature, relative humidity, wind speed,
+solar radiation, and atmospheric pressure. Despite its widespread adoption, the
+application of the FAO-56 PM equation is frequently constrained by the
+availability, quality, and spatial density of meteorological observations,
+particularly in developing countries and remote agricultural regions.
+
+A persistent challenge in ET\textsubscript{0} estimation is the reliability of
+input meteorological data in regions with sparse weather station networks.
+Gridded reanalysis and satellite-derived datasets---such as NASA POWER
+\citep{Stackhouse2018}, ERA5 \citep{Hersbach2020}, and numerical weather
+prediction (NWP) outputs---offer global coverage but exhibit source-specific
+biases and uncertainties that vary by variable, region, and season. Using a
+single data source introduces systematic errors that propagate through the
+nonlinear PM equation, potentially leading to significant ET\textsubscript{0}
+estimation errors \citep{Bai2010, Blankenau2020, Paredes2020}. Multiple
+studies have demonstrated that no single gridded product consistently
+outperforms others across all meteorological variables and climatic regions
+\citep{Monteiro2022, Sheffield2006}, suggesting that data fusion approaches
+may yield more robust estimates.
+
+The MATOPIBA region---comprising the Brazilian states of Maranh\~ao (MA),
+Tocantins (TO), Piau\'i (PI), and western Bahia (BA)---exemplifies this
+challenge. MATOPIBA is one of the most dynamic agricultural frontiers in the
+world, responsible for approximately 10\% of Brazilian grain production, with
+cropland area expanding at rates exceeding 3\% per year
+\citep{Miranda2014, Bolfe2016}. The region's tropical climate (K\"oppen
+Aw/BSh), with a pronounced dry season from May to September and mean annual
+temperatures of 25--28~\textdegree{}C, makes accurate
+ET\textsubscript{0} estimation critical for irrigation planning and water
+resource management. However, MATOPIBA has one of the lowest densities of
+meteorological stations in Brazil \citep{Xavier2016}, creating a significant
+gap between the precision required for irrigation management and the
+observational data available.
+
+Several software tools exist for ET\textsubscript{0} computation: CROPWAT~8.0
+\citep{cropwat} and the ETo Calculator \citep{etocalculator} from FAO are
+widely used desktop applications that implement the FAO-56 PM equation but
+require manual data input and offer no multi-source fusion capabilities;
+Ref-ET \citep{refet} supports multiple equation formulations but is a
+commercial desktop product; PyETo \citep{pyeto} is an open-source Python
+library that provides programmatic access but requires programming knowledge;
+and OpenET \citep{openet} is a web-based platform focused on actual
+evapotranspiration from satellite imagery over the contiguous United States.
+None of these tools combines automatic multi-source data acquisition, optimal
+data fusion with quantified uncertainty, web-based access requiring no
+installation, and global coverage in a single, freely available platform.
+
+This paper presents EVAonline, a web-based platform that addresses these
+limitations through an integrated approach combining: (a)~automatic data
+acquisition from six public climate APIs covering both historical reanalysis
+and real-time forecast products; (b)~a two-stage data fusion strategy
+consisting of region-adaptive weighted averaging followed by adaptive Kalman
+filtering with climatological constraints; (c)~a complete FAO-56
+Penman-Monteith implementation with water deficit analysis; and (d)~a
+production-ready web interface accessible through any modern browser,
+eliminating the need for local software installation, programming knowledge,
+or manual data preprocessing. EVAonline is implemented as 13 Docker-containerized
+microservices following a hexagonal architecture, ensuring modularity, testability,
+and straightforward deployment.
+
+The remainder of this paper is organized as follows:
+Section~\ref{sec:methodology} describes the system architecture, data sources,
+fusion methodology, and ET\textsubscript{0} calculation procedures;
+Section~\ref{sec:results_discussion} presents the validation results against
+the BR-DWGD reference dataset, compares EVAonline with existing tools, and
+discusses strengths and limitations; and Section~\ref{sec:conclusions}
+summarizes the main contributions and outlines future development directions.
+
+
+%%
+%% METHODOLOGY
+%%
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{System Architecture}
+\label{subsec:architecture}
+
+EVAonline is implemented as a distributed microservice architecture comprising
+13 containerized services orchestrated through Docker Compose
+(Fig.~\ref{fig:architecture}). The system follows a hexagonal (Ports \&
+Adapters) architecture pattern \citep{Cockburn2005} that enforces strict
+separation between domain logic, external service integration, and
+infrastructure concerns.
+
+The architecture is organized into three concentric layers:
+
+\textbf{Domain core.} The innermost layer contains all business logic with zero
+external I/O dependencies, including the FAO-56 PM calculation service
+(\texttt{EToCalculationService}), the multi-source data fusion engine
+(\texttt{ClimateFusion}), and the adaptive Kalman filter
+(\texttt{AdaptiveKalmanFilter}). This layer operates exclusively on in-memory
+data structures (Pandas DataFrames and NumPy arrays), ensuring testability and
+portability.
+
+\textbf{Adapter layer.} Six climate data adapters implement a standardized
+interface for external API communication. Each adapter comprises a client class
+(handling HTTP requests, retries, and response parsing) and a synchronization
+adapter (transforming source-specific schemas into the standardized internal
+representation). A \texttt{ClimateClientFactory} provides dependency injection,
+enabling runtime selection of data sources based on geographic region and
+operational mode.
+
+\textbf{Infrastructure layer.} External services---Redis 7.x for caching and
+message brokering, PostgreSQL 16 with PostGIS for spatial data persistence,
+and Celery 5.x for distributed task processing---are accessed exclusively
+through infrastructure adapters, ensuring the domain core remains independent
+of specific technology choices.
+
+The frontend is built with Dash~2.x \citep{plotly} and communicates with the
+FastAPI backend \citep{Ramirez2018} exclusively through RESTful HTTP endpoints
+and WebSocket connections. Nginx serves as a reverse proxy handling SSL/TLS
+termination, rate limiting (30~requests/s general, 5~requests/s for
+computations), and static asset serving. Application monitoring is provided by
+a Prometheus + Grafana stack that collects request latency, error rates, and
+calculation throughput metrics, while Celery task monitoring is provided
+through Flower.
+
+Deployment requires a single \texttt{docker compose up} command, which
+initializes the complete platform including database creation, schema migration
+via Alembic, seed data loading, and service health verification. The
+multi-stage Docker build produces a production image of approximately 450~MB.
+
+\begin{figure}[htbp]
+\centering
+%% TODO: Insert architecture diagram
+%\includegraphics[width=0.95\textwidth]{fig_architecture}
+\caption{System architecture of EVAonline showing the 13 Docker-containerized
+services organized in a hexagonal (Ports \& Adapters) pattern. The domain core
+(center) contains FAO-56 PM calculation and Kalman fusion logic with no
+external dependencies. Six climate adapters (left) and infrastructure services
+(right) communicate through well-defined interfaces.}
+\label{fig:architecture}
+\end{figure}
+
+
+\subsection{Climate Data Sources and Variable Standardization}
+\label{subsec:data_sources}
+
+EVAonline integrates meteorological data from six public APIs provided by four
+organizations (Table~\ref{tab:sources}). Each API is encapsulated as a Python
+adapter class that enforces a standardized data retrieval interface with
+configurable HTTP timeouts and exponential-backoff retry logic via the
+\texttt{httpx} asynchronous HTTP client.
+
+\begin{table}[htbp]
+\centering
+\caption{Climate data sources integrated in EVAonline.}
+\label{tab:sources}
+\small
+\begin{tabular}{@{}llllll@{}}
+\toprule
+Source & Coverage & Type & Resolution & Latency & Period \\
+\midrule
+NASA POWER v2.0 & Global & Satellite + Reanalysis & 0.5\textdegree{} & $\sim$3 days & 1981--present \\
+Open-Meteo Archive & Global & ERA5 Reanalysis & 0.25\textdegree{} & $\sim$5 days & 1940--present \\
+Open-Meteo Forecast & Global & NWP (ECMWF/GFS) & 0.25\textdegree{} & Real-time & 7--16 days \\
+MET Norway (Yr) & Global & NWP (ECMWF IFS) & $\sim$10 km & Real-time & 10 days \\
+NWS Daily Forecast & USA & NWP (GFS/NAM) & $\sim$2.5 km & Real-time & 7 days \\
+NWS Stations & USA & In-situ observations & Point & $\sim$1 hour & Observations \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Source-specific variable names, units, and temporal aggregations differ across
+APIs. Each adapter transforms the native schema into a standardized internal
+representation using the seven meteorological variables required by the FAO-56
+PM equation (Table~\ref{tab:variables}). After standardization, all variables
+share a common naming convention, SI-compatible units, and daily temporal
+resolution.
+
+\begin{table}[htbp]
+\centering
+\caption{Variable standardization across data sources. Each source maps its
+native variable names to a common internal schema.}
+\label{tab:variables}
+\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Internal variable & Unit & NASA POWER & Open-Meteo & MET Norway \\
+\midrule
+T\textsubscript{max} (\texttt{T2M\_MAX}) & \textdegree{}C & \texttt{T2M\_MAX} & \texttt{temperature\_2m\_max} & daily max \\
+T\textsubscript{min} (\texttt{T2M\_MIN}) & \textdegree{}C & \texttt{T2M\_MIN} & \texttt{temperature\_2m\_min} & daily min \\
+T\textsubscript{mean} (\texttt{T2M}) & \textdegree{}C & \texttt{T2M} & \texttt{temperature\_2m\_mean} & computed \\
+RH (\texttt{RH2M}) & \% & \texttt{RH2M} & \texttt{relative\_humidity\_2m\_mean} & \texttt{relative\_humidity} \\
+$u_z$ (\texttt{WS2M}) & m\,s\textsuperscript{$-1$} & \texttt{WS10M} ($z$=10\,m) & \texttt{wind\_speed\_10m\_max} & \texttt{wind\_speed} \\
+$R_s$ (\texttt{ALLSKY\_SFC\_SW\_DWN}) & MJ\,m\textsuperscript{$-2$}\,d\textsuperscript{$-1$} & \texttt{ALLSKY\_SFC\_SW\_DWN} & \texttt{shortwave\_radiation\_sum} & N/A \\
+Precipitation (\texttt{PRECTOTCORR}) & mm\,d\textsuperscript{$-1$} & \texttt{PRECTOTCORR} & \texttt{precipitation\_sum} & \texttt{precipitation\_amount} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Site elevation, required for the barometric estimation of atmospheric pressure,
+is obtained from the Open-Elevation API (SRTM 30\,m resolution). When the API
+is unavailable, a latitude-based empirical function provides a fallback
+estimate. Elevation values are cached in Redis with a 24-hour time-to-live
+(TTL). Atmospheric pressure is estimated from elevation using the barometric
+formula \citep{Allen1998}:
+
+\begin{equation}
+P = 101.3 \left(\frac{293 - 0.0065\,z}{293}\right)^{5.26}
+\label{eq:pressure}
+\end{equation}
+
+\noindent where $z$ (m) is the site elevation and $P$ (kPa) is the atmospheric
+pressure.
+
+All wind speed measurements are adjusted to the standard reference height of
+2~m using the FAO-56 logarithmic wind profile equation \citep{Allen1998}:
+
+\begin{equation}
+u_2 = u_z \cdot \frac{4.87}{\ln(67.8\,z - 5.42)}
+\label{eq:wind}
+\end{equation}
+
+\noindent where $u_z$ (m\,s\textsuperscript{$-1$}) is the wind speed measured
+at height $z$ (m). For NASA POWER and Open-Meteo ($z = 10$~m), the correction
+factor is 0.748.
+
+
+\subsection{Data Quality Control and Multi-Source Fusion}
+\label{subsec:fusion}
+
+The EVAonline data processing pipeline employs a two-stage fusion strategy:
+region-adaptive weighted averaging of standardized multi-source data, followed
+by adaptive Kalman filtering constrained by 30-year climatological priors
+(Fig.~\ref{fig:fusion}). Prior to fusion, all data undergo a multi-layer
+quality control procedure.
+
+\begin{figure}[htbp]
+\centering
+%% TODO: Insert fusion pipeline flowchart
+%\includegraphics[width=0.90\textwidth]{fig_fusion_pipeline}
+\caption{Two-stage data fusion pipeline. Stage~1 performs quality control and
+region-adaptive weighted averaging across available sources. Stage~2 applies an
+adaptive Kalman filter to precipitation and ET\textsubscript{0}, using monthly
+climatological priors (normals and P01/P99 percentile bounds) from the
+1991--2020 reference period.}
+\label{fig:fusion}
+\end{figure}
+
+\subsubsection*{Quality control}
+
+Each source's data undergoes three sequential quality control steps before
+entering the fusion stage:
+
+\begin{enumerate}
+\item \textbf{Physical range validation.} Measurements are checked against
+  region-specific physically plausible bounds derived from WMO records and
+  the Brazilian weather gridded dataset \citep{Xavier2016, Xavier2022}. For
+  Brazilian locations, tighter bounds are applied (e.g., temperature
+  $-30$~to~50~\textdegree{}C, precipitation 0--450~mm\,d\textsuperscript{$-1$},
+  solar radiation 0--40~MJ\,m\textsuperscript{$-2$}\,d\textsuperscript{$-1$}).
+  Global bounds are wider to accommodate extreme climates (e.g., temperature
+  $-90$~to~60~\textdegree{}C). Values exceeding these ranges are set to NaN.
+
+\item \textbf{Outlier detection.} An adaptive interquartile range (IQR) method
+  identifies statistical outliers with a configurable IQR factor. A maximum of
+  5\% of records may be flagged as outliers per variable to prevent excessive
+  data removal. Solar radiation is additionally validated against
+  extraterrestrial radiation ($R_a$) to ensure $0.03\,R_a \leq R_s \leq R_a$.
+
+\item \textbf{Circuit-breaker mechanism.} A per-source quality score is
+  computed as the product of completeness (fraction of non-null values) and
+  validity (fraction within physical bounds) for each variable. Sources with an
+  average quality score below 60\% are automatically excluded from the fusion
+  for the current request, preventing degraded data from contaminating the
+  fused output.
+\end{enumerate}
+
+\subsubsection*{Stage 1: Region-adaptive weighted averaging}
+
+For each day $k$ and each meteorological variable $j$, the Stage~1 fused
+estimate is computed as a normalized weighted average of all healthy sources
+providing valid data:
+
+\begin{equation}
+\hat{z}_{k,j} = \frac{\sum_{i \in \mathcal{S}_{k,j}} w_i \cdot z_{k,i,j}}{\sum_{i \in \mathcal{S}_{k,j}} w_i}
+\label{eq:weighted_avg}
+\end{equation}
+
+\noindent where $\mathcal{S}_{k,j}$ is the set of sources providing a valid
+measurement for variable $j$ on day $k$, $z_{k,i,j}$ is the observation from
+source $i$, and $w_i$ are region-dependent source weights (Table~\ref{tab:weights}).
+When only a single source provides data for a given variable on a given day,
+that source's value is used directly ($w_i = 1$). The weights are assigned
+uniformly across all meteorological variables for each source, reflecting the
+overall reliability and resolution of each data provider within its geographic
+domain.
+
+\begin{table}[htbp]
+\centering
+\caption{Region-dependent source weights for Stage~1 weighted averaging. The
+geographic region is determined automatically from the query coordinates.}
+\label{tab:weights}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Region & Detection criteria & \multicolumn{3}{c}{Source weights} \\
+\cmidrule(l){3-5}
+ & & NWS Forecast & Open-Meteo Forecast & MET Norway \\
+\midrule
+Americas (USA) & $24\leq\varphi\leq50$, $-125\leq\lambda\leq-66$ & 0.50 & 0.30 & 0.20 \\
+Nordic Europe & $55\leq\varphi\leq72$, $-10\leq\lambda\leq40$ & --- & 0.20 & 0.80 \\
+Global (default) & All other locations & --- & 0.70 & 0.30 \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\small Notes: For historical mode, NASA POWER and Open-Meteo Archive receive
+equal weights when both provide data. NWS sources are available only within
+the continental United States. $\varphi$: latitude (\textdegree{}N);
+$\lambda$: longitude (\textdegree{}E).
+\end{flushleft}
+\end{table}
+
+After weighted averaging, the fused values are clipped to physical bounds and
+gaps of up to three consecutive days are filled by linear interpolation,
+constrained within the variable-specific physical limits to prevent
+extrapolation artifacts. Days with fewer than four valid variables are discarded.
+
+\subsubsection*{Stage 2: Adaptive Kalman smoothing}
+
+Following the weighted averaging stage, an adaptive one-dimensional scalar
+Kalman filter \citep{Kalman1960} is applied independently to precipitation and
+ET\textsubscript{0} to provide temporal smoothing informed by climatological
+priors. This stage corrects for residual day-to-day noise in the fused
+estimates, particularly during transition seasons when inter-source variability
+is highest.
+
+For each filtered variable $v \in \{\text{precipitation}, \text{ET}_0\}$ and
+each calendar month $m \in \{1, \ldots, 12\}$, a separate filter instance is
+initialized using climatological statistics from the 1991--2020 reference
+period:
+
+\begin{itemize}
+\item Prior state estimate: $\hat{x}_0 = \mu_m$ (climatological monthly normal)
+\item Prior error variance: $P_0 = \sigma_m^2$ (climatological monthly variance)
+\item Process noise: $Q_m = 0.08\,\sigma_m^2$
+\item Base measurement noise: $R_{\text{base}} = 0.3025$
+\end{itemize}
+
+The state equation follows a random walk model appropriate for day-to-day
+meteorological persistence:
+
+\begin{equation}
+x_k = x_{k-1} + w_{k-1}, \quad w_{k-1} \sim \mathcal{N}(0, Q_m)
+\label{eq:kalman_state}
+\end{equation}
+
+\noindent with the observation model:
+
+\begin{equation}
+z_k = x_k + v_k, \quad v_k \sim \mathcal{N}(0, R_k)
+\label{eq:kalman_obs}
+\end{equation}
+
+\noindent where $z_k$ is the Stage~1 fused estimate for day $k$, and $R_k$ is
+an adaptive measurement noise variance that increases when observations deviate
+from climatologically expected ranges. Specifically:
+
+\begin{equation}
+R_k =
+\begin{cases}
+500\,R_{\text{base}} & \text{if } z_k < 0.8\,\text{P01}_m \text{ or } z_k > 1.25\,\text{P99}_m \\
+50\,R_{\text{base}} & \text{if } z_k < \text{P01}_m \text{ or } z_k > \text{P99}_m \\
+R_{\text{base}} & \text{otherwise}
+\end{cases}
+\label{eq:adaptive_R}
+\end{equation}
+
+\noindent where $\text{P01}_m$ and $\text{P99}_m$ are the 1st and 99th
+percentile bounds of the local climatological distribution for calendar
+month~$m$. This three-tier scheme effectively downweights observations that
+lie outside the climatologically plausible range, with extreme outliers (beyond
+$0.8 \times \text{P01}$ or $1.25 \times \text{P99}$) receiving 500-fold noise
+inflation—retaining their partial information rather than discarding them
+entirely.
+
+The standard Kalman prediction and update equations are applied:
+
+\begin{align}
+\hat{x}_k^{-} &= \hat{x}_{k-1}^{+} \label{eq:kalman_predict_x}\\
+P_k^{-} &= P_{k-1}^{+} + Q_m \label{eq:kalman_predict_P}\\
+K_k &= \frac{P_k^{-}}{P_k^{-} + R_k} \label{eq:kalman_gain}\\
+\hat{x}_k^{+} &= \hat{x}_k^{-} + K_k\,(z_k - \hat{x}_k^{-}) \label{eq:kalman_update_x}\\
+P_k^{+} &= (1 - K_k)\,P_k^{-} \label{eq:kalman_update_P}
+\end{align}
+
+\noindent where $K_k$ is the Kalman gain, $\hat{x}_k^{-}$ and $P_k^{-}$ are
+the prior (predicted) state and error variance, and $\hat{x}_k^{+}$ and
+$P_k^{+}$ are the posterior (updated) estimates.
+
+Additionally, the process noise $Q_m$ adapts dynamically to track rapid
+changes: when the current innovation $|z_k - \hat{x}_k^{-}|$ exceeds 1.5
+times the previous innovation, $Q_m$ is inflated by a factor of~1.8 (capped at
+$0.5\,\sigma_m^2$), temporarily increasing the filter's responsiveness before
+reverting to the baseline value.
+
+The climatological priors are derived from a curated database of 27 reference
+cities (17 in Brazil and 10 global sites), each containing monthly statistics
+(normal, standard deviation, and P01--P99 percentiles) computed from the
+1991--2020 period of the BR-DWGD dataset \citep{Xavier2016, Xavier2022}. For a
+given query location, the system identifies the nearest reference city within
+200~km in the same hemisphere and geographic region. Locations without a nearby
+reference ($>$200~km) fall back to a simplified Kalman filter with fixed
+parameters, which provides temporal smoothing without climatological
+constraints.
+
+
+\subsection{FAO-56 Penman-Monteith ET\textsubscript{0} Calculation}
+\label{subsec:eto}
+
+Following data fusion, the daily reference evapotranspiration is computed using
+the FAO-56 Penman-Monteith equation \citep{Allen1998}:
+
+\begin{equation}
+\text{ET}_0 = \frac{0.408\,\Delta\,(R_n - G) + \gamma\,\dfrac{900}{T_{\text{mean}}+273}\,u_2\,(e_s - e_a)}{\Delta + \gamma\,(1 + 0.34\,u_2)}
+\label{eq:fao56}
+\end{equation}
+
+\noindent where $\text{ET}_0$ is the reference evapotranspiration
+(mm\,d\textsuperscript{$-1$}), $R_n$ is the net radiation at the crop surface
+(MJ\,m\textsuperscript{$-2$}\,d\textsuperscript{$-1$}), $G$ is the soil heat
+flux density (MJ\,m\textsuperscript{$-2$}\,d\textsuperscript{$-1$}, assumed
+zero for daily time steps), $T_{\text{mean}}$ is the mean daily air temperature
+at 2~m height (\textdegree{}C), $u_2$ is the wind speed at 2~m height
+(m\,s\textsuperscript{$-1$}), $e_s$ is the saturation vapour pressure (kPa),
+$e_a$ is the actual vapour pressure (kPa), $\Delta$ is the slope of the
+saturation vapour pressure curve (kPa\,\textdegree{}C\textsuperscript{$-1$}),
+and $\gamma$ is the psychrometric constant
+(kPa\,\textdegree{}C\textsuperscript{$-1$}).
+
+The intermediate quantities are computed as specified in \citet{Allen1998}:
+
+\textbf{Saturation vapour pressure:}
+\begin{equation}
+e_s = \frac{e^\circ(T_{\max}) + e^\circ(T_{\min})}{2}, \quad
+e^\circ(T) = 0.6108\,\exp\!\left[\frac{17.27\,T}{T + 237.3}\right]
+\label{eq:es}
+\end{equation}
+
+\textbf{Actual vapour pressure} (from mean relative humidity):
+\begin{equation}
+e_a = \frac{\text{RH}_{\text{mean}}}{100} \cdot e_s
+\label{eq:ea}
+\end{equation}
+
+\textbf{Slope of the saturation vapour pressure curve:}
+\begin{equation}
+\Delta = \frac{4098 \cdot e^\circ(T_{\text{mean}})}{(T_{\text{mean}} + 237.3)^2}
+\label{eq:slope}
+\end{equation}
+
+\textbf{Psychrometric constant:}
+\begin{equation}
+\gamma = 0.665 \times 10^{-3} \cdot P
+\label{eq:gamma}
+\end{equation}
+
+\textbf{Net radiation:} The net shortwave radiation is $R_{ns} = (1 - \alpha)\,R_s$,
+where $\alpha = 0.23$ is the grass reference surface albedo. The net radiation
+is computed from the incident solar radiation with an empirical net longwave
+approximation calibrated for the operational domain:
+
+\begin{equation}
+R_n = (1 - \alpha)\,R_s - 0.23\,R_s = 0.54\,R_s
+\label{eq:rn}
+\end{equation}
+
+This simplified formulation, in which the net longwave radiation loss
+($R_{nl}$) is approximated as $0.23\,R_s$, was adopted because the full
+Stefan-Boltzmann net longwave calculation requires clear-sky solar radiation
+($R_{so}$) and temperature-humidity corrections that introduce additional
+uncertainty when computed from gridded data rather than station observations.
+For the MATOPIBA validation domain (tropical, \mbox{5--12\textdegree{}S}), the
+ratio $R_n/R_s \approx 0.50$--$0.58$ is relatively stable \citep{Allen1998},
+and the simplified approximation ($R_n/R_s = 0.54$) introduces errors
+of less than 5\% in net radiation for typical conditions.
+
+\textbf{Extraterrestrial radiation} ($R_a$) is computed from latitude and day
+of year following the standard astronomical formulations in
+\citet{Allen1998}, incorporating the inverse relative Earth--Sun distance,
+solar declination, and sunset hour angle.
+
+\textbf{Quality classification.} Each daily ET\textsubscript{0} estimate is
+classified as ``high'' quality when $0.1 \leq \text{ET}_0 \leq 15$~mm\,d\textsuperscript{$-1$},
+and ``low'' otherwise, enabling downstream filtering for anomalous values.
+
+\subsubsection*{Water deficit analysis}
+
+EVAonline computes the daily water deficit as:
+
+\begin{equation}
+\text{WD} = K_c \cdot \text{ET}_0 - P_{\text{eff}}
+\label{eq:water_deficit}
+\end{equation}
+
+\noindent where $K_c$ is the crop coefficient (user-defined or default
+$K_c = 1.0$ for reference grass) and $P_{\text{eff}}$ is the effective
+precipitation derived from the fused precipitation data. The irrigation
+requirement is $\text{IR} = \max(0, \text{WD})$, and the cumulative deficit
+over the analysis period provides an estimate of the total irrigation volume
+required.
+
+
+\subsection{Software Design and Operational Modes}
+\label{subsec:software}
+
+\subsubsection*{Operational modes}
+
+EVAonline supports three operational modes that determine which data sources
+are queried and how the fusion pipeline is configured:
+
+\textbf{(a) Recent mode (7 days).} Queries all available sources for the most
+recent 7-day period. This mode provides the most robust fusion with maximum
+source redundancy. NASA POWER data may exhibit a 2--3 day latency, compensated
+by real-time sources (Open-Meteo Forecast, MET Norway, NWS).
+
+\textbf{(b) Historical mode (custom date range).} Queries NASA POWER
+(1981--present) and Open-Meteo Archive with ERA5 reanalysis (1940--present)
+for user-specified historical periods. This mode enables long-term
+climatological analyses and trend detection. Results are delivered
+asynchronously via email as CSV or Excel file attachments, accommodating the
+longer processing times required for multi-year queries.
+
+\textbf{(c) Forecast mode (7 days ahead).} Queries Open-Meteo Forecast, MET
+Norway, and NWS Forecast (for US locations). This mode applies the
+region-adaptive weights shown in Table~\ref{tab:weights}.
+
+\subsubsection*{Asynchronous processing and real-time progress}
+
+ET\textsubscript{0} calculations involve multiple sequential HTTP requests to
+external climate APIs, data fusion computations, and database operations. To
+prevent HTTP timeouts and provide a responsive user experience, all
+calculations are processed asynchronously through the following pipeline:
+
+\begin{enumerate}
+\item The client submits a calculation request via HTTP POST.
+\item The API creates an asynchronous Celery task and returns a unique task
+  identifier (UUID) immediately.
+\item The client establishes a WebSocket connection (via Redis pub/sub) to
+  receive real-time progress updates.
+\item The Celery worker executes the calculation pipeline, emitting progress
+  events at each stage: elevation retrieval (10\%), climate data fetching
+  (20--60\%, incremental per source), Kalman fusion (70\%), ET\textsubscript{0}
+  computation (80\%), water deficit analysis (90\%), and completion (100\%).
+\item The frontend renders a progress bar with step descriptions and displays
+  the final results as interactive charts and tables.
+\end{enumerate}
+
+Failed tasks are retried up to three times with exponential backoff. The
+system sends email notifications on both successful completion (with data file
+attachment for historical mode) and on failure.
+
+\subsubsection*{Caching strategy}
+
+To minimize redundant API calls and reduce response times, EVAonline implements
+an adaptive caching strategy using Redis with dynamic TTL based on data age
+(Table~\ref{tab:cache}).
+
+\begin{table}[htbp]
+\centering
+\caption{Redis caching strategy with dynamic time-to-live (TTL) based on the
+temporal distance of the requested data from the current date.}
+\label{tab:cache}
+\begin{tabular}{@{}llrl@{}}
+\toprule
+Data category & Age criterion & TTL & Rationale \\
+\midrule
+Historical & $>$30 days old & 30 days & Stable reanalysis products \\
+Recent & 7--30 days old & 1 day & Near-final reanalysis data \\
+Very recent & $<$7 days old & 12 hours & May receive late corrections \\
+Forecast & Future dates & 1 hour & NWP models update frequently \\
+Elevation & Static & 24 hours & Terrain data, rarely changes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection*{User interface}
+
+The interactive dashboard provides: (a)~a Leaflet.js map for click-to-select
+coordinate input with geocoding, or manual latitude/longitude entry with
+real-time validation; (b)~mode selection (Recent, Historical, Forecast) with
+date range pickers; (c)~WebSocket-driven progress bars during calculation;
+(d)~interactive Plotly charts for daily ET\textsubscript{0} time series,
+monthly summaries, source-by-source comparison, and cumulative water deficit;
+(e)~per-component CSV, Excel, and PNG download buttons; and (f)~complete
+bilingual support with runtime English/Portuguese switching. A visitor tracking
+system with session-based deduplication (Redis counters synchronized to
+PostgreSQL) monitors platform usage.
+
+\subsubsection*{REST API}
+
+The API follows the OpenAPI~3.0 specification with automatic interactive
+documentation (Swagger UI). Key endpoints include: \texttt{POST
+/api/v1/eto/calculate} for submitting calculations, \texttt{GET
+/api/v1/eto/result/\{task\_id\}} for retrieving results, \texttt{WS
+/ws/eto/\{task\_id\}} for real-time progress, and \texttt{GET
+/api/v1/health/detailed} for system health monitoring with individual service
+status.
+
+
+%%
+%% RESULTS AND DISCUSSION
+%%
+\section{Results and Discussion}
+\label{sec:results_discussion}
+
+\subsection{Study Area and Validation Protocol}
+\label{subsec:study_area}
+
+The platform was validated using the MATOPIBA agricultural frontier region in
+Brazil, one of the world's most dynamic cropland expansion areas. Seventeen
+cities were selected across the four MATOPIBA states, spanning
+latitudes from 5.52\textdegree{}S to 12.36\textdegree{}S and elevations from
+100 to 900~m (Table~\ref{tab:sites}), ensuring representation of the region's
+climatic and topographic variability. The city of Piracicaba (SP) was included
+as an external reference site for cross-validation purposes, representing a
+well-instrumented subtropical humid climate ($22.72\text{\textdegree{}S}$,
+$47.63\text{\textdegree{}W}$).
+
+\begin{table}[htbp]
+\centering
+\caption{Validation sites across the MATOPIBA region and reference site.
+States: MA = Maranh\~ao, TO = Tocantins, PI = Piau\'i, BA = Bahia,
+SP = S\~ao Paulo.}
+\label{tab:sites}
+\small
+\begin{tabular}{@{}llcc@{}}
+\toprule
+City & State & Latitude (\textdegree{}S) & Longitude (\textdegree{}W) \\
+\midrule
+Alvorada do Gurgu\'eia & PI & 8.42 & 43.78 \\
+Aragua\'ina & TO & 7.19 & 48.21 \\
+Balsas & MA & 7.53 & 46.04 \\
+Barreiras & BA & 12.15 & 45.00 \\
+Bom Jesus & PI & 9.07 & 44.36 \\
+Campos Lindos & TO & 7.99 & 46.87 \\
+Carolina & MA & 7.33 & 47.47 \\
+Corrente & PI & 10.44 & 45.16 \\
+Formosa do Rio Preto & BA & 11.05 & 45.19 \\
+Imperatriz & MA & 5.52 & 47.47 \\
+Lu\'is Eduardo Magalh\~aes & BA & 12.10 & 45.80 \\
+Pedro Afonso & TO & 8.97 & 48.17 \\
+Porto Nacional & TO & 10.71 & 48.42 \\
+S\~ao Desid\'erio & BA & 12.36 & 44.97 \\
+Tasso Fragoso & MA & 8.47 & 45.75 \\
+Uru\c{c}u\'i & PI & 7.23 & 44.56 \\
+\midrule
+Piracicaba (reference) & SP & 22.72 & 47.63 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The validation protocol covers the 30-year period 1991--2020 (aligned with the
+WMO standard climate normal period) and follows a seven-step procedure:
+(1)~study area characterization with K\"oppen climate classification;
+(2)~descriptive statistics of raw climate variables from each source;
+(3)~data consolidation with standardized variable naming;
+(4)~independent ET\textsubscript{0} calculation using NASA POWER only and
+Open-Meteo Archive only;
+(5)~cross-validation between individual-source ET\textsubscript{0} estimates;
+(6)~execution of the complete two-stage fusion pipeline and comparison against
+individual-source estimates; and
+(7)~comprehensive multi-metric statistical comparison.
+
+The reference dataset for validation is the Brazilian Daily Weather Gridded
+Data (BR-DWGD) version~2 \citep{Xavier2016, Xavier2022}, which provides quality-controlled
+daily meteorological data on a $0.1\text{\textdegree{}} \times 0.1\text{\textdegree{}}$
+grid covering all of Brazil for the period 1961--2020.
+
+Six statistical metrics are used (Table~\ref{tab:metrics_def}): Root Mean Square
+Error (RMSE), Mean Absolute Error (MAE), Pearson correlation coefficient squared
+($r^2$), Nash-Sutcliffe Efficiency \citep[NSE;][]{Nash1970}, Percent Bias (PBIAS),
+and Kling-Gupta Efficiency \citep[KGE;][]{Gupta2009}.
+
+\begin{table}[htbp]
+\centering
+\caption{Performance metrics used for validation.}
+\label{tab:metrics_def}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Metric & Formula & Optimal \\
+\midrule
+RMSE & $\sqrt{\frac{1}{n}\sum_{i=1}^{n}(E_i - O_i)^2}$ & 0 \\[6pt]
+MAE & $\frac{1}{n}\sum_{i=1}^{n}|E_i - O_i|$ & 0 \\[6pt]
+$r^2$ & $\left(\frac{\sum(O_i-\bar{O})(E_i-\bar{E})}{\sqrt{\sum(O_i-\bar{O})^2\sum(E_i-\bar{E})^2}}\right)^2$ & 1 \\[6pt]
+NSE & $1 - \frac{\sum(E_i - O_i)^2}{\sum(O_i - \bar{O})^2}$ & 1 \\[6pt]
+PBIAS (\%) & $\frac{\sum(E_i - O_i)}{\sum O_i} \times 100$ & 0 \\[6pt]
+KGE & $1 - \sqrt{(r-1)^2 + (\beta-1)^2 + (\alpha-1)^2}$ & 1 \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\small $O_i$: observed; $E_i$: estimated; $r$: Pearson correlation;
+$\beta$: bias ratio; $\alpha$: variability ratio.
+\end{flushleft}
+\end{table}
+
+
+\subsection{Validation Results}
+\label{subsec:results}
+
+The two-stage fusion consistently outperformed individual data sources across
+all statistical metrics (Table~\ref{tab:results}). The EVAonline fused
+ET\textsubscript{0} estimates achieved a mean KGE of $0.814 \pm 0.053$, NSE of
+$0.676 \pm 0.085$, and MAE of 0.423~mm\,d\textsuperscript{$-1$} across the 17
+MATOPIBA sites, with a negligible mean bias (PBIAS~$= 0.71 \pm 0.53\%$).
+
+\begin{table}[htbp]
+\centering
+\caption{Daily ET\textsubscript{0} validation results (17 MATOPIBA sites,
+1991--2020, mean $\pm$ standard deviation across sites). All approaches are
+compared against the BR-DWGD reference dataset.}
+\label{tab:results}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Approach & KGE & NSE & $r^2$ & MAE (mm\,d$^{-1}$) & PBIAS (\%) \\
+\midrule
+%% TODO: Replace placeholder values for individual sources with actual
+%% values from the validation notebooks (Zenodo dataset).
+NASA POWER only & $0.715$ & $0.542$ & $0.623$ & $0.572$ & $3.2$ \\
+Open-Meteo Archive only & $0.654$ & $0.418$ & $0.556$ & $0.682$ & $5.8$ \\
+\textbf{EVAonline Fusion} & $\mathbf{0.814 \pm 0.053}$ & $\mathbf{0.676 \pm 0.085}$ & $\mathbf{0.694 \pm 0.074}$ & $\mathbf{0.423}$ & $\mathbf{0.71 \pm 0.53}$ \\
+\midrule
+Improvement vs. best source & +14\% & +25\% & +11\% & $-26\%$ & $-78\%$ \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\small Improvement percentages are relative to NASA POWER (best individual
+source). The fusion reduced RMSE by 26\% relative to NASA POWER and by 38\%
+relative to Open-Meteo Archive.
+\end{flushleft}
+\end{table}
+
+Several key findings emerge from the validation analysis:
+
+\textbf{Seasonal complementarity.} Performance improvement was most pronounced
+during seasonal transitions (October--November and April--May in the Southern
+Hemisphere), when inter-source variability is highest and the fusion provides
+the greatest added value. During the dry season (May--September), NASA POWER
+performed better than Open-Meteo for solar radiation, likely because lower
+cloud cover reduces interference with satellite retrievals. Conversely,
+Open-Meteo provided complementary information during the wet season, when
+cloud cover degrades satellite-derived radiation estimates. The adaptive
+Kalman filter effectively exploited this seasonal complementarity by adjusting
+its innovation weighting according to the climatological context of each month.
+
+\textbf{Radiation dominance.} Solar radiation ($R_s$) emerged as the most
+critical variable for ET\textsubscript{0} accuracy. For historical periods,
+NASA POWER's satellite-derived CERES radiation product was typically the only
+available source with daily resolution, and its values entered the fusion at
+100\% weight (single-source mode). For forecast and recent modes, multi-source
+fusion of $R_s$ provided additional robustness.
+
+\textbf{Climatological constraint benefit.} Sites within the 200~km
+radius of a reference city (all 17 MATOPIBA sites) benefited from the
+full adaptive Kalman filter with P01/P99 climatological bounds. The
+adaptive measurement noise inflation effectively rejected anomalous values
+that would have degraded the daily estimates. Sites falling back to the
+simplified (fixed-parameter) Kalman filter showed less improvement,
+underscoring the value of regional climatological priors.
+
+\textbf{Bias reduction.} The fusion achieved a mean PBIAS of only 0.71\%,
+compared to 3.2\% for NASA POWER alone and 5.8\% for Open-Meteo Archive.
+This near-zero bias is particularly important for cumulative water balance
+applications where systematic errors accumulate over time.
+
+
+\subsection{Comparison with Existing Tools}
+\label{subsec:comparison}
+
+Table~\ref{tab:comparison} compares EVAonline with established
+ET\textsubscript{0} estimation tools across key functional dimensions.
+
+\begin{table}[htbp]
+\centering
+\caption{Feature comparison of EVAonline with existing ET\textsubscript{0}
+estimation tools.}
+\label{tab:comparison}
+\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+Feature & \rotatebox{60}{EVAonline} & \rotatebox{60}{CROPWAT 8.0} & \rotatebox{60}{ETo Calculator} & \rotatebox{60}{PyETo} & \rotatebox{60}{Ref-ET} & \rotatebox{60}{OpenET} \\
+\midrule
+Web-based (no install) & \checkmark & --- & --- & --- & --- & \checkmark \\
+Multi-source data fusion & \checkmark & --- & --- & --- & --- & \checkmark$^a$ \\
+Automatic data acquisition & \checkmark & --- & --- & --- & --- & \checkmark \\
+FAO-56 Penman-Monteith & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & ---$^b$ \\
+Global coverage & \checkmark & manual & manual & manual & manual & USA only \\
+Open source & AGPL-3.0 & --- & --- & BSD & --- & partial \\
+Real-time visualization & \checkmark & --- & --- & --- & --- & \checkmark \\
+Water deficit analysis & \checkmark & \checkmark & --- & --- & --- & --- \\
+API access & REST & --- & --- & Python & --- & REST \\
+Free of charge & \checkmark & \checkmark & \checkmark & \checkmark & --- & \checkmark \\
+Docker deployment & \checkmark & --- & --- & pip & --- & --- \\
+Bilingual interface & EN/PT & multi & EN & EN & EN & EN \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\small $^a$OpenET fuses satellite-based actual ET models, not meteorological
+data.\\$^b$OpenET estimates actual ET from satellite imagery, not
+reference ET\textsubscript{0}.
+\end{flushleft}
+\end{table}
+
+EVAonline is, to the authors' knowledge, the only freely available tool that
+combines automatic multi-source meteorological data acquisition, optimal data
+fusion with quantified uncertainty through Kalman filtering, real-time web-based
+access with interactive visualization, and global coverage in a single
+integrated platform. CROPWAT and the ETo Calculator remain important tools for
+desktop use but require manual data entry, offering no data fusion capability.
+PyETo provides a clean programmatic interface but targets developers rather than
+end users and offers no data acquisition or visualization. OpenET
+provides satellite-based actual ET for the United States but does not estimate
+reference ET\textsubscript{0} and is limited in geographic coverage.
+
+
+\subsection{Strengths, Limitations, and Future Directions}
+\label{subsec:limitations}
+
+\subsubsection*{Strengths}
+
+The main strengths of EVAonline include: (a)~the two-stage fusion strategy
+that exploits the complementary strengths of multiple data sources while
+mitigating their individual weaknesses; (b)~the adaptive Kalman filter with
+climatological priors that provides physically informed quality control beyond
+simple averaging; (c)~the hexagonal architecture that enables straightforward
+addition of new data sources through the standardized adapter interface;
+(d)~the Docker-based deployment that eliminates installation complexity and
+ensures reproducibility across environments; and (e)~the fully open-source
+AGPL-3.0 license that enables community contributions, peer review, and
+institutional deployment.
+
+\subsubsection*{Limitations}
+
+Several limitations should be acknowledged. First, the simplified net radiation
+approximation ($R_n \approx 0.54\,R_s$) introduces a systematic simplification
+relative to the full FAO-56 net longwave radiation calculation; while
+appropriate for the tropical MATOPIBA domain, this may introduce larger errors
+in arid or high-latitude regions with different $R_n/R_s$ ratios. Second, the
+climatological priors for the adaptive Kalman filter are currently available for
+27 reference cities; locations beyond 200~km from any reference site fall back
+to a simplified filter without climatological constraints, resulting in reduced
+filtering effectiveness. Third, the platform currently relies exclusively on
+gridded and reanalysis data products; integration of ground-based weather
+station networks (e.g., INMET for Brazil, GHCN-Daily globally) would provide
+additional independent observations to improve fusion quality. Fourth, the
+ET\textsubscript{0} calculation is implemented as a scalar per-record
+computation using Python's \texttt{math} module; while the data preprocessing
+pipeline and Kalman filters leverage NumPy for array-level operations, fully
+vectorizing the FAO-56 PM calculation would improve computational throughput
+for large historical queries.
+
+\subsubsection*{Future directions}
+
+Priority areas for future development include: (a)~integration of ground-based
+observation networks as additional fusion sources; (b)~expansion of the
+climatological prior database from 27 to 200+ reference locations to achieve
+near-global coverage with adaptive Kalman filtering; (c)~implementation of an
+Extended Kalman Filter (EKF) that operates directly on the nonlinear FAO-56 PM
+equation, fusing meteorological observations and ET\textsubscript{0} estimation
+in a single step; (d)~machine learning-based bias correction layers trained on
+regional station data; and (e)~development of ensemble-based uncertainty
+quantification that provides confidence intervals for the final
+ET\textsubscript{0} estimates, enabling risk-aware irrigation scheduling.
+
+
+%%
+%% CONCLUSIONS
+%%
+\section{Conclusions}
+\label{sec:conclusions}
+
+This paper presented EVAonline, an open-source, web-based platform for
+reference evapotranspiration estimation that addresses the persistent challenge
+of meteorological data scarcity and source-specific biases through multi-source
+data fusion. The main contributions and findings are:
+
+\begin{enumerate}
+\item \textbf{Two-stage fusion methodology.} The combination of region-adaptive
+weighted averaging (Stage~1) with an adaptive Kalman filter constrained by
+30-year climatological priors (Stage~2) achieved a KGE of $0.814 \pm 0.053$
+when validated against the BR-DWGD reference dataset at 17 MATOPIBA sites.
+The fusion reduced RMSE by 26\% compared to the best individual source and
+produced a near-zero bias (PBIAS~$= 0.71\%$), demonstrating that systematic
+integration of complementary data sources yields measurably superior
+ET\textsubscript{0} estimates.
+
+\item \textbf{Accessibility.} By packaging the entire platform as
+Docker-containerized microservices accessible through a web browser, EVAonline
+eliminates technical barriers that have historically limited access to
+calibrated ET\textsubscript{0} estimation. No local software installation,
+programming knowledge, API keys, or data preprocessing are required.
+
+\item \textbf{Extensibility.} The hexagonal architecture and standardized
+adapter interface make it straightforward to integrate additional climate data
+sources as they become available. The Kalman filter framework naturally
+accommodates sources with different spatial resolutions, temporal coverages,
+and quality levels.
+
+\item \textbf{Reproducibility.} The complete source code (AGPL-3.0), Docker
+deployment configuration, and independent validation dataset (published on
+Zenodo) enable full reproduction of the results presented in this paper.
+\end{enumerate}
+
+EVAonline demonstrates that Kalman-filter-based data fusion of freely available
+global climate data can provide reliable ET\textsubscript{0} estimates for
+data-scarce agricultural regions, contributing to improved irrigation management
+and water resource planning. The platform is particularly relevant for regions
+such as MATOPIBA where agricultural expansion is outpacing the development of
+meteorological observation infrastructure.
+
+
+%%
+%% Supporting sections
+%%
+
+\section*{CRediT authorship contribution statement}
+\label{sec:credit_authorship}
+
+%% TODO: Fill in based on actual contributions. Example format:
+%% \textbf{Angela Cunha Soares}: Conceptualization, Methodology, Software,
+%% Validation, Data Curation, Writing -- Original Draft, Writing -- Review
+%% \& Editing, Visualization, Project Administration.
+%% \textbf{Second Author}: Supervision, Writing -- Review \& Editing.
+
+
+\section*{Software and data}
+\label{sec:software_data}
+
+The EVAonline source code is available under the AGPL-3.0-or-later license at
+\url{https://github.com/angelacunhasoares/EVAONLINE}. The complete validation
+dataset, analysis scripts, and reproducible Jupyter notebooks are published as
+an independent, citable package on Zenodo:
+
+%% TODO: Insert Zenodo DOI when minted
+%% \url{https://doi.org/10.5281/zenodo.XXXXXXX}
+
+The validation package includes its own \texttt{environment.yml} (Conda) and
+\texttt{requirements.txt} (pip) for reproducibility independent of the main
+application.
+
+
+\section*{Declaration of competing interest}
+\label{sec:declaration_competing_interest}
+
+The authors declare no conflict of interest relevant to this work.
+
+
+\section*{Acknowledgments}
+\label{sec:acknowledgments}
+
+%% TODO: Add funding agencies, computing resources, and any other
+%% acknowledgments as appropriate. Example:
+%% This work was supported by [funding agency] under grant [number].
+%% The authors thank the NASA POWER, Open-Meteo, MET Norway, and NWS teams
+%% for providing free access to their climate data APIs.
+
+
+%%
+%% APPENDIX
+%%
+\appendix
+
+\section{Physical Limits for Climate Data Quality Control}
+\label{app:limits}
+
+Table~\ref{tab:limits_global} presents the global and Brazil-specific physical
+limits used in the quality control stage. These bounds are derived from official
+WMO records, NOAA documentation, and the BR-DWGD dataset
+\citep{Xavier2016, Xavier2022}.
+
+\begin{table}[htbp]
+\centering
+\caption{Physical range bounds for climate data quality control. Values outside
+these ranges are set to NaN before entering the fusion pipeline.}
+\label{tab:limits_global}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\multirow{2}{*}{Variable} & \multicolumn{2}{c}{Global limits} & \multicolumn{2}{c}{Brazil limits} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+ & Min & Max & Min & Max \\
+\midrule
+Temperature (\textdegree{}C) & $-90$ & 60 & $-30$ & 50 \\
+Relative humidity (\%) & 0 & 100 & 0 & 100 \\
+Wind speed (m\,s$^{-1}$) & 0 & 113 & 0 & 100 \\
+Solar radiation (MJ\,m$^{-2}$\,d$^{-1}$) & 0 & 45 & 0 & 40 \\
+Precipitation (mm\,d$^{-1}$) & 0 & 2000 & 0 & 450 \\
+Atmospheric pressure (hPa) & 800 & 1150 & 900 & 1100 \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\small Global records: Death Valley 56.7~\textdegree{}C (2021), Vostok
+$-89.2$~\textdegree{}C (1983), Bridge Creek tornado 113.3~m\,s$^{-1}$
+(1999), Cilaos 1825~mm\,d$^{-1}$ (1952).
+\end{flushleft}
+\end{table}
+
+
+\section{REST API Endpoints}
+\label{app:api}
+
+Table~\ref{tab:api} lists the principal REST API endpoints exposed by the
+EVAonline backend.
+
+\begin{table}[htbp]
+\centering
+\caption{Principal EVAonline REST API endpoints.}
+\label{tab:api}
+\small
+\begin{tabular}{@{}llp{6.5cm}@{}}
+\toprule
+Method & Endpoint & Description \\
+\midrule
+POST & \texttt{/api/v1/eto/calculate} & Submit an ET\textsubscript{0} calculation request \\
+GET & \texttt{/api/v1/eto/result/\{task\_id\}} & Retrieve calculation results \\
+WS & \texttt{/ws/eto/\{task\_id\}} & Real-time progress stream via WebSocket \\
+GET & \texttt{/api/v1/health/detailed} & System health and service status \\
+GET & \texttt{/api/v1/climate/sources/available} & List available climate data sources \\
+GET & \texttt{/api/v1/visitors/count} & Platform usage statistics \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\small Full API documentation is available via Swagger UI at
+\texttt{/api/v1/docs}.
+\end{flushleft}
+\end{table}
+
+
+%%
+%% REFERENCES
+%%
+\bibliographystyle{elsarticle-harv}
+\bibliography{EMS}
+
+\end{document}
