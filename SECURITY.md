@@ -184,7 +184,7 @@ grep -r "password\|secret\|key" backend/ --exclude-dir=.venv
 pip install safety bandit
 
 # Escanear dependências
-safety check -r requirements/production.txt
+safety check -r requirements.txt
 
 # Escanear código
 bandit -r backend/ -ll
@@ -244,7 +244,7 @@ nano .env
 git status --ignored | grep .env
 
 # Escanear vulnerabilidades
-safety check -r requirements/production.txt
+safety check -r requirements.txt
 bandit -r backend/ -ll
 
 # Validar Docker
@@ -321,6 +321,6 @@ Antes de fazer deploy, confirme:
 
 ---
 
-**Última atualização:** 27/10/2025  
+**Última atualização:** 23/02/2026  
 **Responsável:** Equipe EVAonline  
 **Contato Segurança:** angelassilviane@gmail.com

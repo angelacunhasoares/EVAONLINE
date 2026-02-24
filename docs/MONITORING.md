@@ -502,6 +502,6 @@ docker exec evaonline-redis redis-cli -a $REDIS_PASSWORD --hotkeys
 
 ---
 
-**Última atualização**: 2025-01-15  
-**Versão**: 1.0  
+**Última atualização**: 2026-02-23  
+**Versão**: 2.0  
 **Responsável**: DevOps Team

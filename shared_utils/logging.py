@@ -1,3 +1,10 @@
+"""
+⚠️ DEPRECATED: Use config.logging_config instead.
+
+This module is kept for backward compatibility only.
+New code should use:
+    from config.logging_config import setup_logging, get_logger
+"""
 import os
 import sys
 

@@ -6,7 +6,7 @@
 # COMO USAR:
 # 1. Copie este arquivo: cp docker-compose.override.example.yml docker-compose.override.yml
 # 2. Ajuste as configurações conforme sua necessidade
-# 3. Execute: docker-compose up -d
+# 3. Execute: docker compose up -d
 #
 # O Docker Compose automaticamente combina:
 #   - docker-compose.yml (configuração base)

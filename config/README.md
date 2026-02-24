@@ -6,16 +6,20 @@
 config/
 ├── settings/
 │   ├── __init__.py          # Factory para carregar configurações por ambiente
-│   ├── config.py            # ✅ SISTEMA MODULAR (atual)
+│   ├── app_config.py        # ✅ SISTEMA MODULAR (atual)
 │   └── __pycache__/         # Cache Python
-└── logging.py               # Sistema avançado de logging
+├── translations/
+│   ├── en.json              # Traduções inglês
+│   └── pt.json              # Traduções português
+├── logging_config.py         # Sistema avançado de logging
+└── README.md                 # Este arquivo
 ```
 
 ## 🎯 Sistemas Disponíveis
 
-### ✅ Sistema Moderno (Atual - `config.py`)
+### ✅ Sistema Moderno (Atual - `app_config.py`)
 ```python
-from config.settings import get_settings
+from config.settings.app_config import get_settings
 settings = get_settings()
 ```
 
@@ -27,9 +31,9 @@ settings = get_settings()
 - ✅ Separação clara de responsabilidades
 - ✅ Adaptador de compatibilidade com API legado
 
-### ✅ Sistema de Logging Avançado (`logging.py`)
+### ✅ Sistema de Logging Avançado (`logging_config.py`)
 ```python
-from config.logging import setup_logging, LogContext
+from config.logging_config import setup_logging, LogContext
 ```
 
 **Vantagens:**
@@ -72,7 +76,7 @@ from config.logging import setup_logging, LogContext
 
 ### Configurações (Sistema Moderno)
 ```python
-from config.settings import get_settings
+from config.settings.app_config import get_settings
 settings = get_settings()
 
 # Acesso direto aos atributos
@@ -83,7 +87,7 @@ api_prefix = settings.API_V1_PREFIX
 
 ### Logging Avançado (Implementado)
 ```python
-from config.logging import setup_logging, LogContext
+from config.logging_config import setup_logging, LogContext
 
 # Configurar logging
 setup_logging(log_level="INFO", json_logs=False)
@@ -101,7 +105,7 @@ with LogContext.api_request("GET", "/api/eto"):
 
 ## 🎯 Status Atual
 
-- ✅ **Sistema Moderno**: Implementado e funcionando em produção (`config.py`)
+- ✅ **Sistema Moderno**: Implementado e funcionando em produção (`app_config.py`)
 - ✅ **Arquitetura Modular**: DatabaseSettings, RedisSettings, APISettings, etc.
 - ✅ **Validação Avançada**: Pydantic com tipagem forte
 - ✅ **Compatibilidade**: API legado mantida via adaptador
