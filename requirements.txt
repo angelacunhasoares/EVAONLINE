@@ -302,6 +302,8 @@ requests-cache==1.2.1
     # via evaonline (pyproject.toml)
 requests-oauthlib==2.0.0
     # via evaonline (pyproject.toml)
+resend>=2.0.0
+    # via evaonline (pyproject.toml)
 retry-requests==2.0.0
     # via evaonline (pyproject.toml)
 retrying==1.4.2

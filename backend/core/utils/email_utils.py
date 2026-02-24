@@ -245,43 +245,110 @@ def send_email_with_attachment(
         return False
 
 
-def send_html_email(
+# ============================================================================
+# RESEND API FUNCTIONS (HTTPS - bypasses SMTP port blocking)
+# ============================================================================
+
+def _send_via_resend(
     to: str,
     subject: str,
     html_body: str,
+    attachment_path: Optional[str] = None,
     from_email: Optional[str] = None,
 ) -> bool:
     """
-    Envia email HTML (sem anexo) via SMTP.
+    Envia email via Resend API (HTTPS).
 
-    Args:
-        to: Email destinatário
-        subject: Assunto do email
-        html_body: Corpo do email em HTML
-        from_email: Email remetente (opcional)
-
-    Returns:
-        True se enviado com sucesso, False caso contrário
+    Usa API REST do Resend, que não precisa de porta SMTP.
+    Funciona em qualquer servidor, incluindo DigitalOcean.
     """
-    if not validate_email(to):
-        logger.error(f"Email inválido: {to}")
+    import resend
+
+    resend.api_key = RESEND_API_KEY
+    sender = from_email or RESEND_FROM
+
+    try:
+        params: dict = {
+            "from": sender,
+            "to": [to],
+            "subject": subject,
+            "html": html_body,
+        }
+
+        # Adicionar anexo se fornecido
+        if attachment_path:
+            file_path = Path(attachment_path)
+            if not file_path.exists():
+                logger.error(f"Arquivo anexo não encontrado: {attachment_path}")
+                raise FileNotFoundError(f"Anexo não encontrado: {attachment_path}")
+
+            with open(attachment_path, "rb") as f:
+                file_content = f.read()
+
+            params["attachments"] = [
+                {
+                    "filename": file_path.name,
+                    "content": list(file_content),
+                }
+            ]
+
+        email_response = resend.Emails.send(params)
+        logger.info(
+            f"📧 Email enviado via Resend para {to}: {subject} "
+            f"(id: {email_response.get('id', 'N/A')})"
+        )
+        return True
+
+    except Exception as e:
+        logger.error(f"❌ Erro ao enviar email via Resend: {e}", exc_info=True)
         return False
 
+
+# ============================================================================
+# SMTP FALLBACK FUNCTIONS
+# ============================================================================
+
+def _send_via_smtp(
+    to: str,
+    subject: str,
+    html_body: str,
+    attachment_path: Optional[str] = None,
+    from_email: Optional[str] = None,
+) -> bool:
+    """Envia email via SMTP (fallback se Resend não configurado)."""
     if not SMTP_USER or not SMTP_PASSWORD:
         logger.warning("SMTP não configurado. Email simulado.")
-        logger.info(f"[EMAIL HTML SIMULADO] Para: {to}, Assunto: {subject}")
+        logger.info(f"[EMAIL SIMULADO] Para: {to}, Assunto: {subject}")
         return True
 
     sender = from_email or SMTP_FROM
 
     try:
-        msg = MIMEMultipart("alternative")
-        msg["From"] = sender
-        msg["To"] = to
-        msg["Subject"] = subject
+        if attachment_path:
+            file_path = Path(attachment_path)
+            msg = MIMEMultipart("mixed")
+            msg["From"] = sender
+            msg["To"] = to
+            msg["Subject"] = subject
 
-        # Adicionar versão HTML
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
+            html_part = MIMEMultipart("alternative")
+            html_part.attach(MIMEText(html_body, "html", "utf-8"))
+            msg.attach(html_part)
+
+            with open(attachment_path, "rb") as f:
+                attachment = MIMEApplication(f.read())
+                attachment.add_header(
+                    "Content-Disposition",
+                    "attachment",
+                    filename=file_path.name,
+                )
+                msg.attach(attachment)
+        else:
+            msg = MIMEMultipart("alternative")
+            msg["From"] = sender
+            msg["To"] = to
+            msg["Subject"] = subject
+            msg.attach(MIMEText(html_body, "html", "utf-8"))
 
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
             if SMTP_USE_TLS:
@@ -289,12 +356,36 @@ def send_html_email(
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(msg)
 
-        logger.info(f"Email HTML enviado para {to}: {subject}")
+        logger.info(f"📧 Email enviado via SMTP para {to}: {subject}")
         return True
 
     except Exception as e:
-        logger.error(f"Erro ao enviar email HTML: {e}", exc_info=True)
+        logger.error(f"❌ Erro ao enviar email via SMTP: {e}", exc_info=True)
         return False
+
+
+# ============================================================================
+# PUBLIC API (auto-selects Resend or SMTP)
+# ============================================================================
+
+def send_html_email(
+    to: str,
+    subject: str,
+    html_body: str,
+    from_email: Optional[str] = None,
+) -> bool:
+    """
+    Envia email HTML (sem anexo).
+
+    Usa Resend API se RESEND_API_KEY configurado, senão SMTP.
+    """
+    if not validate_email(to):
+        logger.error(f"Email inválido: {to}")
+        return False
+
+    if RESEND_API_KEY:
+        return _send_via_resend(to, subject, html_body, from_email=from_email)
+    return _send_via_smtp(to, subject, html_body, from_email=from_email)
 
 
 def send_html_email_with_attachment(
@@ -305,19 +396,9 @@ def send_html_email_with_attachment(
     from_email: Optional[str] = None,
 ) -> bool:
     """
-    Envia email HTML com anexo via SMTP.
+    Envia email HTML com anexo.
 
-    Usado para enviar dados processados com template bonito.
-
-    Args:
-        to: Email destinatário
-        subject: Assunto do email
-        html_body: Corpo do email em HTML
-        attachment_path: Caminho do arquivo anexo
-        from_email: Email remetente (opcional)
-
-    Returns:
-        True se enviado com sucesso, False caso contrário
+    Usa Resend API se RESEND_API_KEY configurado, senão SMTP.
     """
     if not validate_email(to):
         logger.error(f"Email inválido: {to}")
@@ -328,51 +409,6 @@ def send_html_email_with_attachment(
         logger.error(f"Arquivo anexo não encontrado: {attachment_path}")
         raise FileNotFoundError(f"Anexo não encontrado: {attachment_path}")
 
-    if not SMTP_USER or not SMTP_PASSWORD:
-        logger.warning("SMTP não configurado. Email simulado.")
-        logger.info(
-            f"[EMAIL HTML+ANEXO SIMULADO] Para: {to}, "
-            f"Assunto: {subject}, Anexo: {attachment_path}"
-        )
-        return True
-
-    sender = from_email or SMTP_FROM
-
-    try:
-        msg = MIMEMultipart("mixed")
-        msg["From"] = sender
-        msg["To"] = to
-        msg["Subject"] = subject
-
-        # Parte HTML
-        html_part = MIMEMultipart("alternative")
-        html_part.attach(MIMEText(html_body, "html", "utf-8"))
-        msg.attach(html_part)
-
-        # Anexo
-        with open(attachment_path, "rb") as f:
-            attachment = MIMEApplication(f.read())
-            attachment.add_header(
-                "Content-Disposition",
-                "attachment",
-                filename=file_path.name,
-            )
-            msg.attach(attachment)
-
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
-            if SMTP_USE_TLS:
-                server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.send_message(msg)
-
-        logger.info(
-            f"Email HTML com anexo enviado para {to}: "
-            f"{subject} (anexo: {file_path.name})"
-        )
-        return True
-
-    except Exception as e:
-        logger.error(
-            f"Erro ao enviar email HTML com anexo: {e}", exc_info=True
-        )
-        return False
+    if RESEND_API_KEY:
+        return _send_via_resend(to, subject, html_body, attachment_path, from_email=from_email)
+    return _send_via_smtp(to, subject, html_body, attachment_path, from_email=from_email)

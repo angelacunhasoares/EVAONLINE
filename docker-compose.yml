@@ -200,7 +200,10 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
-      # 📧 SMTP para envio de emails
+      # 📧 Email (Resend API - HTTPS, bypasses SMTP port blocking)
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM=${RESEND_FROM:-EVAonline <onboarding@resend.dev>}
+      # SMTP fallback
       - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USER=${SMTP_USER}
@@ -314,7 +317,10 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
-      # SMTP para envio de emails
+      # 📧 Email (Resend API - HTTPS, bypasses SMTP port blocking)
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM=${RESEND_FROM:-EVAonline <onboarding@resend.dev>}
+      # SMTP fallback
       - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USER=${SMTP_USER}

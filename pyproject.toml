@@ -101,6 +101,9 @@ dependencies = [
     "requests>=2.32.5",
     "aiohttp>=3.13.2",
 
+    # Email (Resend API - HTTPS, no SMTP port needed)
+    "resend>=2.0.0",
+
     # Monitoring (atualizado)
     "prometheus-client>=0.23.1",
     "prometheus-fastapi-instrumentator>=7.1.0",
