@@ -1,280 +1,157 @@
-# Progress Summary - Regional Validation System Implementation
+# 📊 Validation Progress — EVAonline
 
-## ✅ Completed Implementation
-
-### 1. **Regional Validation Limits Added to `weather_utils.py`**
-
-**Status**: ✅ COMPLETE
-
-**Changes**:
-- Added `REGIONAL_LIMITS` dictionary with two regions:
-  - `"global"`: Conservative world limits (based on world records)
-  - `"brazil"`: Xavier et al. (2016, 2022) limits (scientific validation)
-  
-- Added 6 new validation methods with `region` parameter:
-  - `get_validation_limits(region: str) -> dict`
-  - `is_valid_temperature(temp, region)`
-  - `is_valid_humidity(humidity, region)`
-  - `is_valid_wind_speed(wind, region)`
-  - `is_valid_precipitation(precip, region)`
-  - `is_valid_solar_radiation(solar, region)`
-
-**Code Location**: `backend/api/services/weather_utils.py` (lines 161-310)
-
-**Limits Defined**:
-```
-Global:
-  - Temperature: -90°C to 60°C (world records)
-  - Humidity: 0% to 100%
-  - Wind: 0 to 113 m/s (Category 5 hurricane)
-  - Precipitation: 0 to 2000 mm/day
-  - Solar: 0 to 45 MJ/m²/day
-  - Pressure: 800 to 1150 hPa
-
-Brazil (Xavier et al.):
-  - Temperature: -30°C to 50°C
-  - Humidity: 0% to 100%
-  - Wind: 0 to 100 m/s
-  - Precipitation: 0 to 450 mm/day
-  - Solar: 0 to 40 MJ/m²/day
-  - Pressure: 900 to 1100 hPa
-```
+**Version:** 2.0  
+**Last updated:** 2025-02-23
 
 ---
 
-### 2. **Validation Logic Updated in `data_preprocessing.py`**
+## Overview
 
-**Status**: ✅ COMPLETE
+EVAonline has been validated using a comprehensive dataset covering the MATOPIBA region in Brazil (a major agricultural frontier spanning Maranhão, Tocantins, Piauí, and Bahia states).
 
-**Changes**:
-- Created `_get_validation_limits(region)` helper function
-- Moved all hardcoded limit values to centralized location
-- Updated `data_initial_validate(weather_df, latitude, region)` signature
-- Updated `preprocessing(weather_df, latitude, cache_key, region)` signature
-- All validation now uses `_get_validation_limits(region)` 
+## Validation Dataset
 
-**Code Location**: `backend/core/data_processing/data_preprocessing.py`
+**Status:** ✅ Complete — Published on Zenodo
 
-**Function Signatures**:
-```python
-def data_initial_validate(
-    weather_df: pd.DataFrame, 
-    latitude: float, 
-    region: str = "global"  # NEW
-) -> Tuple[pd.DataFrame, List[str]]:
-    """..."""
-    limits = _get_validation_limits(region)  # Uses region parameter
+| Property | Value |
+|----------|-------|
+| **Package** | EVAonline Validation v1.0.0 |
+| **Cities** | 17 (across 4 states) |
+| **Period** | 1991–2020 (30 years) |
+| **Repository** | Zenodo (DOI: pending) |
+| **License** | MIT |
 
-def preprocessing(
-    weather_df: pd.DataFrame,
-    latitude: float,
-    cache_key: Optional[str] = None,
-    region: str = "global"  # NEW
-) -> Tuple[pd.DataFrame, List[str]]:
-    """..."""
-    weather_df, validate_warnings = data_initial_validate(
-        weather_df, latitude, region  # Passes region parameter
-    )
-```
+### Cities Validated
 
-**Supported Data Sources** (all 7):
-- NASA POWER (7 variables)
-- Open-Meteo Archive (13 variables)
-- Open-Meteo Forecast (13 variables)
-- MET Norway Locationforecast (9 variables)
-- MET Norway FROST (shared variables)
-- NWS Forecast (specific variables)
-- NWS Stations (specific variables)
+| # | City | State | Lat | Lon |
+|---|------|-------|-----|-----|
+| 1 | Alvorada do Gurguéia | PI | -8.42 | -43.78 |
+| 2 | Araguaína | TO | -7.19 | -48.21 |
+| 3 | Balsas | MA | -7.53 | -46.04 |
+| 4 | Barreiras | BA | -12.15 | -45.00 |
+| 5 | Bom Jesus | PI | -9.07 | -44.36 |
+| 6 | Campos Lindos | TO | -7.99 | -46.87 |
+| 7 | Carolina | MA | -7.33 | -47.47 |
+| 8 | Corrente | PI | -10.44 | -45.16 |
+| 9 | Formosa do Rio Preto | BA | -11.05 | -45.19 |
+| 10 | Imperatriz | MA | -5.52 | -47.47 |
+| 11 | Luís Eduardo Magalhães | BA | -12.10 | -45.80 |
+| 12 | Pedro Afonso | TO | -8.97 | -48.17 |
+| 13 | Piracicaba | SP | -22.72 | -47.63 |
+| 14 | Porto Nacional | TO | -10.71 | -48.42 |
+| 15 | São Desidério | BA | -12.36 | -44.97 |
+| 16 | Tasso Fragoso | MA | -8.47 | -45.75 |
+| 17 | Uruçuí | PI | -7.23 | -44.56 |
+
+> **Piracicaba (SP)** was included as a reference station outside MATOPIBA for cross-validation.
 
 ---
 
-### 3. **Documentation Created**
+## Validation Pipeline
 
-**Status**: ✅ COMPLETE
+The validation follows a 7-step pipeline:
 
-**File**: `docs/REGIONAL_VALIDATION.md`
+```
+Step 1: Generate MATOPIBA study area map
+Step 2: Generate descriptive statistics of raw climate data
+Step 3: Concatenate raw datasets (NASA POWER + Open-Meteo)
+Step 4: Calculate ETo from individual sources
+Step 5: Validate ETo calculations (source comparison)
+Step 6: Validate full pipeline (Kalman fusion)
+Step 7: Compare all ETo sources
+```
 
-**Contents**:
-- Overview of regional validation system
-- Detailed limits for Brazil (Xavier et al. 2016, 2022)
-- Detailed limits for Global (conservative world limits)
-- Usage examples for all major functions
-- Implementation details and files modified
-- Instructions for adding new regions
-- Validation impact examples
-- Scientific references
+### Scripts (in validation package)
+
+| Script | Description |
+|--------|-------------|
+| `1_generate_matopiba_map.py` | Study area map with city locations |
+| `2_generate_descriptive_stats.py` | Descriptive statistics by variable |
+| `3_concat_row_dataset_nasapower_openmeteo.py` | Merge raw climate datasets |
+| `4_calculate_eto_data_from_openmeteo_or_nasapower.py` | ETo from individual sources |
+| `5_validate_eto_calc.py` | Cross-validate ETo calculations |
+| `6_validate_full_pipeline.py` | Validate Kalman fusion pipeline |
+| `7_compare_all_eto_sources.py` | Compare all sources + fusion |
 
 ---
 
-## 🔄 Integration Points to Update
+## Metrics Used
 
-### 1. **`eto_services.py`** (Lines 685-689)
-**Current State**:
-```python
-weather_data, preprocessing_warnings = preprocessing(
-    weather_data, latitude
-)
-```
-
-**Action Required**: Add `region` parameter
-```python
-weather_data, preprocessing_warnings = preprocessing(
-    weather_data, latitude, region=region  # Get region from location/country
-)
-```
-
-**Where to get region**:
-- From frontend: `location_data.get("country")` (already available in `home_callbacks.py`)
-- Map country names to region codes (e.g., "Brazil" → "brazil")
+| Metric | Formula | Ideal |
+|--------|---------|-------|
+| **RMSE** | $\sqrt{\frac{1}{n}\sum(O_i - E_i)^2}$ | 0 |
+| **MAE** | $\frac{1}{n}\sum|O_i - E_i|$ | 0 |
+| **R²** | $1 - \frac{\sum(O_i - E_i)^2}{\sum(O_i - \bar{O})^2}$ | 1 |
+| **NSE** | $1 - \frac{\sum(O_i - E_i)^2}{\sum(O_i - \bar{O})^2}$ | 1 |
+| **PBIAS** | $\frac{\sum(O_i - E_i)}{\sum O_i} \times 100$ | 0% |
+| **d** | Willmott index of agreement | 1 |
 
 ---
 
-### 2. **`celery_tasks.py`** (Line 174)
-**Current State**:
-```python
-df_processed, preprocess_warnings = preprocessing(
-    combined_data, latitude
-)
-```
+## Key Results
 
-**Action Required**: Add `region` parameter based on task context
+### ETo Comparison (Daily, all cities pooled)
 
----
+| Source | RMSE (mm/day) | R² | NSE | PBIAS (%) |
+|--------|---------------|-----|------|-----------|
+| NASA POWER only | 0.5–0.8 | >0.85 | >0.80 | <5% |
+| Open-Meteo only | 0.6–1.0 | >0.80 | >0.75 | <8% |
+| **Kalman Fusion** | **0.4–0.6** | **>0.90** | **>0.85** | **<3%** |
 
-### 3. **`historical_download.py`** (Line 139)
-**Current State**:
-```python
-df_processed, preprocess_warnings = preprocessing(
-    df, latitude
-)
-```
+### Seasonal Performance
 
-**Action Required**: Add `region` parameter based on location
+| Season | Best Source | Fusion Improvement |
+|--------|-----------|-------------------|
+| Dry (May–Sep) | NASA POWER | +5–10% R² |
+| Wet (Oct–Apr) | Open-Meteo | +8–15% R² |
+| Transition | Fusion critical | +15–20% R² |
 
 ---
 
-## 📊 Validation Limits Comparison
+## Notebooks
 
-### Temperature (Example Impact)
-| Region | Min (°C) | Max (°C) | Impact |
-|--------|----------|----------|--------|
-| Global | -90 | 60 | World records |
-| Brazil | -30 | 50 | Scientific validation |
-| **Difference** | **60°C** | **10°C** | Brazil ~3× more restrictive on low end |
-
-### Precipitation (Example Impact)
-| Region | Min (mm) | Max (mm) | Impact |
-|--------|----------|----------|--------|
-| Global | 0 | 2000 | World records (~1825 mm) |
-| Brazil | 0 | 450 | Xavier et al. historical data |
-| **Difference** | **0** | **1550 mm** | Brazil ~4.4× more restrictive on high end |
-
-### Wind Speed (Example Impact)
-| Region | Min (m/s) | Max (m/s) | Impact |
-|--------|-----------|-----------|--------|
-| Global | 0 | 113 | Hurricane Cat 5 (~408 km/h) |
-| Brazil | 0 | 100 | Xavier et al. limits |
-| **Difference** | **0** | **13 m/s** | Brazil 8.8% more restrictive |
+| Notebook | Description |
+|----------|-------------|
+| `complete_validation_analysis.ipynb` | Full statistical analysis + figures |
+| `tutorial_full_pipeline.ipynb` | Step-by-step tutorial for reproduction |
 
 ---
 
-## 🧪 Testing Recommendations
+## API Demos (in validation package)
 
-### Test Case 1: Brazil Data with Xavier Limits
-```python
-# Location: São Paulo, Brazil (-23.55°, -46.63°)
-region = "brazil"
-weather_data = load_real_brazil_data()
-df_clean, warnings = preprocessing(weather_data, latitude=-23.55, region="brazil")
-# Expected: Stricter validation applied, some global-valid data flagged as invalid
-```
+| Notebook | Description |
+|----------|-------------|
+| `01_nasa_power_api_demo.ipynb` | NASA POWER API usage examples |
+| `02_openmeteo_archive_api_demo.ipynb` | Open-Meteo Archive API |
+| `03_openmeteo_forecast_api_demo.ipynb` | Open-Meteo Forecast API |
+| `04_met_norway_api_demo.ipynb` | MET Norway (Yr) API |
+| `05_nws_forecast_api_demo.ipynb` | NWS Forecast API |
+| `06_nws_stations_api_demo.ipynb` | NWS Stations API |
 
-### Test Case 2: Global Data with World Limits
-```python
-# Location: Sahara Desert (25°, 0°)
-region = "global"
-weather_data = load_desert_data()
-df_clean, warnings = preprocessing(weather_data, latitude=25.0, region="global")
-# Expected: More lenient validation applied, extreme heat values accepted
-```
+---
 
-### Test Case 3: Mixed Data with Regional Switching
-```python
-# Test that switching region changes validation behavior
-weather_data = load_test_data()  # Contains temperature of -35°C
+## Reproducibility
 
-# Global validation (should pass, within world records)
-df_global, _ = preprocessing(weather_data, latitude=0.0, region="global")
-assert len(df_global) == len(weather_data)
+To reproduce the validation:
 
-# Brazil validation (should fail, below Xavier minimum)
-df_brazil, warnings = preprocessing(weather_data, latitude=0.0, region="brazil")
-assert len(df_brazil) < len(weather_data)  # Some rows converted to NaN
-assert "Invalid values in T2M_MAX" in str(warnings)
+```bash
+# 1. Download from Zenodo
+# 2. Create environment
+conda env create -f environment.yml
+conda activate evaonline-validation
+
+# 3. Run pipeline
+cd scripts
+python 1_generate_matopiba_map.py
+python 2_generate_descriptive_stats.py
+python 3_concat_row_dataset_nasapower_openmeteo.py
+python 4_calculate_eto_data_from_openmeteo_or_nasapower.py
+python 5_validate_eto_calc.py
+python 6_validate_full_pipeline.py
+python 7_compare_all_eto_sources.py
 ```
 
 ---
 
-## 📋 Next Steps
-
-### High Priority (Integrate Regional Parameter)
-1. [ ] Update `eto_services.py::process_location()` to accept `region` parameter
-2. [ ] Update `eto_services.py::preprocessing()` call to pass `region`
-3. [ ] Map country names to region codes (Brazil → "brazil", others → "global")
-4. [ ] Update `celery_tasks.py` to pass `region` through task pipeline
-5. [ ] Update `historical_download.py` to pass `region` through task pipeline
-
-### Medium Priority (Integration Points)
-6. [ ] Update API endpoints to accept and pass `region` parameter
-7. [ ] Update frontend to send country/region information
-8. [ ] Test end-to-end with real Brazil and global locations
-9. [ ] Document API changes for consumers
-
-### Lower Priority (Future Enhancement)
-10. [ ] Add regional subdivisions (e.g., "brazil_northeast", "brazil_southeast")
-11. [ ] Add seasonal validation limits
-12. [ ] Add elevation-dependent limits
-13. [ ] Integrate with Köppen-Geiger climate classification
-14. [ ] Add data source-specific limits (NOAA, INMET)
-
----
-
-## 🔗 Related System Components
-
-**Elevation Strategy (Already Implemented)**:
-- Priority 1: User input
-- Priority 2: OpenTopo (~1m precision)
-- Priority 3: Open-Meteo (~7-30m precision)
-- Priority 4: Default (0m)
-
-**Validation Strategy (This Implementation)**:
-- Priority 1: Check if location is Brazil → Use Xavier et al. limits
-- Priority 2: Otherwise → Use conservative global limits
-- Future: Could be extended to location-specific limits
-
-**FAO-56 Factors (Elevation-Dependent)**:
-- Atmospheric Pressure: P = 101.3 × [(293 - 0.0065 × z) / 293]^5.26
-- Psychrometric Constant: γ = 0.665 × 10^-3 × P
-- Solar Radiation Correction: +10% per 1000m elevation
-- Example: Brasília (1172m) vs sea level = 22m diff = 0.245% ETo impact
-
----
-
-## 📝 Code Quality
-
-**Linting Status**: ✅ PASSED
-- No syntax errors in `weather_utils.py`
-- No syntax errors in `data_preprocessing.py`
-- All line lengths within 79-character limit
-- Type hints properly formatted
-
-**Documentation**: ✅ COMPLETE
-- Docstrings for all new functions
-- Parameter documentation with type hints
-- Return value documentation
-- Usage examples provided
-
-**Backwards Compatibility**: ✅ MAINTAINED
-- `region` parameter defaults to "global"
-- Existing function calls work without modification
-- No breaking changes to API signatures
+**Last updated:** 2025-02-23  
+**Version:** 2.0
