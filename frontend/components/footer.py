@@ -264,7 +264,7 @@ def create_footer(lang: str = "en") -> html.Footer:
                                                     ),
                                                     target="_blank",
                                                     rel="noopener noreferrer",
-                                                    title="Licença MIT",
+                                                    title="Licença AGPL-3.0",
                                                     className="footer-icon-link license-link",
                                                 ),
                                                 html.A(

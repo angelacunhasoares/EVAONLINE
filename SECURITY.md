@@ -86,22 +86,30 @@ if not SECRET_KEY:
 
 ### 1. Não Expor Portas Desnecessárias
 
-**Em produção, remover:**
+**Em produção, NÃO expor portas diretamente:**
 ```yaml
-# ❌ NÃO expor em produção
+# ❌ NÃO expor em produção (acesso via Nginx)
 ports:
   - "5432:5432"  # PostgreSQL
   - "6379:6379"  # Redis
+  - "8000:8000"  # API (acesso via Nginx /api/)
+  - "9090:9090"  # Prometheus (rede interna)
+  - "3000:3000"  # Grafana (acesso via Nginx /grafana/)
+  - "5555:5555"  # Flower (acesso via Nginx /flower/)
 ```
 
-**Manter apenas:**
+**Manter APENAS Nginx (reverse proxy):**
 ```yaml
-# ✅ OK expor em produção
-ports:
-  - "8000:8000"  # API
-  - "9090:9090"  # Prometheus (opcional)
-  - "3000:3000"  # Grafana (opcional)
+# ✅ Única porta pública em produção
+services:
+  nginx:
+    ports:
+      - "80:80"    # HTTP
+      - "443:443"  # HTTPS (com SSL)
 ```
+
+> **Todos os outros serviços** usam `expose` (rede interna Docker).
+> Acesso externo: `/api/`, `/grafana/`, `/flower/` via Nginx.
 
 ### 2. Docker Secrets (Recomendado)
 
@@ -157,13 +165,21 @@ docker exec -it evaonline-grafana grafana-cli admin reset-admin-password 'NovaSe
 
 ### Flower (Celery)
 
-⚠️ **Sem autenticação por padrão!**
+✅ **Autenticação configurada via HTTP Basic Auth:**
 
-**Adicionar autenticação:**
 ```yaml
-celery-flower:
+# docker-compose.yml (já configurado)
+flower:
   environment:
-    - FLOWER_BASIC_AUTH=user:password
+    - FLOWER_BASIC_AUTH=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-changeme}
+```
+
+> **Acesso**: `http://localhost/flower/` (via Nginx, com autenticação)
+
+⚠️ **Trocar senha padrão em produção** no arquivo `.env`:
+```bash
+FLOWER_USER=admin
+FLOWER_PASSWORD=SuaSenhaSeguraAqui
 ```
 
 ---
@@ -204,14 +220,19 @@ docker compose config
 ```gitignore
 # ✅ OBRIGATÓRIO no .gitignore
 .env
-.env.*
+.env.local
+.env.production
 !.env.example
+!.env.docker
 secrets/
 keys/
 *.key
 *.pem
 *.crt
 ```
+
+> **Nota:** `.env.docker` e `.env.example` são templates SEM senhas reais — podem ficar no repositório.
+> O `.env` com senhas reais NUNCA deve ser commitado.
 
 **Verificar status:**
 ```bash
