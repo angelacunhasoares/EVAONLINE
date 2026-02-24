@@ -1063,6 +1063,7 @@ def render_conditional_form(data_type, lang):
         Output("current-task-id", "data"),
         Output("progress-interval", "disabled"),
         Output("current-operation-mode", "data"),
+        Output("eto-progress-container", "children", allow_duplicate=True),
     ],
     Input("calculate-eto-btn", "n_clicks"),
     [
@@ -1118,7 +1119,7 @@ def calculate_eto(
 
     if n_clicks is None or n_clicks == 0:
         logger.warning("⚠️ Aborting - n_clicks empty or zero")
-        return None, None, None, None, True, None
+        return None, None, None, None, True, None, None
 
     # Garantir session_id único para esta sessão
     if not session_id:
@@ -1142,7 +1143,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return None, None, error_alert, None, True, None
+        return None, None, error_alert, None, True, None, None
 
     try:
         lat = float(coords_data.get("lat"))
@@ -1158,7 +1159,7 @@ def calculate_eto(
                 ],
                 color="danger",
             )
-            return None, None, error_alert, None, True, None
+            return None, None, error_alert, None, True, None, None
 
     except (ValueError, TypeError, KeyError) as e:
         logger.error(f"❌ Error parsing coordinates: {e}")
@@ -1170,7 +1171,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return None, None, error_alert, None, True, None
+        return None, None, error_alert, None, True, None, None
 
     # Pre-check: Is this a land point?
     if not is_land_point(lat, lon):
@@ -1202,7 +1203,7 @@ def calculate_eto(
             color="info",
             className="mt-2",
         )
-        return None, None, error_alert, None, True, None
+        return None, None, error_alert, None, True, None, None
 
     # ========================================================================
     # 2. DETECT OPERATION MODE & VALIDATE
@@ -1222,7 +1223,7 @@ def calculate_eto(
                 ],
                 color="warning",
             )
-            return None, None, error_alert, None, True, None
+            return None, None, error_alert, None, True, None, None
 
         # Parse dates
         start_date = None
@@ -1240,7 +1241,7 @@ def calculate_eto(
                     ],
                     color="warning",
                 )
-                return None, None, error_alert, None, True, None
+                return None, None, error_alert, None, True, None, None
 
             # Parse historical dates
             start_date = parse_date_from_ui(start_date_hist)
@@ -1267,7 +1268,7 @@ def calculate_eto(
                     ],
                     color="warning",
                 )
-                return None, None, error_alert, None, True, None
+                return None, None, error_alert, None, True, None, None
 
             # Validar formato de arquivo
             if not file_format_hist:
@@ -1279,7 +1280,7 @@ def calculate_eto(
                     ],
                     color="warning",
                 )
-                return None, None, error_alert, None, True, None
+                return None, None, error_alert, None, True, None, None
 
             # Validar que data inicial não é maior que data final
             if start_date > end_date:
@@ -1292,7 +1293,7 @@ def calculate_eto(
                     ],
                     color="danger",
                 )
-                return None, None, error_alert, None, True, None
+                return None, None, error_alert, None, True, None, None
 
             # Validar que datas não são anteriores a 1990
             from datetime import date as dt_date
@@ -1320,7 +1321,7 @@ def calculate_eto(
                     ],
                     color="warning",
                 )
-                return None, None, error_alert, None, True, None
+                return None, None, error_alert, None, True, None, None
 
             # Validar que datas não são futuras
             if start_date > today or end_date > today:
@@ -1334,7 +1335,7 @@ def calculate_eto(
                     ],
                     color="warning",
                 )
-                return None, None, error_alert, None, True, None
+                return None, None, error_alert, None, True, None, None
 
             # Validar que período não excede 90 dias
             period_days_hist = (end_date - start_date).days + 1
@@ -1353,7 +1354,7 @@ def calculate_eto(
                     ],
                     color="warning",
                 )
-                return None, None, error_alert, None, True, None
+                return None, None, error_alert, None, True, None, None
 
         elif ui_selection == "recent":
             # Parse period from dropdown
@@ -1366,7 +1367,7 @@ def calculate_eto(
                     ],
                     color="warning",
                 )
-                return None, None, error_alert, None, True, None
+                return None, None, error_alert, None, True, None, None
             period_days = int(days_current)
             logger.info(f"📅 Recent: last {period_days} days")
 
@@ -1536,7 +1537,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return None, None, error_alert, None, True, None
+        return None, None, error_alert, None, True, None, None
 
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
@@ -1548,7 +1549,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return None, None, error_alert, None, True, None
+        return None, None, error_alert, None, True, None, None
 
     # ========================================================================
     # 3. CALL BACKEND API
@@ -1588,7 +1589,27 @@ def calculate_eto(
 
                 # Iniciar monitoramento via interval callback
                 # Retornar: results=None, mode_indicator, alert=None,
-                #          task_id, interval_disabled=False, operation_mode
+                #          task_id, interval_disabled=False, operation_mode, progress_spinner
+                immediate_spinner = html.Div(
+                    [
+                        html.Div(
+                            [
+                                dbc.Spinner(
+                                    color="success",
+                                    type="grow",
+                                    size="sm",
+                                    spinner_class_name="me-2",
+                                ),
+                                html.Span(
+                                    t(lang, "progress_ui", "downloading_calculating", default="Downloading data and calculating ETo..."),
+                                    className="text-success fw-semibold",
+                                ),
+                            ],
+                            className="d-flex align-items-center",
+                        ),
+                    ],
+                    className="p-3 bg-light rounded-3 border",
+                )
                 return (
                     None,
                     mode_indicator,
@@ -1596,6 +1617,7 @@ def calculate_eto(
                     task_id,
                     False,  # Habilitar interval
                     backend_mode,  # Salvar o modo de operação
+                    immediate_spinner,  # Spinner imediato
                 )
 
             # Se não foi aceito
@@ -1607,7 +1629,7 @@ def calculate_eto(
                 ],
                 color="danger",
             )
-            return None, mode_indicator, error_alert, None, True, None
+            return None, mode_indicator, error_alert, None, True, None, None
 
         else:
             logger.error(f"❌ Backend error {response.status_code}")
@@ -1619,7 +1641,7 @@ def calculate_eto(
                 ],
                 color="danger",
             )
-            return None, mode_indicator, error_alert, None, True, None
+            return None, mode_indicator, error_alert, None, True, None, None
 
     except requests.Timeout:
         logger.error("⏱️ Request timeout")
@@ -1631,7 +1653,7 @@ def calculate_eto(
             ],
             color="warning",
         )
-        return None, mode_indicator, error_alert, None, True, None
+        return None, mode_indicator, error_alert, None, True, None, None
 
     except requests.ConnectionError:
         logger.error("🔌 Connection error")
@@ -1643,7 +1665,7 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return None, mode_indicator, error_alert, None, True, None
+        return None, mode_indicator, error_alert, None, True, None, None
 
     except Exception as e:
         logger.error(f"💥 Unexpected error: {str(e)}")
@@ -1655,12 +1677,12 @@ def calculate_eto(
             ],
             color="danger",
         )
-        return None, mode_indicator, error_alert, None, True, None
+        return None, mode_indicator, error_alert, None, True, None, None
 
 
 @callback(
     [
-        Output("eto-progress-container", "children"),
+        Output("eto-progress-container", "children", allow_duplicate=True),
         Output("eto-results-container", "children", allow_duplicate=True),
         Output("progress-interval", "disabled", allow_duplicate=True),
         Output("current-task-id", "data", allow_duplicate=True),
