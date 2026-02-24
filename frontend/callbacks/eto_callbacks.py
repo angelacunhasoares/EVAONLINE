@@ -1764,6 +1764,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                 task_id,
                 no_update,
                 no_update,
+                no_update,  # fusion-info-card
             )
 
         result = json.loads(result_data)
