@@ -1,12 +1,13 @@
 # =====================================================
 # DOCKER-COMPOSE MULTI-STAGE - EVAonline
-# Atualizado para usar pyproject.toml como única fonte de dependências
+# Security: Only Nginx exposes public ports (80/443).
+# All other services communicate via internal network.
 # =====================================================
 
 services:
   # =====================================================
   # PostgreSQL Database with PostGIS
-  # Tags: https://hub.docker.com/r/postgis/postgis/tags?name=alpine&page=2
+  # SECURITY: Internal network only (no public port)
   # =====================================================
   postgres:
     image: postgis/postgis:16-3.4-alpine
@@ -17,8 +18,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-evaonline}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432" # Expor porta para desenvolvimento local
+    # SECURITY: Internal only — use Adminer (dev profile) for DB access
+    expose:
+      - "5432"
     restart: unless-stopped
     command:
       - "postgres"
@@ -26,7 +28,6 @@ services:
       - "max_connections=200"
       - "-c"
       - "shared_buffers=256MB"
-      # 🔥 REMOVIDO: SSL em desenvolvimento (causa problemas desnecessários)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-evaonline}"]
       interval: 5s
@@ -37,6 +38,7 @@ services:
 
   # =====================================================
   # Redis Cache & Message Broker
+  # SECURITY: Internal network only (no public port)
   # =====================================================
   redis:
     image: redis:7-alpine
@@ -44,8 +46,9 @@ services:
     command: redis-server ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379" # Expor porta para desenvolvimento local
+    # SECURITY: Internal only
+    expose:
+      - "6379"
     restart: unless-stopped
     healthcheck:
       test:
@@ -58,6 +61,7 @@ services:
 
   # =====================================================
   # API Production
+  # SECURITY: Internal only — Nginx proxies on port 80/443
   # =====================================================
   api:
     build:
@@ -68,7 +72,6 @@ services:
     environment:
       - SERVICE=api
       - ENVIRONMENT=production
-      # 🔥 CORREÇÃO: Variáveis individuais em vez de DATABASE_URL
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER:-evaonline}
@@ -79,11 +82,9 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
-    # ✅ Porta interna apenas - Nginx faz proxy na porta 80
+    # SECURITY: Only expose internally (Nginx proxies)
     expose:
       - "8000"
-    ports:
-      - "8000:8000" # Acesso direto para debug (remover em produção final)
     depends_on:
       postgres:
         condition: service_healthy
@@ -354,6 +355,7 @@ services:
 
   # =====================================================
   # Flower - Celery Monitoring
+  # SECURITY: Internal only — Nginx proxies on /flower/
   # =====================================================
   flower:
     build:
@@ -364,10 +366,13 @@ services:
     environment:
       - SERVICE=flower
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      # ✅ Autenticação básica
-      - FLOWER_BASIC_AUTH=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
-    ports:
-      - "5555:5555" # ✅ Acesso direto (sem proxy)
+      # Auth: credentials passed to entrypoint.sh for --basic_auth
+      - FLOWER_USER=${FLOWER_USER:-admin}
+      - FLOWER_PASSWORD=${FLOWER_PASSWORD:-admin}
+      - FLOWER_URL_PREFIX=flower
+    # SECURITY: Internal only (Nginx proxies on /flower/)
+    expose:
+      - "5555"
     volumes:
       - ./logs:/app/logs
     depends_on:
@@ -385,34 +390,52 @@ services:
       - evaonline-network
 
   # =====================================================
-  # Prometheus - Métricas (acesso direto)
-  # Tags: https://hub.docker.com/r/prom/prometheus
+  # Prometheus - Metrics Collection
+  # SECURITY: Internal only — accessed only by Grafana
   # =====================================================
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.54.1
     container_name: evaonline-prometheus
-    user: root
     volumes:
       - ./docker/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
-    ports:
-      - "9090:9090" # ✅ Acesso direto: http://localhost:9090
+    # SECURITY: Internal only (Grafana reads via internal network)
+    expose:
+      - "9090"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=1GB"
       - "--web.console.libraries=/usr/share/prometheus/console_libraries"
       - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    depends_on:
+      api:
+        condition: service_healthy
     networks:
       - evaonline-network
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9090/-/healthy",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # =====================================================
-  # Grafana - Dashboards (acesso direto)
-  # Tags: https://hub.docker.com/r/grafana/grafana/tags
+  # Grafana - Dashboards & Visualization
+  # SECURITY: Internal only — Nginx proxies on /grafana/
   # =====================================================
   grafana:
-    image: grafana/grafana:main-ubuntu
+    image: grafana/grafana:11.4.0
     container_name: evaonline-grafana
     volumes:
       - grafana_data:/var/lib/grafana
@@ -425,38 +448,153 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_USERS_ALLOW_ORG_CREATE=false
       - GF_AUTH_ANONYMOUS_ENABLED=false
-      # ✅ URL pública
-      - GF_SERVER_ROOT_URL=http://localhost:3000
-      - GF_SERVER_SERVE_FROM_SUB_PATH=false
-    ports:
-      - "3000:3000" # ✅ Acesso direto: http://localhost:3000
+      - GF_AUTH_BASIC_ENABLED=true
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=warn
+      # ✅ Sub-path: served at /grafana/
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    # SECURITY: Internal only (Nginx proxies on /grafana/)
+    expose:
+      - "3000"
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
     networks:
       - evaonline-network
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/grafana/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # =====================================================
-  # Nginx - Reverse Proxy & Static Assets
+  # PostgreSQL Exporter - Metrics for Grafana
+  # Exposes: pg_stat_activity_count, pg_stat_* metrics
+  # =====================================================
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: evaonline-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-evaonline}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-evaonline}?sslmode=disable"
+    expose:
+      - "9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9187/metrics",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - evaonline-network
+
+  # =====================================================
+  # Redis Exporter - Metrics for Grafana
+  # Exposes: redis_keyspace_hits_total, redis_commands_total
+  # =====================================================
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0-alpine
+    container_name: evaonline-redis-exporter
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+    expose:
+      - "9121"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9121/metrics",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - evaonline-network
+
+  # =====================================================
+  # Blackbox Exporter - HTTP probes for health checking
+  # Exposes: probe_duration_seconds, probe_success
+  # =====================================================
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: evaonline-blackbox-exporter
+    volumes:
+      - ./docker/monitoring/blackbox.yml:/config/blackbox.yml:ro
+    command:
+      - "--config.file=/config/blackbox.yml"
+    expose:
+      - "9115"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9115/",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - evaonline-network
+
+  # =====================================================
+  # Nginx - Reverse Proxy & Security
+  # ONLY service with public ports (80/443)
   # =====================================================
   nginx:
-    build:
-      context: ./docker/nginx
-      dockerfile: Dockerfile
+    image: nginx:1.27-alpine
     container_name: evaonline-nginx
     ports:
-      - "80:80"
-      # - "443:443"  # Descomentar quando SSL estiver configurado
+      - "${NGINX_HTTP_PORT:-80}:80"
+      # - "${NGINX_HTTPS_PORT:-443}:443"  # Uncomment when SSL is configured
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
     depends_on:
       api:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/nginx_status"]
+      test: ["CMD", "nginx", "-t"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
-      start_period: 10s
     networks:
       - evaonline-network
 
@@ -483,6 +621,7 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
+  nginx_logs:
 
 networks:
   evaonline-network:

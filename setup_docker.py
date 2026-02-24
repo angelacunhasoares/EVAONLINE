@@ -34,7 +34,7 @@ print("=" * 80)
 print("\n1️⃣  Verificando Docker...")
 try:
     result = subprocess.run(
-        ["docker", "--version"],
+        ["docker", "compose", "version"],
         capture_output=True,
         text=True,
         timeout=5,
@@ -45,18 +45,19 @@ except Exception as e:
     print("   Instale Docker em: https://www.docker.com/")
     sys.exit(1)
 
-# Verificar docker-compose
-print("\n2️⃣  Verificando docker-compose...")
+# Verificar docker compose (v2)
+print("\n2️⃣  Verificando docker compose (v2)...")
 try:
     result = subprocess.run(
-        ["docker-compose", "--version"],
+        ["docker", "compose", "version"],
         capture_output=True,
         text=True,
         timeout=5,
     )
     print(f"   ✅ {result.stdout.strip()}")
 except Exception as e:
-    print(f"   ❌ docker-compose não encontrado: {e}")
+    print(f"   ❌ docker compose não encontrado: {e}")
+    print("   Docker Compose v2 é incluído com Docker Desktop.")
     sys.exit(1)
 
 # Verificar variáveis .env
@@ -87,7 +88,7 @@ for var in required_vars:
 print("\n4️⃣  Limpando containers antigos...")
 try:
     subprocess.run(
-        ["docker-compose", "down", "-v"],
+        ["docker", "compose", "down", "-v"],
         capture_output=True,
         timeout=30,
     )
@@ -99,7 +100,7 @@ except Exception as e:
 print("\n5️⃣  Iniciando PostgreSQL e Redis...")
 try:
     result = subprocess.run(
-        ["docker-compose", "up", "-d", "postgres", "redis"],
+        ["docker", "compose", "up", "-d", "postgres", "redis"],
         capture_output=True,
         text=True,
         timeout=60,
@@ -172,7 +173,7 @@ print("      alembic upgrade head")
 print("\n   2. Rodar validação do pipeline ETo:")
 print("      python validate_eto_pipeline.py")
 print("\n   3. Parar containers:")
-print("      docker-compose down")
+print("      docker compose down")
 
 print("\n✅ Setup completo!")
 print("=" * 80 + "\n")

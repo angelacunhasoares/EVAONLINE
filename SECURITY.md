@@ -192,7 +192,7 @@ bandit -r backend/ -ll
 
 3. **Validar configuração Docker:**
 ```bash
-docker-compose config
+docker compose config
 ```
 
 ---
@@ -248,23 +248,23 @@ safety check -r requirements/production.txt
 bandit -r backend/ -ll
 
 # Validar Docker
-docker-compose config
+docker compose config
 ```
 
 ### Passo 3: Build e Deploy
 
 ```bash
 # Build
-docker-compose build
+docker compose build
 
 # Subir serviços
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
 sleep 30
-docker-compose up -d api celery-worker celery-beat
+docker compose up -d api celery-worker celery-beat
 
 # Verificar health
 docker ps
-docker-compose logs -f api
+docker compose logs -f api
 ```
 
 ---

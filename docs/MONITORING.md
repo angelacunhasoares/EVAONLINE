@@ -18,27 +18,30 @@ O EVAonline utiliza Prometheus para coletar métricas e Grafana para visualizaç
 
 ```bash
 # Subir todos os serviços incluindo monitoramento
-docker-compose up -d
+docker compose up -d
 
 # Verificar status
-docker-compose ps
+docker compose ps
 ```
 
 ### 2. Acessar Dashboards
 
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000
+- **Grafana**: http://localhost/grafana/
   - User: `admin`
   - Password: definido em `.env` (`GRAFANA_ADMIN_PASSWORD`)
+- **Flower**: http://localhost/flower/
+  - User/Password: definidos em `.env` (`FLOWER_USER` / `FLOWER_PASSWORD`)
+- **Prometheus**: Apenas acesso interno (via Grafana datasource)
 
 ### 3. Verificar Métricas
 
 ```bash
-# Endpoint de métricas da API
-curl http://localhost:8000/metrics
+# ⚠️ /metrics é bloqueado pelo Nginx externamente
+# Acesse internamente via Docker:
+docker exec evaonline-api curl http://localhost:8000/metrics
 
-# Health check
-curl http://localhost:8000/health
+# Health check (público)
+curl http://localhost/api/v1/health
 ```
 
 ---
@@ -356,11 +359,11 @@ metadata:
 ### Métricas não aparecem no Prometheus
 
 ```bash
-# Verificar se endpoint de métricas está acessível
-curl http://localhost:8000/metrics
+# Verificar se endpoint de métricas está acessível (internamente)
+docker exec evaonline-api curl http://localhost:8000/metrics
 
-# Verificar targets no Prometheus
-# Acesse http://localhost:9090/targets
+# Verificar targets no Prometheus (via Docker)
+docker exec evaonline-prometheus wget -qO- http://localhost:9090/api/v1/targets
 
 # Verificar logs do Prometheus
 docker logs evaonline-prometheus
@@ -385,7 +388,7 @@ docker exec evaonline-grafana curl http://prometheus:9090/-/ready
 docker logs evaonline-api | grep "VALIDATION_ERROR"
 
 # Investigar fonte específica
-curl "http://localhost:9090/api/v1/query?query=weather_validation_errors_total{source='met_norway'}"
+docker exec evaonline-prometheus wget -qO- 'http://localhost:9090/api/v1/query?query=weather_validation_errors_total{source="met_norway"}'
 
 # Testar API externa diretamente
 curl -i "https://api.met.no/weatherapi/locationforecast/2.0/status"
@@ -465,7 +468,7 @@ Importar via Dashboard ID:
 **Diagnóstico**:
 ```bash
 # 1. Identificar fonte problemática
-curl "http://localhost:9090/api/v1/query?query=topk(5, rate(weather_validation_errors_total[5m]) by (source))"
+docker exec evaonline-prometheus wget -qO- 'http://localhost:9090/api/v1/query?query=topk(5,rate(weather_validation_errors_total[5m])by(source))'
 
 # 2. Verificar logs da fonte
 docker logs evaonline-api --tail=100 | grep "met_norway"

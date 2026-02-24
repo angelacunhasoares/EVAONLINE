@@ -13,20 +13,27 @@
 
 - [ ] Criar senhas fortes para `.env`:
   ```bash
-  POSTGRES_PASSWORD=$(openssl rand -base64 32)
-  REDIS_PASSWORD=$(openssl rand -base64 32)
-  SECRET_KEY=$(openssl rand -base64 32)
+  POSTGRES_PASSWORD=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
+  REDIS_PASSWORD=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
+  SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
+  GRAFANA_ADMIN_PASSWORD=$(python -c "import secrets; print(secrets.token_urlsafe(16))")
+  FLOWER_PASSWORD=$(python -c "import secrets; print(secrets.token_urlsafe(16))")
   ```
 - [ ] Adicionar `.env` ao `.gitignore` (já deve estar)
 - [ ] Configurar firewall no servidor (apenas portas 22, 80, 443)
 - [ ] Habilitar fail2ban para proteção SSH
+- [ ] Verificar que **nenhum** serviço além do Nginx expõe porta pública
+- [ ] `/metrics` endpoint bloqueado publicamente (Nginx retorna 404)
+- [ ] Grafana servido em `/grafana/` via Nginx (sem porta 3000 pública)
+- [ ] Flower servido em `/flower/` via Nginx (sem porta 5555 pública)
+- [ ] Prometheus sem porta 9090 pública (apenas rede interna)
 
 ## 🌐 Servidor (VPS)
 
 - [ ] Servidor Ubuntu 22.04+ com Docker instalado
 - [ ] Domínio configurado (DNS apontando para IP do servidor)
 - [ ] Certificado SSL (Let's Encrypt com Certbot)
-- [ ] Nginx como reverse proxy (opcional mas recomendado)
+- [ ] **Nginx reverse proxy é OBRIGATÓRIO** (parte do Docker Compose)
 
 ### Requisitos Mínimos:
 - **CPU**: 2 vCPUs
@@ -38,14 +45,13 @@
 
 ### 1. Preparar Servidor
 ```bash
-# Instalar Docker
+# Instalar Docker (inclui Docker Compose v2)
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 
-# Instalar docker-compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+# Verificar instalação
+docker compose version
 ```
 
 ### 2. Clonar Repositório
@@ -56,46 +62,69 @@ cd EVAONLINE
 
 ### 3. Configurar Ambiente
 ```bash
-# Criar .env
-cp .env.example .env  # Se existir
-# OU criar manualmente:
-cat > .env << 'EOF'
-POSTGRES_PASSWORD=<senha_forte_aqui>
-POSTGRES_USER=evaonline
-POSTGRES_DB=evaonline
-REDIS_PASSWORD=<senha_forte_aqui>
-DOMAIN=seu-dominio.com
-EOF
+# Copiar template
+cp .env.example .env
+
+# Gerar senhas seguras e substituir no .env
+python -c "import secrets; print(secrets.token_urlsafe(32))"  # POSTGRES_PASSWORD
+python -c "import secrets; print(secrets.token_urlsafe(32))"  # REDIS_PASSWORD
+python -c "import secrets; print(secrets.token_hex(32))"      # SECRET_KEY
+python -c "import secrets; print(secrets.token_urlsafe(16))"  # GRAFANA_ADMIN_PASSWORD
+python -c "import secrets; print(secrets.token_urlsafe(16))"  # FLOWER_PASSWORD
+
+# Editar .env com os valores gerados
+nano .env
 ```
 
-### 4. Deploy
+### 4. SSL (Produção)
+```bash
+# Obter certificado Let's Encrypt
+sudo certbot certonly --standalone -d your-domain.com
+
+# Copiar certificados para o projeto
+cp /etc/letsencrypt/live/your-domain.com/fullchain.pem docker/nginx/ssl/
+cp /etc/letsencrypt/live/your-domain.com/privkey.pem docker/nginx/ssl/
+
+# Descomentar as linhas de SSL em:
+#   - docker-compose.yml (porta 443)
+#   - docker/nginx/nginx.conf (ssl_certificate directives)
+```
+
+### 5. Deploy
 ```bash
 # Build e start
-docker-compose up -d
+docker compose up -d --build
+
+# Verificar todos os serviços estão healthy
+docker compose ps
 
 # Verificar logs
-docker-compose logs -f api celery-worker
-
-# Verificar saúde dos serviços
-docker-compose ps
+docker compose logs -f api celery-worker nginx
 ```
 
-### 5. Configurar Nginx (Opcional)
+### 6. Verificar Segurança
 ```bash
-# Instalar Certbot para SSL
-sudo apt install certbot python3-certbot-nginx
+# /metrics NÃO deve ser acessível publicamente
+curl http://your-domain.com/metrics  # Deve retornar 404
 
-# Obter certificado
-sudo certbot --nginx -d seu-dominio.com
+# Grafana acessível via sub-path
+curl http://your-domain.com/grafana/api/health  # Deve retornar OK
 
-# Nginx configurado automaticamente com HTTPS
+# Flower acessível via sub-path
+curl http://your-domain.com/flower/  # Deve pedir autenticação
+
+# Portas internas NÃO devem estar expostas
+nmap -p 3000,5432,5555,6379,9090 your-domain.com  # Todas filtered/closed
 ```
 
 ## 🔍 Monitoramento
 
-- [ ] Configurar logs persistentes: `volumes: - ./logs:/app/logs`
+- [ ] Todos os serviços `healthy`: `docker compose ps`
+- [ ] Prometheus coletando métricas (acessível internamente na porta 9090)
+- [ ] Grafana dashboards funcionando em `/grafana/`
+- [ ] Flower monitorando Celery em `/flower/`
+- [ ] Logs persistentes: `volumes: - ./logs:/app/logs`
 - [ ] Monitorar uso de recursos: `docker stats`
-- [ ] Configurar alertas (opcional): Prometheus + Grafana
 - [ ] Backup automático do PostgreSQL:
   ```bash
   # Cron job diário
@@ -106,8 +135,8 @@ sudo certbot --nginx -d seu-dominio.com
 
 ### Container não inicia
 ```bash
-docker-compose logs <service_name>
-docker-compose down && docker-compose up -d
+docker compose logs <service_name>
+docker compose down && docker compose up -d
 ```
 
 ### Banco de dados não conecta
@@ -122,10 +151,10 @@ docker exec evaonline-postgres psql -U evaonline -d evaonline -c "SELECT 1"
 ### Celery worker não processa
 ```bash
 # Verificar logs
-docker-compose logs celery-worker
+docker compose logs celery-worker
 
 # Restart
-docker-compose restart celery-worker
+docker compose restart celery-worker
 
 # Limpar cache Redis
 docker exec evaonline-redis redis-cli FLUSHDB
@@ -142,7 +171,6 @@ docker exec evaonline-redis redis-cli FLUSHDB
 
 ### Render.com
 1. New Web Service → Docker
-2. Add PostgreSQL database
 3. Add Redis
 4. Deploy
 5. **Custo**: $7-15/mês
@@ -164,18 +192,27 @@ docker exec evaonline-redis redis-cli FLUSHDB
 
 ## 📊 Performance
 
+### Otimizações Já Implementadas:
+- [x] Nginx como reverse proxy obrigatório
+- [x] Rate limiting no Nginx (API, WebSocket, admin zones)
+- [x] Gzip compression no Nginx
+- [x] Cache de assets estáticos (_dash-component-suites)
+- [x] Prometheus com pinned version (v2.54.1) e retention size 1GB
+- [x] Grafana com pinned version (11.4.0) e sub-path /grafana/
+- [x] Healthchecks em todos os serviços
+
 ### Otimizações Recomendadas:
-- [ ] Habilitar cache HTTP (Redis)
+- [ ] Habilitar SSL/TLS (Let's Encrypt)
+- [ ] Habilitar HSTS header
 - [ ] Configurar CDN (Cloudflare - grátis)
 - [ ] Otimizar queries PostgreSQL (índices)
-- [ ] Rate limiting no Nginx
-- [ ] Gzip compression no Nginx
+- [ ] Configurar IP whitelist para Grafana/Flower em produção
 
 ---
 
 ## 🆘 Suporte
 
-- **Logs**: `docker-compose logs -f --tail=100`
+- **Logs**: `docker compose logs -f --tail=100`
 - **Shell no container**: `docker exec -it evaonline-api bash`
-- **Restart rápido**: `docker-compose restart api celery-worker`
-- **Rebuild completo**: `docker-compose down && docker-compose build --no-cache && docker-compose up -d`
+- **Restart rápido**: `docker compose restart api celery-worker`
+- **Rebuild completo**: `docker compose down && docker compose build --no-cache && docker compose up -d`

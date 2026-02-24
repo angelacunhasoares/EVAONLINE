@@ -158,10 +158,10 @@ LABEL description="Testing image com pytest"
 # Instalar ferramentas adicionais para testes
 USER root
 
-RUN apk add --no-cache \
-    # Ferramentas para testes de integração
+RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
-    redis
+    redis-tools \
+    && rm -rf /var/lib/apt/lists/*
 
 USER evaonline
 

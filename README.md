@@ -21,7 +21,7 @@
 | **Backend** | FastAPI, Celery (3 worker types), Redis Pub/Sub |
 | **Database** | PostgreSQL 16 + PostGIS 3.4, Alembic migrations |
 | **Cache** | Redis 7 (caching + message broker) |
-| **Infra** | Docker Compose (12 services), Nginx, Prometheus + Grafana |
+| **Infra** | Docker Compose (13 services), Nginx, Prometheus + Grafana |
 | **i18n** | JSON-based translations (EN / PT) |
 | **CI/Quality** | pytest, black, flake8, mypy, pre-commit |
 
@@ -95,7 +95,7 @@ EVAONLINE/
 ├── docker/                     # Docker configs (backend, nginx, monitoring)
 ├── docs/                       # Technical documentation
 ├── EVAonline_validation_v1.0.0/ # Independent validation package
-├── docker-compose.yml          # 12-service orchestration
+├── docker-compose.yml          # 13-service orchestration
 ├── Dockerfile                  # Multi-stage build (builder + runtime)
 ├── pyproject.toml              # Project metadata & dependencies
 └── requirements.txt            # Locked dependencies (uv pip compile)
@@ -179,12 +179,11 @@ cp .env.example .env
 docker compose up --build -d
 
 # 4. Access the application
-#    Dashboard:    http://localhost:8050
-#    API docs:     http://localhost:8000/docs
-#    Flower:       http://localhost:5555
-#    Prometheus:   http://localhost:9090
-#    Grafana:      http://localhost:3000
-#    Adminer:      http://localhost:8080
+#    Dashboard:    http://localhost
+#    API docs:     http://localhost/api/v1/docs
+#    Grafana:      http://localhost/grafana/
+#    Flower:       http://localhost/flower/
+#    Adminer:      http://localhost:5050  (dev profile only)
 ```
 
 ### Local Development
@@ -241,10 +240,14 @@ Key configuration options in `.env`:
 
 ## 📈 Monitoring
 
-- **Prometheus**: collects API response times, request counts, error rates, cache metrics
-- **Grafana**: pre-configured dashboards for system performance
-- **Flower**: Celery task monitoring (queue depth, worker status, task history)
+- **Nginx**: reverse proxy, rate limiting, security headers, SSL termination
+- **Prometheus** (internal only): collects API response times, request counts, error rates, cache metrics
+- **Grafana** (`/grafana/`): pre-configured dashboards for system performance (auth required)
+- **Flower** (`/flower/`): Celery task monitoring with basic auth (queue depth, worker status, task history)
 - **Loguru**: structured application logs with rotation
+- **Health endpoints**: `/api/v1/health`, `/api/v1/health/detailed`, `/api/v1/ready`
+
+> **Security**: Only Nginx exposes public ports (80/443). Prometheus, Grafana, Flower, PostgreSQL, and Redis are accessible only via internal Docker network.
 
 ---
 

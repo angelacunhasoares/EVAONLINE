@@ -4,31 +4,31 @@ Guia de acesso aos dashboards e ferramentas de monitoramento.
 
 ---
 
-## 🌐 **URLs de Acesso Direto**
+## 🌐 **URLs de Acesso (via Nginx)**
 
-Após iniciar os containers com `docker-compose up -d`, acesse:
+Após iniciar os containers com `docker compose up -d`, acesse:
 
 ### **1. Grafana - Dashboards Visuais**
-- **URL**: http://localhost:3000
+- **URL**: http://localhost/grafana/
 - **Usuário**: `admin` (configurado em `.env`)
 - **Senha**: Definida em `GRAFANA_ADMIN_PASSWORD` no `.env`
 - **Descrição**: Interface visual com dashboards personalizados
 
 ### **2. Prometheus - Métricas Brutas**
-- **URL**: http://localhost:9090
-- **Autenticação**: Nenhuma (acesso interno)
-- **Descrição**: Consultas PromQL e exploração de métricas
+- **Acesso**: Apenas rede interna Docker (sem porta pública)
+- **Via Grafana**: Datasource pré-configurado
+- **Debug**: `docker exec evaonline-prometheus wget -qO- http://localhost:9090/api/v1/targets`
 
 ### **3. Flower - Monitor Celery**
-- **URL**: http://localhost:5555
+- **URL**: http://localhost/flower/
 - **Usuário**: `admin` (configurado em `.env`)
 - **Senha**: Definida em `FLOWER_PASSWORD` no `.env`
 - **Descrição**: Monitoramento de tasks e workers Celery
 
 ### **4. API Backend**
-- **URL**: http://localhost:8000
-- **Health Check**: http://localhost:8000/health
-- **Docs**: http://localhost:8000/docs (Swagger)
+- **URL**: http://localhost/api/v1/
+- **Health Check**: http://localhost/api/v1/health
+- **Docs**: http://localhost/api/v1/docs (Swagger)
 
 ---
 
@@ -36,7 +36,7 @@ Após iniciar os containers com `docker-compose up -d`, acesse:
 
 ### **Básico**
 ```bash
-curl http://localhost:8000/health
+curl http://localhost/api/v1/health
 ```
 
 **Resposta**:
@@ -51,7 +51,7 @@ curl http://localhost:8000/health
 
 ### **Detalhado**
 ```bash
-curl http://localhost:8000/health/detailed
+curl http://localhost/api/v1/health/detailed
 ```
 
 **Resposta**:
@@ -81,7 +81,7 @@ curl http://localhost:8000/health/detailed
 
 ### **Readiness (Docker Health Check)**
 ```bash
-curl http://localhost:8000/ready
+curl http://localhost/api/v1/ready
 ```
 
 ---
@@ -120,19 +120,19 @@ FLOWER_PASSWORD=OutraSenhaSegura456!
 
 ```bash
 # Iniciar todos os serviços (incluindo monitoramento)
-docker-compose up -d
+docker compose up -d
 
 # Verificar status
-docker-compose ps
+docker compose ps
 
 # Logs do Grafana
-docker-compose logs -f grafana
+docker compose logs -f grafana
 
 # Logs do Prometheus
-docker-compose logs -f prometheus
+docker compose logs -f prometheus
 
 # Parar tudo
-docker-compose down
+docker compose down
 ```
 
 ### **Desenvolvimento (opcional)**
@@ -141,10 +141,10 @@ Para desenvolvimento, você pode desabilitar monitoramento:
 
 ```bash
 # Iniciar apenas backend essencial
-docker-compose up -d postgres redis api celery-worker
+docker compose up -d postgres redis api celery-worker
 
 # Verificar
-docker-compose ps
+docker compose ps
 ```
 
 ---
@@ -157,7 +157,7 @@ Os dashboards estão pré-configurados em:
 
 ### **Importar Dashboard Manualmente**
 
-1. Acesse http://localhost:3000
+1. Acesse http://localhost/grafana/
 2. Login com usuário/senha do `.env`
 3. Menu: **Dashboards** → **Import**
 4. Upload do arquivo `.json` ou cole o conteúdo
@@ -167,7 +167,7 @@ Os dashboards estão pré-configurados em:
 
 ## 🔍 **Prometheus - Consultas Úteis**
 
-Acesse http://localhost:9090 e experimente:
+Acesse Prometheus internamente via Grafana (Explore) ou Docker:
 
 ### **API Response Time (p95)**
 ```promql
@@ -197,26 +197,26 @@ celery_tasks_active_total
 
 ```bash
 # Verificar logs
-docker-compose logs grafana
+docker compose logs grafana
 
-# Verificar se Prometheus está respondendo
-curl http://localhost:9090/api/v1/status/config
+# Verificar se Prometheus está respondendo (via Docker)
+docker exec evaonline-prometheus wget -qO- http://localhost:9090/api/v1/status/config
 
 # Reiniciar Grafana
-docker-compose restart grafana
+docker compose restart grafana
 ```
 
 ### **Prometheus não coleta métricas**
 
 ```bash
-# Verificar targets
-curl http://localhost:9090/api/v1/targets
+# Verificar targets (via Docker)
+docker exec evaonline-prometheus wget -qO- http://localhost:9090/api/v1/targets
 
 # Ver configuração
 docker exec evaonline-prometheus cat /etc/prometheus/prometheus.yml
 
 # Reiniciar Prometheus
-docker-compose restart prometheus
+docker compose restart prometheus
 ```
 
 ### **Flower não autentica**
@@ -224,7 +224,7 @@ docker-compose restart prometheus
 Verifique se as variáveis estão corretas no `.env`:
 
 ```bash
-docker-compose exec flower env | grep FLOWER
+docker compose exec flower env | grep FLOWER
 ```
 
 ---
@@ -259,11 +259,12 @@ docker/monitoring/
 
 ## 📝 **Notas**
 
-- **Sem Nginx**: Monitoramento acessado **diretamente** (sem proxy)
+- **Nginx obrigatório**: Grafana em `/grafana/`, Flower em `/flower/` (proxy reverso)
+- **Prometheus**: Apenas rede interna Docker (sem acesso público)
 - **Docker Network**: Todos os serviços na rede `evaonline-network`
 - **Dados Persistentes**: Volumes Docker mantêm dados históricos
-- **Portas Expostas**: 3000 (Grafana), 9090 (Prometheus), 5555 (Flower)
+- **Única porta pública**: 80 (Nginx) — todas as demais são internas
 
 ---
 
-**Última atualização**: 2024-11-06
+**Última atualização**: 2025-02-23
