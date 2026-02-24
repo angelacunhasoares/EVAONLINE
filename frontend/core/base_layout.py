@@ -32,6 +32,12 @@ def create_base_layout():
             # Store para identificação única da sessão do usuário (sessionStorage)
             # Cada aba/janela do navegador terá um ID único
             dcc.Store(id="app-session-id", storage_type="session", data=None),
+            # Flag: visitante já foi contabilizado nesta sessão?
+            dcc.Store(
+                id="visitor-incremented",
+                storage_type="session",
+                data=False,
+            ),
             # Interval para atualizar contador de visitantes (a cada 10 segundos)
             dcc.Interval(
                 id="visitor-counter-interval",

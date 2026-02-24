@@ -2,7 +2,7 @@
 Rotas para contador de visitantes em tempo real
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import redis
@@ -25,6 +25,7 @@ class VisitorIncrementRequest(BaseModel):
 
 @router.post("/increment")
 async def increment_visitor_count(
+    request: Request,
     body: VisitorIncrementRequest = VisitorIncrementRequest(),
     redis_client: redis.Redis = Depends(get_redis_client),
     db: Session = Depends(get_db),
@@ -37,12 +38,22 @@ async def increment_visitor_count(
 
     Se session_id for fornecido, visitantes repetidos no mesmo dia
     NÃO incrementam o total (apenas page views por hora).
+    Fallback: usa IP do visitante para deduplicação.
 
     Returns:
         Dict com estatísticas atualizadas
     """
+    # Extrair IP real (respeita X-Forwarded-For do nginx)
+    ip_address = request.headers.get(
+        "X-Forwarded-For", request.client.host if request.client else None
+    )
+    if ip_address and "," in ip_address:
+        ip_address = ip_address.split(",")[0].strip()
+
     service = VisitorCounterService(redis_client, db)
-    return service.increment_visitor(session_id=body.session_id)
+    return service.increment_visitor(
+        session_id=body.session_id, ip_address=ip_address
+    )
 
 
 @router.get("/stats")

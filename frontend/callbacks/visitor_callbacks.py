@@ -3,7 +3,7 @@ Callbacks para contador de visitantes em tempo real.
 
 Fluxo:
 1. update_visitor_counter: Atualiza display no footer a cada 10 segundos
-2. increment_visitor_on_page_load: Incrementa na primeira visita da sessão
+2. increment_visitor_on_session_start: Incrementa UMA VEZ quando sessão inicia
 3. translate_visitor_labels: Traduz labels quando idioma muda
 
 Integração Backend:
@@ -13,6 +13,7 @@ Integração Backend:
 Stores usados:
 - visitor-counter-interval (base_layout.py): Interval de 10s
 - app-session-id (base_layout.py): Session ID único por aba
+- visitor-incremented (base_layout.py): Flag se já contabilizou esta sessão
 - language-store (base_layout.py): Idioma atual
 
 IDs de Output (footer.py):
@@ -95,31 +96,34 @@ def update_visitor_counter(n_intervals):
 
 
 # ============================================================================
-# CALLBACK 2: Incrementar visitante (uma vez por sessão)
+# CALLBACK 2: Incrementar visitante (uma única vez por sessão)
 # ============================================================================
 @callback(
-    Output("visitor-counter-interval", "n_intervals", allow_duplicate=True),
-    Input("url", "pathname"),
-    State("app-session-id", "data"),
+    Output("visitor-incremented", "data"),
+    Input("app-session-id", "data"),
+    State("visitor-incremented", "data"),
     prevent_initial_call=True,
 )
-def increment_visitor_on_page_load(pathname, session_id):
+def increment_visitor_on_session_start(session_id, already_incremented):
     """
-    Incrementa o contador quando usuário acessa a página principal.
+    Incrementa o contador UMA ÚNICA VEZ quando a sessão é inicializada.
 
-    Só incrementa na "/". Backend deduplica por session_id.
+    Dispara quando app-session-id é definido (primeira vez na aba).
+    Usa visitor-incremented Store (sessionStorage) para garantir
+    que NÃO incrementa novamente ao navegar entre páginas.
     """
-    if pathname not in ("/", None):
+    # Já contabilizou nesta sessão? Não incrementar de novo
+    if already_incremented:
+        return no_update
+
+    # Sem session_id ainda? Aguardar
+    if not session_id:
         return no_update
 
     try:
-        payload = {}
-        if session_id:
-            payload["session_id"] = session_id
-
         response = requests.post(
             f"{API_BASE_URL}/visitors/increment",
-            json=payload,
+            json={"session_id": session_id},
             timeout=3,
         )
 
@@ -150,7 +154,8 @@ def increment_visitor_on_page_load(pathname, session_id):
     except Exception as e:
         logger.debug(f"Erro ao registrar visitante: {e}")
 
-    return no_update
+    # Marcar como já incrementado nesta sessão (persiste em sessionStorage)
+    return True
 
 
 # ============================================================================

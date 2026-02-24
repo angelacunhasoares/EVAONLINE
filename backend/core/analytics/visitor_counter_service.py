@@ -22,34 +22,43 @@ class VisitorCounterService:
         self.REDIS_KEY_PEAK_HOUR = "visitors:peak_hour"
         self.REDIS_KEY_HOURLY = "visitors:hourly"  # Contador por hora
 
-    def increment_visitor(self, session_id: str = None) -> Dict:
+    def increment_visitor(
+        self, session_id: str = None, ip_address: str = None
+    ) -> Dict:
         """
         Incrementa contador de visitantes no Redis com deduplicação por sessão.
 
         Se session_id for fornecido, verifica se já foi contado hoje.
         Sessões repetidas NÃO incrementam o total (evita inflação).
-        Cada sessão ainda incrementa o hourly (page views por hora).
+        Se nem session_id nem ip_address disponíveis, NÃO incrementa
+        (segurança contra inflação acidental).
 
         Args:
             session_id: ID único da sessão do usuário (ex: "sess_abc123")
+            ip_address: IP do visitante (fallback para deduplicação)
 
         Returns:
             Dict com estatísticas atualizadas
         """
         try:
-            is_new_visitor = True
+            # Determinar chave de deduplicação
+            dedup_key = session_id or (
+                f"ip_{ip_address}" if ip_address else None
+            )
 
-            # Deduplicação: verificar se sessão já foi contada hoje
-            if session_id:
-                is_new_visitor = not self.redis.sismember(
-                    self.REDIS_KEY_UNIQUE_TODAY, session_id
-                )
-                if is_new_visitor:
-                    self.redis.sadd(self.REDIS_KEY_UNIQUE_TODAY, session_id)
-                    # Expirar set à meia-noite (~24h)
-                    self.redis.expire(self.REDIS_KEY_UNIQUE_TODAY, 86400)
+            # Sem identificador → não incrementar (evita inflação)
+            if not dedup_key:
+                return self.get_stats()
 
-            # Incrementar total APENAS se visitante novo (ou sem session_id)
+            is_new_visitor = not self.redis.sismember(
+                self.REDIS_KEY_UNIQUE_TODAY, dedup_key
+            )
+            if is_new_visitor:
+                self.redis.sadd(self.REDIS_KEY_UNIQUE_TODAY, dedup_key)
+                # Expirar set à meia-noite (~24h)
+                self.redis.expire(self.REDIS_KEY_UNIQUE_TODAY, 86400)
+
+            # Incrementar total APENAS se visitante novo
             if is_new_visitor:
                 self.redis.incr(self.REDIS_KEY_VISITORS)
 
