@@ -49,10 +49,10 @@ def create_world_map():
     locate_control = dl.LocateControl(
         id="locate-control",
         locateOptions={
-            "enableHighAccuracy": False,  # Mais rapido (usa IP/WiFi em vez de GPS)
+            "enableHighAccuracy": True,  # Melhor precisão (GPS quando disponível)
             "maxZoom": 14,  # Zoom menor para carregar mais rapido
-            "timeout": 5000,  # Timeout reduzido de 10s para 5s
-            "maximumAge": 60000,  # Cache de 1 minuto
+            "timeout": 15000,  # 15 segundos para obter posição
+            "maximumAge": 300000,  # Cache de 5 minutos
             "watch": False,  # Nao monitora continuamente
         },
         position="topleft",
