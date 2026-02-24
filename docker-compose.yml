@@ -51,7 +51,11 @@ services:
       - "6379"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ${REDIS_PASSWORD:+-a $REDIS_PASSWORD} ping | grep PONG"]
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli ${REDIS_PASSWORD:+-a $REDIS_PASSWORD} ping | grep PONG",
+        ]
       interval: 5s
       timeout: 3s
       retries: 5
