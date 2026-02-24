@@ -130,7 +130,9 @@ async def calculate_eto(
         )
         period_type_str = (request.period_type or "dashboard_current").lower()
 
-        allowed, rate_msg = check_calculation_limit(client_ip, period_type_str)
+        allowed, rate_msg = check_calculation_limit(
+            client_ip, period_type_str, visitor_id=request.visitor_id
+        )
         if not allowed:
             raise HTTPException(status_code=429, detail=rate_msg)
 
@@ -224,7 +226,7 @@ async def calculate_eto(
         )
 
         # 5b. Track calculation for rate limiting
-        track_calculation(client_ip, period_type_str)
+        track_calculation(client_ip, period_type_str, visitor_id=request.visitor_id)
 
         # 6. Retornar task_id para monitoramento via WebSocket
         return {

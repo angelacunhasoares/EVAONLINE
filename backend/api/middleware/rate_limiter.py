@@ -1,13 +1,19 @@
 """
-Per-IP Rate Limiter for ETo Calculations.
+Per-User Rate Limiter for ETo Calculations.
 
-Limita o número de cálculos por IP por dia usando Redis.
+Limita o número de cálculos por usuário por dia usando Redis.
+Identifica usuários por IP + visitor_id (localStorage do navegador).
 Protege contra abuso e uso excessivo das APIs externas.
 
+Dual identification:
+- IP: protege contra abuso em nível de rede
+- visitor_id: granularidade por navegador (ex: vários alunos no mesmo IP)
+- Ambos são verificados; o mais restritivo prevalece
+
 Limits:
-- Dashboard modes (current/forecast): 30/day per IP
-- Historical mode (email): 10/day per IP
-- Global: 50/day per IP across all modes
+- Dashboard modes (current/forecast): 30/day per user
+- Historical mode (email): 10/day per user
+- Global: 50/day per user across all modes
 """
 
 from datetime import datetime
@@ -34,22 +40,77 @@ def _get_redis() -> Redis:
     return Redis.from_url(settings.redis.redis_url, decode_responses=True)
 
 
-def _get_key(ip: str, mode: str) -> str:
+def _get_key(identifier: str, mode: str) -> str:
     """Build Redis key for rate limiting."""
     today = datetime.now().strftime("%Y-%m-%d")
-    return f"calc_limit:{ip}:{mode}:{today}"
+    return f"calc_limit:{identifier}:{mode}:{today}"
+
+
+def _check_identifier_limit(
+    redis: Redis,
+    identifier: str,
+    identifier_type: str,
+    mode: str,
+) -> tuple[bool, Optional[str]]:
+    """
+    Check limits for a single identifier (IP or visitor_id).
+
+    Returns:
+        (allowed, error_message)
+    """
+    # 1. Check mode-specific limit
+    mode_key = _get_key(identifier, mode)
+    mode_usage_raw = redis.get(mode_key)
+    mode_usage = int(mode_usage_raw) if mode_usage_raw else 0
+    mode_limit = CALC_LIMITS.get(mode, 30)
+
+    if mode_usage >= mode_limit:
+        logger.warning(
+            f"🚫 Rate limit exceeded: {identifier_type}={identifier} "
+            f"mode={mode} usage={mode_usage}/{mode_limit}"
+        )
+        return False, (
+            f"Daily limit reached for this mode ({mode_limit} calculations/day). "
+            f"Try again tomorrow."
+        )
+
+    # 2. Check global limit
+    global_key = _get_key(identifier, "global")
+    global_usage_raw = redis.get(global_key)
+    global_usage = int(global_usage_raw) if global_usage_raw else 0
+    global_limit = CALC_LIMITS["global"]
+
+    if global_usage >= global_limit:
+        logger.warning(
+            f"🚫 Global rate limit exceeded: {identifier_type}={identifier} "
+            f"usage={global_usage}/{global_limit}"
+        )
+        return False, (
+            f"Daily calculation limit reached ({global_limit}/day). "
+            f"Try again tomorrow."
+        )
+
+    return True, None
 
 
 def check_calculation_limit(
     client_ip: str,
     mode: str = "dashboard_current",
+    visitor_id: Optional[str] = None,
 ) -> tuple[bool, Optional[str]]:
     """
-    Check if IP has remaining calculation quota.
+    Check if user has remaining calculation quota.
+
+    Uses dual identification: IP + visitor_id.
+    Both are checked; the most restrictive one prevails.
+    This provides:
+    - IP: network-level abuse protection
+    - visitor_id: per-browser granularity (e.g. university lab)
 
     Args:
         client_ip: IP address of the client
-        mode: Operation mode (dashboard_current, dashboard_forecast, historical_email)
+        mode: Operation mode
+        visitor_id: Unique browser identifier (from localStorage)
 
     Returns:
         (allowed, error_message) - True if allowed, False with message if blocked
@@ -57,37 +118,19 @@ def check_calculation_limit(
     try:
         redis = _get_redis()
 
-        # 1. Check mode-specific limit
-        mode_key = _get_key(client_ip, mode)
-        mode_usage_raw = redis.get(mode_key)
-        mode_usage = int(mode_usage_raw) if mode_usage_raw else 0
-        mode_limit = CALC_LIMITS.get(mode, 30)
+        # 1. Check IP-based limits
+        allowed, msg = _check_identifier_limit(redis, client_ip, "IP", mode)
+        if not allowed:
+            return False, msg
 
-        if mode_usage >= mode_limit:
-            logger.warning(
-                f"🚫 Rate limit exceeded: IP={client_ip} mode={mode} "
-                f"usage={mode_usage}/{mode_limit}"
+        # 2. Check visitor_id-based limits (if provided)
+        if visitor_id:
+            vid_key = f"vid:{visitor_id}"  # Prefix to distinguish from IPs
+            allowed, msg = _check_identifier_limit(
+                redis, vid_key, "visitor_id", mode
             )
-            return False, (
-                f"Daily limit reached for this mode ({mode_limit} calculations/day). "
-                f"Try again tomorrow."
-            )
-
-        # 2. Check global limit
-        global_key = _get_key(client_ip, "global")
-        global_usage_raw = redis.get(global_key)
-        global_usage = int(global_usage_raw) if global_usage_raw else 0
-        global_limit = CALC_LIMITS["global"]
-
-        if global_usage >= global_limit:
-            logger.warning(
-                f"🚫 Global rate limit exceeded: IP={client_ip} "
-                f"usage={global_usage}/{global_limit}"
-            )
-            return False, (
-                f"Daily calculation limit reached ({global_limit}/day). "
-                f"Try again tomorrow."
-            )
+            if not allowed:
+                return False, msg
 
         return True, None
 
@@ -97,15 +140,20 @@ def check_calculation_limit(
         return True, None
 
 
-def track_calculation(client_ip: str, mode: str = "dashboard_current") -> int:
+def track_calculation(
+    client_ip: str,
+    mode: str = "dashboard_current",
+    visitor_id: Optional[str] = None,
+) -> int:
     """
-    Increment calculation counter for IP.
+    Increment calculation counter for IP and visitor_id.
 
     Call this AFTER successfully dispatching the Celery task.
 
     Args:
         client_ip: IP address of the client
         mode: Operation mode
+        visitor_id: Unique browser identifier
 
     Returns:
         Current global usage count for this IP today
@@ -114,19 +162,29 @@ def track_calculation(client_ip: str, mode: str = "dashboard_current") -> int:
         redis = _get_redis()
         ttl = 86400 * 2  # 48h TTL
 
-        # Increment mode-specific counter
+        # Track IP
         mode_key = _get_key(client_ip, mode)
         redis.incr(mode_key)
         redis.expire(mode_key, ttl)
 
-        # Increment global counter
         global_key = _get_key(client_ip, "global")
         global_usage = int(redis.incr(global_key))
         redis.expire(global_key, ttl)
 
+        # Track visitor_id (if provided)
+        if visitor_id:
+            vid_key = f"vid:{visitor_id}"
+            vid_mode_key = _get_key(vid_key, mode)
+            redis.incr(vid_mode_key)
+            redis.expire(vid_mode_key, ttl)
+
+            vid_global_key = _get_key(vid_key, "global")
+            redis.incr(vid_global_key)
+            redis.expire(vid_global_key, ttl)
+
         logger.info(
-            f"📊 Calc tracked: IP={client_ip} mode={mode} "
-            f"global_usage={global_usage}/{CALC_LIMITS['global']}"
+            f"📊 Calc tracked: IP={client_ip} visitor={visitor_id or 'N/A'} "
+            f"mode={mode} global_usage={global_usage}/{CALC_LIMITS['global']}"
         )
 
         return global_usage
