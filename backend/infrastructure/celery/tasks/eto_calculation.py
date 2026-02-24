@@ -20,10 +20,9 @@ from backend.infrastructure.celery.celery_config import celery_app
 @celery_app.task(
     bind=True,
     name="backend.infrastructure.celery.tasks.calculate_eto_task",
-    max_retries=3,
-    autoretry_for=(Exception,),
+    max_retries=2,
     retry_backoff=True,
-    retry_backoff_max=600,  # Max 10 minutos entre retries
+    retry_backoff_max=60,  # Max 1 minuto entre retries
     retry_jitter=True,
     ignore_result=False,  # Garantir que resultado seja salvo no Redis
     track_started=True,  # Track status STARTED
@@ -574,5 +573,30 @@ def calculate_eto_task(
             except Exception as email_err:
                 logger.error(f"Falha ao enviar email de erro: {email_err}")
 
-        # Retry automático (max 3 tentativas)
-        raise self.retry(exc=e, countdown=60 * (self.request.retries + 1))
+        # Retry apenas para erros de rede/API, não para validação
+        if isinstance(e, (ValueError, TypeError)):
+            # Erros de validação: falhar imediatamente sem retry
+            return {
+                "error": str(e),
+                "task_id": task_id,
+                "mode": mode,
+                "processing_time_seconds": round(
+                    (datetime.now() - start_time).total_seconds(), 2
+                ),
+            }
+
+        # Erros de rede/API: retry com backoff (max 2 tentativas)
+        if self.request.retries < self.max_retries:
+            raise self.retry(
+                exc=e, countdown=30 * (self.request.retries + 1)
+            )
+
+        # Esgotou retries: retornar erro
+        return {
+            "error": str(e),
+            "task_id": task_id,
+            "mode": mode,
+            "processing_time_seconds": round(
+                (datetime.now() - start_time).total_seconds(), 2
+            ),
+        }

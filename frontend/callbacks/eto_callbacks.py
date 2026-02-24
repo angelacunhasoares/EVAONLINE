@@ -1698,11 +1698,13 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
         # Usar variável de ambiente ou padrão para Docker
         redis_host = os.getenv("REDIS_HOST", "redis")
         redis_port = int(os.getenv("REDIS_PORT", "6379"))
+        redis_password = os.getenv("REDIS_PASSWORD", None)
 
         r = redis.Redis(
             host=redis_host,
             port=redis_port,
             db=0,
+            password=redis_password,
             decode_responses=True,
         )
 
