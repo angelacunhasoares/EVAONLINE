@@ -1683,6 +1683,371 @@ def _feature_card(icon, title, description, color):
     )
 
 
+def _create_usage_limits_section(lang):
+    """Usage limits information section."""
+    return dbc.Row(
+        [
+            dbc.Col(
+                [
+                    html.H2(
+                        _t(lang, "limits_title"),
+                        id="usage-limits",
+                        className="mb-4 doc-section-title",
+                    ),
+                    html.P(
+                        _t(lang, "limits_intro"),
+                        className="text-muted mb-4",
+                    ),
+                    # Per-user limits card
+                    dbc.Card(
+                        [
+                            dbc.CardHeader(
+                                [
+                                    html.I(
+                                        className="bi bi-person-badge me-2"
+                                    ),
+                                    html.Strong(
+                                        _t(lang, "limits_per_user_title")
+                                    ),
+                                ],
+                                className="bg-primary text-white",
+                            ),
+                            dbc.CardBody(
+                                [
+                                    html.P(
+                                        _t(lang, "limits_per_user_desc"),
+                                        className="text-muted small mb-3",
+                                    ),
+                                    dbc.Table(
+                                        [
+                                            html.Thead(
+                                                html.Tr(
+                                                    [
+                                                        html.Th(
+                                                            _t(
+                                                                lang,
+                                                                "limits_mode",
+                                                            )
+                                                        ),
+                                                        html.Th(
+                                                            _t(
+                                                                lang,
+                                                                "limits_limit",
+                                                            ),
+                                                            className="text-center",
+                                                        ),
+                                                        html.Th(
+                                                            _t(
+                                                                lang,
+                                                                "limits_details",
+                                                            )
+                                                        ),
+                                                    ]
+                                                )
+                                            ),
+                                            html.Tbody(
+                                                [
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-calendar-check me-2 text-success"
+                                                                    ),
+                                                                    _t(
+                                                                        lang,
+                                                                        "limits_dashboard_mode",
+                                                                    ),
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                dbc.Badge(
+                                                                    _t(
+                                                                        lang,
+                                                                        "limits_dashboard_limit",
+                                                                    ),
+                                                                    color="success",
+                                                                    pill=True,
+                                                                ),
+                                                                className="text-center",
+                                                            ),
+                                                            html.Td(
+                                                                _t(
+                                                                    lang,
+                                                                    "limits_dashboard_detail",
+                                                                ),
+                                                                className="small text-muted",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-clock-history me-2 text-info"
+                                                                    ),
+                                                                    _t(
+                                                                        lang,
+                                                                        "limits_historical_mode",
+                                                                    ),
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                dbc.Badge(
+                                                                    _t(
+                                                                        lang,
+                                                                        "limits_historical_limit",
+                                                                    ),
+                                                                    color="info",
+                                                                    pill=True,
+                                                                ),
+                                                                className="text-center",
+                                                            ),
+                                                            html.Td(
+                                                                _t(
+                                                                    lang,
+                                                                    "limits_historical_detail",
+                                                                ),
+                                                                className="small text-muted",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                [
+                                                                    html.I(
+                                                                        className="bi bi-globe me-2 text-warning"
+                                                                    ),
+                                                                    html.Strong(
+                                                                        _t(
+                                                                            lang,
+                                                                            "limits_global_mode",
+                                                                        )
+                                                                    ),
+                                                                ]
+                                                            ),
+                                                            html.Td(
+                                                                dbc.Badge(
+                                                                    _t(
+                                                                        lang,
+                                                                        "limits_global_limit",
+                                                                    ),
+                                                                    color="warning",
+                                                                    text_color="dark",
+                                                                    pill=True,
+                                                                ),
+                                                                className="text-center",
+                                                            ),
+                                                            html.Td(
+                                                                _t(
+                                                                    lang,
+                                                                    "limits_global_detail",
+                                                                ),
+                                                                className="small text-muted",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ]
+                                            ),
+                                        ],
+                                        bordered=True,
+                                        hover=True,
+                                        responsive=True,
+                                        className="mb-0",
+                                    ),
+                                ]
+                            ),
+                        ],
+                        className="mb-4 shadow-sm",
+                    ),
+                    # External API quotas card
+                    dbc.Card(
+                        [
+                            dbc.CardHeader(
+                                [
+                                    html.I(
+                                        className="bi bi-cloud-download me-2"
+                                    ),
+                                    html.Strong(
+                                        _t(lang, "limits_api_title")
+                                    ),
+                                ],
+                                className="bg-secondary text-white",
+                            ),
+                            dbc.CardBody(
+                                [
+                                    html.P(
+                                        _t(lang, "limits_api_desc"),
+                                        className="text-muted small mb-3",
+                                    ),
+                                    dbc.Table(
+                                        [
+                                            html.Thead(
+                                                html.Tr(
+                                                    [
+                                                        html.Th(
+                                                            _t(
+                                                                lang,
+                                                                "limits_api_name",
+                                                            )
+                                                        ),
+                                                        html.Th(
+                                                            _t(
+                                                                lang,
+                                                                "limits_api_daily",
+                                                            ),
+                                                            className="text-center",
+                                                        ),
+                                                        html.Th(
+                                                            _t(
+                                                                lang,
+                                                                "limits_api_usage",
+                                                            )
+                                                        ),
+                                                    ]
+                                                )
+                                            ),
+                                            html.Tbody(
+                                                [
+                                                    html.Tr(
+                                                        [
+                                                            html.Td("NASA POWER"),
+                                                            html.Td(
+                                                                "1,000",
+                                                                className="text-center",
+                                                            ),
+                                                            html.Td(
+                                                                _t(
+                                                                    lang,
+                                                                    "limits_nasa_usage",
+                                                                ),
+                                                                className="small",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                "Open-Meteo Archive"
+                                                            ),
+                                                            html.Td(
+                                                                "10,000",
+                                                                className="text-center",
+                                                            ),
+                                                            html.Td(
+                                                                _t(
+                                                                    lang,
+                                                                    "limits_openmeteo_archive_usage",
+                                                                ),
+                                                                className="small",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                "Open-Meteo Forecast"
+                                                            ),
+                                                            html.Td(
+                                                                "10,000",
+                                                                className="text-center",
+                                                            ),
+                                                            html.Td(
+                                                                _t(
+                                                                    lang,
+                                                                    "limits_openmeteo_forecast_usage",
+                                                                ),
+                                                                className="small",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                "OpenTopoData"
+                                                            ),
+                                                            html.Td(
+                                                                "1,000",
+                                                                className="text-center",
+                                                            ),
+                                                            html.Td(
+                                                                _t(
+                                                                    lang,
+                                                                    "limits_opentopo_usage",
+                                                                ),
+                                                                className="small",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Tr(
+                                                        [
+                                                            html.Td("Resend"),
+                                                            html.Td(
+                                                                "100",
+                                                                className="text-center",
+                                                            ),
+                                                            html.Td(
+                                                                _t(
+                                                                    lang,
+                                                                    "limits_resend_usage",
+                                                                ),
+                                                                className="small",
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ]
+                                            ),
+                                        ],
+                                        bordered=True,
+                                        hover=True,
+                                        responsive=True,
+                                        size="sm",
+                                        className="mb-0",
+                                    ),
+                                ]
+                            ),
+                        ],
+                        className="mb-4 shadow-sm",
+                    ),
+                    # What happens when limit reached
+                    dbc.Alert(
+                        [
+                            html.I(
+                                className="bi bi-info-circle-fill me-2"
+                            ),
+                            html.Strong(
+                                _t(lang, "limits_exceeded_title")
+                            ),
+                            " ",
+                            _t(lang, "limits_exceeded_desc"),
+                        ],
+                        color="warning",
+                        className="mb-3",
+                    ),
+                    # Tip about cache
+                    dbc.Alert(
+                        [
+                            html.I(
+                                className="bi bi-lightbulb-fill me-2"
+                            ),
+                            html.Strong(
+                                _t(lang, "limits_tip_title")
+                            ),
+                            _t(lang, "limits_tip_desc"),
+                        ],
+                        color="success",
+                        className="mb-0",
+                    ),
+                ],
+                width=12,
+            )
+        ],
+        className="mb-4",
+    )
+
+
 def _create_faq_section(lang):
     """FAQ / Troubleshooting section."""
     faq_keys = [
@@ -2066,6 +2431,20 @@ def create_documentation_layout(lang="en"):
                                                         className="doc-nav-number",
                                                     ),
                                                     html.I(
+                                                        className="bi bi-shield-exclamation me-1"
+                                                    ),
+                                                    _t(lang, "nav_limits"),
+                                                ],
+                                                href="#usage-limits",
+                                                className="doc-nav-link",
+                                            ),
+                                            html.A(
+                                                [
+                                                    html.Span(
+                                                        "10",
+                                                        className="doc-nav-number",
+                                                    ),
+                                                    html.I(
                                                         className="bi bi-question-circle me-1"
                                                     ),
                                                     _t(lang, "nav_faq"),
@@ -2076,7 +2455,7 @@ def create_documentation_layout(lang="en"):
                                             html.A(
                                                 [
                                                     html.Span(
-                                                        "10",
+                                                        "11",
                                                         className="doc-nav-number",
                                                     ),
                                                     html.I(
@@ -2105,6 +2484,7 @@ def create_documentation_layout(lang="en"):
                     _create_variables_section(lang),
                     _create_data_sources_section(lang),
                     _create_features_section(lang),
+                    _create_usage_limits_section(lang),
                     _create_faq_section(lang),
                     _create_license_section(lang),
                 ],
