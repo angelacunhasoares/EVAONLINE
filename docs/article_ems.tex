@@ -10,6 +10,8 @@
 \usepackage{xcolor}
 \usepackage{siunitx}
 \usepackage{textcomp}
+\usepackage{caption}
+\captionsetup[table]{labelsep=newline, labelfont=bf, singlelinecheck=false, justification=raggedright}
 
 %% Journal name
 \journal{Environmental Modelling \& Software}
@@ -165,7 +167,8 @@ and straightforward deployment.
 
 The remainder of this paper is organized as follows:
 Section~\ref{sec:methodology} describes the system architecture, data sources,
-fusion methodology, and ET\textsubscript{0} calculation procedures;
+fusion methodology, ET\textsubscript{0} calculation procedures, and the
+deployment and quality assurance protocol;
 Section~\ref{sec:results_discussion} presents the validation results against
 the BR-DWGD reference dataset, compares EVAonline with existing tools, and
 discusses strengths and limitations; and Section~\ref{sec:conclusions}
@@ -254,24 +257,73 @@ configurable HTTP timeouts and exponential-backoff retry logic via the
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lllc}
 \hline
-\textbf{Source}     & \textbf{Model}    & \textbf{Coverage}     & \textbf{Resolution}  \\ \hline
-NASA POWER v2.0     & MERRA-2 + CERES   & Global, 1981--present & 0.5$^{\circ}$        \\
-Open-Meteo Archive  & Best Match$^b$ (IFS/ERA5) & Global, 1940--present & 9--25\,km    \\
-Open-Meteo Forecast & Best Match$^b$ (multi-NWP) & Global, 16 days      & 1--25\,km    \\
-MET Norway (Yr)     & MEPS / ECMWF IFS  & Global, 10 days       & 2.5--9\,km$^a$       \\
-NWS Forecast        & NWP (GFS/NAM)     & CONUS, 7 days         & 2.5\,km              \\
-NWS Stations        & In-situ obs.      & CONUS ($\sim$1800 st.)& Station              \\ \hline
+\textbf{Source} & \textbf{Model} & \textbf{Coverage} & \textbf{Resolution} \\ \hline
+
+% NASA POWER
+NASA POWER &
+MERRA-2 + CERES &
+Global, 1981--present &
+0.5$^{\circ}$ \\
+
+% Open-Meteo Archive
+\begin{tabular}[c]{@{}l@{}}Open-Meteo\\ Archive\end{tabular} &
+\begin{tabular}[c]{@{}l@{}}Best Match$^{b}$\\ (ERA5-Land\,/\,ERA5)\end{tabular} &
+Global, 1940--present &
+9--25\,km \\
+
+% Open-Meteo Forecast
+\begin{tabular}[c]{@{}l@{}}Open-Meteo\\ Forecast\end{tabular} &
+\begin{tabular}[c]{@{}l@{}}Best Match$^{b}$\\ (multi-NWP)\end{tabular} &
+Global, 16 days &
+1--25\,km \\
+
+% MET Norway Locationforecast
+\begin{tabular}[c]{@{}l@{}}MET Norway\\ Locationforecast\end{tabular} &
+MEPS\,/\,ECMWF IFS &
+Global, 9--10 days &
+2.5--9\,km$^{a}$ \\
+
+% NOAA NWS Forecast
+\begin{tabular}[c]{@{}l@{}}NOAA NWS\\ Forecast\end{tabular} &
+\begin{tabular}[c]{@{}l@{}}Blend of NWP\\ (GFS, NAM, HRRR, etc.)$^{c}$\end{tabular} &
+CONUS, 7 days &
+2.5\,km \\
+
+% NOAA NWS Stations
+\begin{tabular}[c]{@{}l@{}}NOAA NWS\\ Stations\end{tabular} &
+In-situ obs. &
+\begin{tabular}[c]{@{}l@{}}CONUS\\ ($\sim$900 ASOS stations)$^{d}$\end{tabular} &
+Station \\ \hline
+
 \end{tabular}%
 }
-\begin{flushleft}
+% Notes
+\noindent\begin{minipage}{\textwidth}
 \scriptsize
-$^a$~2.5\,km in Nordic Europe (MEPS); $\sim$9\,km elsewhere (ECMWF IFS).\\
-$^b$~Open-Meteo \texttt{best\_match} auto-selects the highest-resolution model per location.
-\textit{Archive}: ECMWF IFS (9\,km, 2017+) or ERA5 (25\,km, pre-2017).
-\textit{Forecast}: combines ICON, GFS, ECMWF IFS, AROME, and 10+ regional NWP models.\\
-EVAonline enforces standardised limits: historical queries start from 1990-01-01;
-forecast horizon is capped at today\,+\,5\,d (6 days total) across all sources.
-\end{flushleft}
+\textbf{Note.}
+EVAonline enforces standardised limits: historical queries start from
+1990-01-01; forecast horizon is capped at today\,+\,5\,d (6~days total)
+across all sources.\\[2pt]
+$^{a}$~2.5\,km in Nordic Europe (MEPS); $\sim$9\,km elsewhere (ECMWF IFS).
+Documentation available at: \url{https://docs.api.met.no/doc/}\\
+$^{b}$~Open-Meteo \texttt{best\_match} auto-selects the highest-resolution
+model per location.
+\textit{Archive}: ECMWF IFS HRES or ERA5-Land (9\,km, 2017+) or ERA5
+(25\,km, pre-2017).
+\textit{Forecast}: combines ICON, GFS, ECMWF IFS, AROME, ARPEGE, GEM, and
+10+ other regional/global NWP models.
+Documentation available at: \url{https://open-meteo.com/en/docs}\\
+$^{c}$~Based on the National Digital Forecast Database (NDFD), which
+integrates multiple NWP models including GFS (global), NAM (regional),
+HRRR (high-resolution short-term), RAP, and ensembles like NBM, with
+manual adjustments by meteorologists.
+Documentation available at: \url{https://www.weather.gov/documentation}\\
+$^{d}$~Primarily Automated Surface Observing System (ASOS) stations; total
+active stations exceed 10\,000 across networks (e.g.\ ASOS, AWOS, Coop),
+but $\sim$900 are core ASOS sites in CONUS with hourly observations.
+Documentation available at: \url{https://www.weather.gov/documentation}\\[2pt]
+\rule{\textwidth}{0.4pt}
+\end{minipage}
 \end{table}
 
 Source-specific variable names, units, and temporal aggregations differ across
@@ -850,6 +902,108 @@ documentation (Swagger UI). Key endpoints include: \texttt{POST
 /api/v1/health/detailed} for system health monitoring with individual service
 status.
 
+\subsection{Deployment, Security, and Quality Assurance}
+\label{subsec:testing}
+
+Production readiness was evaluated through a structured quality assurance
+protocol encompassing automated testing, security hardening, and deployment
+verification. This section documents the measures taken to ensure that the
+application is both scientifically correct (validated in
+Section~\ref{sec:results_discussion}) and operationally reliable.
+
+\subsubsection*{Automated test suite}
+
+The project includes a comprehensive test suite organized into four tiers
+(Table~\ref{tab:tests}), executed via the \texttt{pytest} framework with
+\texttt{pytest-cov} for coverage analysis:
+
+\begin{table}[htbp]
+\centering
+\caption{Automated test suite summary. All tests are executed before each
+deployment using a pre-deploy verification script.}
+\label{tab:tests}
+\small
+\begin{tabular}{@{}llp{5.5cm}@{}}
+\toprule
+Tier & Count & Scope \\
+\midrule
+\textbf{Unit tests} & 50+ & Individual functions: FAO-56 PM
+  calculation, Kalman filter state updates, coordinate validation,
+  data preprocessing, physical limits enforcement \\
+\textbf{Integration tests} & 20+ & Multi-component: API endpoint
+  responses, database CRUD with SQLAlchemy/PostGIS, Celery task
+  lifecycle, WebSocket message delivery \\
+\textbf{Security tests} & 30+ & SQL injection prevention (5~payloads
+  $\times$ 3~fields), XSS reflection (5~payloads), coordinate range
+  validation ($\pm 90$/$\pm 180$, NaN, None), WKT injection
+  (4~payloads), payload malformation (empty body, invalid dates,
+  oversized JSON), burst resistance (50--120~rapid requests) \\
+\textbf{Performance tests} & 5+ & Response time benchmarks,
+  concurrent request handling, memory usage under load \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection*{Security hardening}
+
+The containerized deployment employs defense-in-depth principles:
+
+\begin{itemize}
+\item \textbf{Network isolation:} Only the Nginx reverse proxy exposes
+  public ports (80/443); PostgreSQL, Redis, Prometheus, Grafana, Flower,
+  and the API backend communicate exclusively via an internal Docker
+  bridge network, with no host port bindings.
+\item \textbf{Non-root execution:} Application containers run as a
+  dedicated unprivileged user (\texttt{uid=1000}), reducing the impact
+  of potential container escapes.
+\item \textbf{Credential management:} Production secrets (database
+  password, Redis password, API secret key) are generated
+  automatically using Python's \texttt{secrets.token\_urlsafe(32)}
+  (256-bit entropy). A startup validation routine rejects deployment
+  with default placeholder credentials, preventing accidental exposure.
+\item \textbf{Firewall and intrusion prevention:} The deployment script
+  configures \texttt{ufw} (deny-all-incoming default, allow only
+  ports~22, 80, 443) and \texttt{fail2ban} for SSH brute-force
+  protection.
+\item \textbf{Resource limits:} Docker Compose enforces CPU and memory
+  constraints per service (e.g., 1~CPU / 1~GB for the API), preventing
+  resource exhaustion from runaway processes.
+\item \textbf{Monitoring:} Prometheus collects per-endpoint latency and
+  error-rate metrics; Grafana dashboards provide real-time visibility;
+  the \texttt{/metrics} endpoint is blocked from public access via
+  Nginx configuration.
+\end{itemize}
+
+\subsubsection*{Pre-deployment verification}
+
+Before each production deployment, a 10-step automated verification
+script validates the complete stack locally
+(\texttt{scripts/test\_local\_before\_deploy.ps1}):
+
+\begin{enumerate}
+\item \textbf{Environment validation:} Verify \texttt{.env} file
+  exists and contains no default/placeholder credentials.
+\item \textbf{Docker Compose syntax:} Validate
+  \texttt{docker-compose.yml} configuration.
+\item \textbf{Image build:} Build all multi-stage Docker images.
+\item \textbf{Service startup:} Launch the full stack and verify all
+  containers reach healthy status.
+\item \textbf{Health checks:} Verify HTTP responses from 7~endpoints:
+  API health, readiness probe, detailed health, Swagger UI, frontend
+  dashboard, Grafana, and Flower (authentication required).
+\item \textbf{Port isolation:} Confirm that ports 5432 (PostgreSQL),
+  6379 (Redis), 9090 (Prometheus), 3000 (Grafana), 5555 (Flower),
+  and 8000 (API) are \emph{not} reachable from the host.
+\item \textbf{Metrics protection:} Verify \texttt{/metrics} returns
+  HTTP~403 or 404 via Nginx.
+\item \textbf{Unit tests:} Execute the full unit test suite inside
+  the API container.
+\item \textbf{Security tests:} Execute all security test tiers
+  (SQL injection, XSS, coordinate validation, rate limiting).
+\item \textbf{Resource monitoring:} Report container CPU and memory
+  usage to detect anomalies before deployment.
+\end{enumerate}
+
 
 %%
 %% RESULTS AND DISCUSSION
@@ -1215,9 +1369,13 @@ climatological priors that provides physically informed quality control beyond
 simple averaging; (c)~the hexagonal architecture that enables straightforward
 addition of new data sources through the standardized adapter interface;
 (d)~the Docker-based deployment that eliminates installation complexity and
-ensures reproducibility across environments; and (e)~the fully open-source
+ensures reproducibility across environments; (e)~the fully open-source
 AGPL-3.0 license that enables community contributions, peer review, and
-institutional deployment.
+institutional deployment; and (f)~the comprehensive quality assurance pipeline
+(Section~\ref{subsec:testing}) including 100+ automated tests (unit,
+integration, security, and performance), defense-in-depth Docker hardening
+with network isolation, and a 10-step pre-deployment verification script that
+validates the complete stack before each release.
 
 \subsubsection*{Limitations}
 

@@ -1,3 +1,6 @@
+import os
+import sys
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -14,6 +17,59 @@ logger = get_logger()
 
 # Carregar configurações
 settings = get_legacy_settings()
+
+
+# ============================================================================
+# PRODUCTION SECRET VALIDATION
+# ============================================================================
+_FORBIDDEN_PATTERNS = [
+    "CHANGE_THIS",
+    "your_password",
+    "your_secret",
+    "changeme",
+    "admin123",
+    "password123",
+]
+
+
+def _validate_production_secrets():
+    """Reject default/insecure secrets in production.
+
+    Prevents accidental deployment with template placeholder credentials.
+    Only enforced when ENVIRONMENT=production.
+    """
+    env = os.getenv("ENVIRONMENT", "development")
+    if env != "production":
+        return
+
+    critical_vars = {
+        "SECRET_KEY": os.getenv("SECRET_KEY", ""),
+        "POSTGRES_PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
+        "REDIS_PASSWORD": os.getenv("REDIS_PASSWORD", ""),
+    }
+
+    for var_name, value in critical_vars.items():
+        if not value or len(value) < 16:
+            logger.critical(
+                f"FATAL: {var_name} is empty or too short (min 16 chars). "
+                f"Generate a secure secret: python -c "
+                f"\"import secrets; print(secrets.token_urlsafe(32))\""
+            )
+            sys.exit(1)
+
+        for pattern in _FORBIDDEN_PATTERNS:
+            if pattern.lower() in value.lower():
+                logger.critical(
+                    f"FATAL: {var_name} contains default placeholder "
+                    f"'{pattern}'. Replace with a secure generated value "
+                    f"before deploying to production."
+                )
+                sys.exit(1)
+
+    logger.info("✅ Production secret validation passed")
+
+
+_validate_production_secrets()
 
 
 def create_application() -> FastAPI:

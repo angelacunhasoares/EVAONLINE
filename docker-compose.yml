@@ -106,6 +106,8 @@ services:
 
   # =====================================================
   # API Development - Hot Reload
+  # SECURITY: Internal only — access via Nginx or SSH tunnel:
+  #   ssh -L 8001:evaonline-api-dev:8000 root@server-ip
   # =====================================================
   api-dev:
     build:
@@ -127,8 +129,9 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - .:/app # ✅ Montar projeto inteiro para hot-reload
-    ports:
-      - "8001:8000"
+    # SECURITY: No public port — all traffic goes through Nginx
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -610,6 +613,8 @@ services:
 
   # =====================================================
   # Database Admin (Development Only)
+  # SECURITY: No public port — access via SSH tunnel:
+  #   ssh -L 5050:evaonline-adminer:8080 root@server-ip
   # =====================================================
   adminer:
     image: adminer:4.8.1-standalone
@@ -617,8 +622,8 @@ services:
     environment:
       ADMINER_DEFAULT_SERVER: postgres
       ADMINER_DESIGN: dracula
-    ports:
-      - "5050:8080"
+    expose:
+      - "8080"
     depends_on:
       postgres:
         condition: service_healthy

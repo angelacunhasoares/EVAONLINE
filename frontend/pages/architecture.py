@@ -301,33 +301,33 @@ def _create_pipeline_section(lang="en"):
         },
         {
             "step_key": "step3_name",
-            "step_default": "3. Climate Fusion",
+            "step_default": "3. Climate Fusion (3 modes)",
             "file": "climate_fusion.py",
             "func": "ClimateFusion.fuse_multi_source()",
             "desc_key": "step3_desc",
-            "desc_default": "Region-aware weighted fusion: USA (NWS 50%, OM 30%, MET 20%), Nordic (MET 80%, OM 20%), Global (OM 70%, MET 30%)",
+            "desc_default": "Historical: per-variable NASA/OM weights (validated). Recent: primary+fallback sources with HIST_WEIGHTS. Forecast: region weights (USA → NWS 50%/OM 30%/MET 20%; Nordic → MET 80%/OM 20%; Global → OM 70%/MET 30%)",
             "icon": "bi-intersect",
-            "lines": "270 lines",
+            "lines": "403 lines",
         },
         {
             "step_key": "step4_name",
-            "step_default": "4. Kalman Filters",
+            "step_default": "4. Kalman Filters (2-stage)",
             "file": "kalman_filters.py",
             "func": "KalmanApplier.apply_eto_filter()",
             "desc_key": "step4_desc",
-            "desc_default": "AdaptiveKalmanFilter (monthly normals, outlier penalty R×500) + SimpleKalmanFilter (fallback R=0.8, Q=0.05)",
+            "desc_default": "Stage 1: Adaptive Kalman on precipitation (outlier detection via monthly P01/P99 percentiles, R×500 penalty). Stage 2: Final adaptive Kalman on calculated ETo (monthly bias correction + continuous filter using 1991–2020 climatology)",
             "icon": "bi-gpu-card",
             "lines": "~400 lines",
         },
         {
             "step_key": "step5_name",
-            "step_default": "5. Ensemble",
+            "step_default": "5. Ensemble Orchestrator",
             "file": "climate_ensemble.py",
             "func": "ClimateKalmanEnsemble.process()",
             "desc_key": "step5_desc",
-            "desc_default": "Fusion → Load 1991–2020 normals → Kalman precip → Kalman ETo → Set fusion_mode",
+            "desc_default": "Fusion (step 3) → Load 30-year monthly normals (1991–2020) → Kalman precipitation filter (step 4a) → FAO-56 ETo calculation → Kalman ETo correction (step 4b) → Set fusion_mode",
             "icon": "bi-layers",
-            "lines": "~350 lines",
+            "lines": "55 lines",
         },
     ]
 
@@ -1163,6 +1163,307 @@ def _create_tech_stack_section(lang="en"):
 
 
 # =============================================================================
+# SECTION 10: Validation & Scientific Methodology
+# =============================================================================
+def _create_validation_section(lang="en"):
+    """Seção detalhada da validação científica e metodologia de fusão."""
+
+    # --- Fusion weights table ---
+    fusion_weights = [
+        ("T2M_MAX", "Max temperature", "0.58", "0.42"),
+        ("T2M_MIN", "Min temperature", "0.52", "0.48"),
+        ("T2M", "Mean temperature", "0.60", "0.40"),
+        ("RH2M", "Relative humidity", "0.35", "0.65"),
+        ("WS2M", "Wind speed at 2m", "0.20", "0.80"),
+        ("ALLSKY_SFC_SW_DWN", "Solar radiation", "0.92", "0.08"),
+        ("PRECTOTCORR", "Precipitation", "0.50", "0.50"),
+    ]
+
+    weights_rows = []
+    for var, desc_default, w_nasa, w_om in fusion_weights:
+        weights_rows.append(
+            html.Tr([
+                html.Td(html.Code(var)),
+                html.Td(html.Small(
+                    _t(lang, "validation", f"var_{var}", default=desc_default)
+                )),
+                html.Td(html.Strong(w_nasa, className="text-primary")),
+                html.Td(html.Strong(w_om, className="text-success")),
+            ])
+        )
+
+    # --- Validation results table ---
+    results_data = [
+        ("NASA POWER (FAO-56)", "0.740", "0.411", "-0.363", "0.845", "1.117", "+15.78"),
+        ("Open-Meteo Archive (ERA5-Land)", "0.636", "0.432", "-0.547", "0.859", "1.097", "+13.02"),
+        ("Open-Meteo API (ERA5)", "0.649", "0.584", "0.216", "0.690", "0.860", "+8.27"),
+    ]
+    fusion_result = ("EVAonline Fusion", "0.694", "0.814", "0.676", "0.423", "0.566", "+0.71")
+
+    results_rows = []
+    for name, r2, kge, nse, mae, rmse, pbias in results_data:
+        results_rows.append(
+            html.Tr([
+                html.Td(name),
+                html.Td(r2), html.Td(kge), html.Td(nse),
+                html.Td(mae), html.Td(rmse), html.Td(pbias),
+            ])
+        )
+    # Fusion row (bold)
+    fn, fr2, fkge, fnse, fmae, frmse, fpbias = fusion_result
+    results_rows.append(
+        html.Tr([
+            html.Td(html.Strong(fn, className="text-success")),
+            html.Td(html.Strong(fr2)),
+            html.Td(html.Strong(fkge, className="text-success")),
+            html.Td(html.Strong(fnse)),
+            html.Td(html.Strong(fmae)),
+            html.Td(html.Strong(frmse)),
+            html.Td(html.Strong(fpbias, className="text-success")),
+        ], className="table-success")
+    )
+
+    # --- Pipeline steps (validation methodology) ---
+    pipeline_steps = [
+        ("1", "bi-download", "val_step1", "Data Acquisition",
+         "val_step1_desc",
+         "Download raw data from NASA POWER (7 variables at 2m) and Open-Meteo Archive (7 variables, wind at 10m). Period: 1991-2020, 17 MATOPIBA cities + Piracicaba/SP."),
+        ("2", "bi-funnel", "val_step2", "Preprocessing & QC",
+         "val_step2_desc",
+         "Apply physical limits (Xavier et al., 2016). IQR outlier detection (max 5%). Linear interpolation for gaps. Wind conversion: Open-Meteo 10m \u2192 2m via FAO-56 Eq. 47."),
+        ("3", "bi-intersect", "val_step3", "Weighted Fusion",
+         "val_step3_desc",
+         "Per-variable weighted average: each variable has a NASA weight and an Open-Meteo weight (see table). Precipitation: simple average (0.50/0.50) + Adaptive Kalman filter for outlier detection."),
+        ("4", "bi-calculator", "val_step4", "FAO-56 Penman-Monteith",
+         "val_step4_desc",
+         "Complete FAO-56 PM calculation on the fused data: saturation/actual vapor pressure, extraterrestrial radiation (Eqs. 21-25), net radiation, psychrometric constant with altitude correction."),
+        ("5", "bi-gpu-card", "val_step5", "Final Kalman ETo Correction",
+         "val_step5_desc",
+         "3-step adaptive Kalman on calculated ETo: (a) monthly bias correction using 30-year climatology, (b) continuous Kalman filter (no monthly reset) with dynamic P01/P99 bounds, (c) anomaly detection."),
+        ("6", "bi-clipboard-check", "val_step6", "Validation vs Xavier BR-DWGD",
+         "val_step6_desc",
+         "Compare EVAonline ETo against Xavier et al. (2022) gridded reference dataset (gold standard for Brazil). Calculate R\u00b2, KGE, NSE, MAE, RMSE, PBIAS across all 17 sites."),
+    ]
+
+    step_items = []
+    for num, icon, key, default_title, desc_key, desc_default in pipeline_steps:
+        step_items.append(
+            html.Div([
+                html.Div([
+                    dbc.Badge(num, color="primary", pill=True, className="me-2",
+                              style={"minWidth": "28px", "fontSize": "0.85rem"}),
+                    html.I(className=f"bi {icon} me-2 text-primary",
+                           style={"fontSize": "1.1rem"}),
+                    html.Strong(
+                        _t(lang, "validation", key, default=default_title),
+                    ),
+                ], className="d-flex align-items-center mb-1"),
+                html.P(
+                    _t(lang, "validation", desc_key, default=desc_default),
+                    className="small text-muted mb-0 ms-5",
+                ),
+            ], className="mb-3 p-2 border-start border-primary border-2 bg-light rounded")
+        )
+
+    return dbc.Row(
+        dbc.Col([
+            html.H2([
+                html.I(className="bi bi-check2-square me-2"),
+                _t(lang, "validation", "title",
+                   default="Validation & Scientific Methodology"),
+            ], id="validation", className="mb-4 doc-section-title"),
+
+            # --- Card 1: Overview ---
+            dbc.Card(dbc.CardBody([
+                html.H5([
+                    html.I(className="bi bi-info-circle me-2 text-info"),
+                    _t(lang, "validation", "overview_title",
+                       default="Overview"),
+                ], className="mb-3"),
+                html.P(
+                    _t(lang, "validation", "overview_text",
+                       default="EVAonline was validated against the Brazilian Daily Weather Gridded Data (BR-DWGD) by Xavier et al. (2016, 2022), the gold-standard reference ETo dataset for Brazil. The validation covers 17 sites (16 in the MATOPIBA agricultural frontier + Piracicaba/SP), 30 years of daily data (1991-2020, 10,958 days per site), and compares 4 ETo estimation methods against the BR-DWGD reference."),
+                    className="text-muted",
+                ),
+                dbc.Alert([
+                    html.I(className="bi bi-trophy me-2"),
+                    html.Strong(
+                        _t(lang, "validation", "highlight_label",
+                           default="Key result: ")),
+                    _t(lang, "validation", "highlight_text",
+                       default="EVAonline Fusion achieved KGE = 0.814, reducing RMSE by 49% vs NASA POWER and by 34% vs the best single source (Open-Meteo API)."),
+                ], color="success", className="mb-0"),
+            ]), className="mb-3 shadow-sm"),
+
+            # --- Card 2: Step-by-step Pipeline ---
+            dbc.Card(dbc.CardBody([
+                html.H5([
+                    html.I(className="bi bi-list-ol me-2 text-primary"),
+                    _t(lang, "validation", "pipeline_title",
+                       default="Validation Pipeline (Step by Step)"),
+                ], className="mb-3"),
+                html.Div(step_items),
+            ]), className="mb-3 shadow-sm"),
+
+            # --- Card 3: Fusion Weights ---
+            dbc.Card(dbc.CardBody([
+                html.H5([
+                    html.I(className="bi bi-sliders me-2 text-warning"),
+                    _t(lang, "validation", "weights_title",
+                       default="Historical Fusion Weights (Validated)"),
+                ], className="mb-3"),
+                html.P(
+                    _t(lang, "validation", "weights_desc",
+                       default="In historical mode, each meteorological variable is fused as a weighted average of NASA POWER and Open-Meteo Archive. These weights were optimized to minimize error against Xavier BR-DWGD and are identical in both the validation scripts and the production backend."),
+                    className="small text-muted mb-3",
+                ),
+                dbc.Table([
+                    html.Thead(html.Tr([
+                        html.Th(_t(lang, "validation", "th_variable", default="Variable")),
+                        html.Th(_t(lang, "validation", "th_description", default="Description")),
+                        html.Th(
+                            _t(lang, "validation", "th_nasa_weight", default="NASA Weight"),
+                            className="text-center",
+                        ),
+                        html.Th(
+                            _t(lang, "validation", "th_om_weight", default="Open-Meteo Weight"),
+                            className="text-center",
+                        ),
+                    ])),
+                    html.Tbody(weights_rows),
+                ], bordered=True, hover=True, responsive=True, size="sm"),
+                html.Small(
+                    _t(lang, "validation", "weights_note",
+                       default="Precipitation uses simple average (0.50/0.50) followed by Adaptive Kalman filter for outlier detection using monthly percentile bounds."),
+                    className="text-muted fst-italic",
+                ),
+            ]), className="mb-3 shadow-sm"),
+
+            # --- Card 4: Validation Results ---
+            dbc.Card(dbc.CardBody([
+                html.H5([
+                    html.I(className="bi bi-bar-chart me-2 text-success"),
+                    _t(lang, "validation", "results_title",
+                       default="Validation Results (17 sites, 1991-2020)"),
+                ], className="mb-3"),
+                html.P(
+                    _t(lang, "validation", "results_desc",
+                       default="Mean metrics across 17 sites comparing 4 ETo estimation methods against Xavier BR-DWGD reference:"),
+                    className="small text-muted mb-3",
+                ),
+                dbc.Table([
+                    html.Thead(html.Tr([
+                        html.Th(
+                            _t(lang, "validation", "th_method", default="Method")),
+                        html.Th("R\u00b2"), html.Th("KGE"), html.Th("NSE"),
+                        html.Th("MAE (mm/d)"), html.Th("RMSE (mm/d)"),
+                        html.Th("PBIAS (%)"),
+                    ])),
+                    html.Tbody(results_rows),
+                ], bordered=True, hover=True, responsive=True, size="sm",
+                   className="mb-3"),
+                # Improvement callout
+                dbc.Alert([
+                    html.Strong(
+                        _t(lang, "validation", "improvement_label",
+                           default="Improvement vs best individual source (Open-Meteo API):")),
+                    html.Br(),
+                    html.Small(
+                        _t(lang, "validation", "improvement_text",
+                           default="\u0394KGE: +39% | \u0394MAE: -39% | \u0394RMSE: -34% | \u0394PBIAS: -91.5%")),
+                ], color="info", className="mb-0 py-2"),
+            ]), className="mb-3 shadow-sm"),
+
+            # --- Card 5: Three Operational Modes ---
+            dbc.Card(dbc.CardBody([
+                html.H5([
+                    html.I(className="bi bi-toggles me-2 text-info"),
+                    _t(lang, "validation", "modes_title",
+                       default="Three Operational Modes"),
+                ], className="mb-3"),
+                dbc.Row([
+                    dbc.Col(dbc.Card([
+                        dbc.CardHeader(
+                            html.Strong(
+                                _t(lang, "validation", "mode_hist_title",
+                                   default="Historical")),
+                            className="bg-primary text-white py-2",
+                        ),
+                        dbc.CardBody([
+                            html.Small(
+                                _t(lang, "validation", "mode_hist_sources",
+                                   default="Sources: NASA POWER + Open-Meteo Archive"),
+                                className="d-block mb-1",
+                            ),
+                            html.Small(
+                                _t(lang, "validation", "mode_hist_fusion",
+                                   default="Fusion: Per-variable HIST_WEIGHTS (validated)"),
+                                className="d-block mb-1",
+                            ),
+                            html.Small(
+                                _t(lang, "validation", "mode_hist_period",
+                                   default="Period: 1990 \u2192 today \u2212 2 days"),
+                                className="d-block text-muted",
+                            ),
+                        ], className="py-2"),
+                    ], className="h-100"), md=4, className="mb-2"),
+                    dbc.Col(dbc.Card([
+                        dbc.CardHeader(
+                            html.Strong(
+                                _t(lang, "validation", "mode_recent_title",
+                                   default="Recent")),
+                            className="bg-warning text-dark py-2",
+                        ),
+                        dbc.CardBody([
+                            html.Small(
+                                _t(lang, "validation", "mode_recent_sources",
+                                   default="Sources: OM Forecast (primary) + fallback pair"),
+                                className="d-block mb-1",
+                            ),
+                            html.Small(
+                                _t(lang, "validation", "mode_recent_fusion",
+                                   default="Fusion: HIST_WEIGHTS when both primary sources available; OM Forecast fills gaps"),
+                                className="d-block mb-1",
+                            ),
+                            html.Small(
+                                _t(lang, "validation", "mode_recent_period",
+                                   default="Period: today \u2212 29 days \u2192 today"),
+                                className="d-block text-muted",
+                            ),
+                        ], className="py-2"),
+                    ], className="h-100"), md=4, className="mb-2"),
+                    dbc.Col(dbc.Card([
+                        dbc.CardHeader(
+                            html.Strong(
+                                _t(lang, "validation", "mode_forecast_title",
+                                   default="Forecast")),
+                            className="bg-info text-white py-2",
+                        ),
+                        dbc.CardBody([
+                            html.Small(
+                                _t(lang, "validation", "mode_forecast_sources",
+                                   default="Sources: Region-dependent (OM, MET, NWS)"),
+                                className="d-block mb-1",
+                            ),
+                            html.Small(
+                                _t(lang, "validation", "mode_forecast_fusion",
+                                   default="Fusion: Region weights \u2014 USA: NWS 50%/OM 30%/MET 20%; Nordic: MET 80%/OM 20%; Global: OM 70%/MET 30%"),
+                                className="d-block mb-1",
+                            ),
+                            html.Small(
+                                _t(lang, "validation", "mode_forecast_period",
+                                   default="Period: today \u2192 today + 5 days"),
+                                className="d-block text-muted",
+                            ),
+                        ], className="py-2"),
+                    ], className="h-100"), md=4, className="mb-2"),
+                ]),
+            ]), className="mb-4 shadow-sm"),
+        ], width=12)
+    )
+
+
+# =============================================================================
 # QUICK NAV
 # =============================================================================
 def _create_arch_nav(lang="en"):
@@ -1172,11 +1473,12 @@ def _create_arch_nav(lang="en"):
         ("2", "bi-cloud-download", _t(lang, "nav", "apis", default="APIs"), "#api-clients"),
         ("3", "bi-gear", _t(lang, "nav", "pipeline", default="Pipeline"), "#pipeline"),
         ("4", "bi-calculator", _t(lang, "nav", "eto", default="ETo"), "#eto-calc"),
-        ("5", "bi-hdd-network", _t(lang, "nav", "endpoints", default="Endpoints"), "#api-endpoints"),
-        ("6", "bi-database", _t(lang, "nav", "database", default="Database"), "#database"),
-        ("7", "bi-cpu", _t(lang, "nav", "celery", default="Celery"), "#celery"),
-        ("8", "bi-broadcast-pin", _t(lang, "nav", "websocket", default="WebSocket"), "#websocket"),
-        ("9", "bi-stack", _t(lang, "nav", "tech_stack", default="Tech Stack"), "#tech-stack"),
+        ("5", "bi-check2-square", _t(lang, "nav", "validation", default="Validation"), "#validation"),
+        ("6", "bi-hdd-network", _t(lang, "nav", "endpoints", default="Endpoints"), "#api-endpoints"),
+        ("7", "bi-database", _t(lang, "nav", "database", default="Database"), "#database"),
+        ("8", "bi-cpu", _t(lang, "nav", "celery", default="Celery"), "#celery"),
+        ("9", "bi-broadcast-pin", _t(lang, "nav", "websocket", default="WebSocket"), "#websocket"),
+        ("10", "bi-stack", _t(lang, "nav", "tech_stack", default="Tech Stack"), "#tech-stack"),
     ]
 
     links = []
@@ -1244,6 +1546,7 @@ def create_architecture_layout(lang="en"):
                     _create_api_clients_section(lang),
                     _create_pipeline_section(lang),
                     _create_eto_calculation_section(lang),
+                    _create_validation_section(lang),
                     _create_api_endpoints_section(lang),
                     _create_database_section(lang),
                     _create_celery_section(lang),

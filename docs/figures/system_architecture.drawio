@@ -1,146 +1,244 @@
 <mxfile host="65bd71144e">
     <diagram name="Architecture" id="arch">
-        <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="1800" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
 
-                <!-- Title -->
-                <mxCell id="title" value="&lt;b&gt;EVAonline System Architecture&lt;/b&gt;&lt;br&gt;13 Docker Services | Hexagonal Pattern" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=16;" vertex="1" parent="1">
-                    <mxGeometry x="500" y="10" width="420" height="50" as="geometry"/>
+                <!-- ==================== TITLE ==================== -->
+                <mxCell id="title" value="&lt;b&gt;EVAonline System Architecture&lt;/b&gt;&lt;br&gt;13 Production Services | Hexagonal (Ports &amp;amp; Adapters) Pattern" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=16;" vertex="1" parent="1">
+                    <mxGeometry x="500" y="10" width="540" height="50" as="geometry"/>
                 </mxCell>
 
-                <!-- USER -->
-                <mxCell id="user" value="👤 User&lt;br&gt;(Browser)" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
-                    <mxGeometry x="730" y="70" width="60" height="60" as="geometry"/>
+                <!-- ==================== USER ==================== -->
+                <mxCell id="user" value="User&lt;br&gt;(Browser)" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="680" y="70" width="60" height="60" as="geometry"/>
                 </mxCell>
 
-                <!-- NGINX -->
-                <mxCell id="nginx" value="&lt;b&gt;Nginx&lt;/b&gt;&lt;br&gt;Reverse Proxy&lt;br&gt;Port 80/443&lt;br&gt;Rate Limiting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="660" y="160" width="200" height="70" as="geometry"/>
+                <!-- ==================== NGINX ==================== -->
+                <mxCell id="nginx" value="&lt;b&gt;Nginx 1.27&lt;/b&gt;&lt;br&gt;Reverse Proxy | SSL/TLS | Rate Limiting&lt;br&gt;Port 80/443 (only public ports)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="440" y="170" width="540" height="60" as="geometry"/>
                 </mxCell>
 
                 <!-- Arrow User → Nginx -->
-                <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="user" target="nginx" parent="1">
+                <mxCell id="e_user_nginx" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="user" target="nginx" parent="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
 
-                <!-- DASH FRONTEND -->
-                <mxCell id="dash" value="&lt;b&gt;Dash Frontend&lt;/b&gt;&lt;br&gt;(port 8050)&lt;br&gt;Leaflet Map | Plotly Charts&lt;br&gt;Bilingual EN/PT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="440" y="280" width="200" height="80" as="geometry"/>
+                <!-- ==================== APPLICATION TIER ==================== -->
+                <!-- FastAPI + Dash (single container) -->
+                <mxCell id="api" value="&lt;b&gt;FastAPI + Dash 2.x&lt;/b&gt;&lt;br&gt;(port 8000)&lt;br&gt;REST API + WebSocket + Dash UI&lt;br&gt;Leaflet Map | Plotly | Bilingual EN/PT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="380" y="280" width="260" height="80" as="geometry"/>
                 </mxCell>
 
-                <!-- FASTAPI BACKEND -->
-                <mxCell id="api" value="&lt;b&gt;FastAPI Backend&lt;/b&gt;&lt;br&gt;(port 8000)&lt;br&gt;REST API + WebSocket&lt;br&gt;OpenAPI 3.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="660" y="280" width="200" height="80" as="geometry"/>
+                <!-- Grafana -->
+                <mxCell id="grafana" value="&lt;b&gt;Grafana 11.4&lt;/b&gt;&lt;br&gt;(3000)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="285" width="100" height="40" as="geometry"/>
                 </mxCell>
 
-                <!-- MONITORING GROUP -->
-                <mxCell id="grafana" value="&lt;b&gt;Grafana&lt;/b&gt;&lt;br&gt;(3000)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="880" y="280" width="100" height="50" as="geometry"/>
-                </mxCell>
-                <mxCell id="flower" value="&lt;b&gt;Flower&lt;/b&gt;&lt;br&gt;(5555)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="990" y="280" width="100" height="50" as="geometry"/>
+                <!-- Flower -->
+                <mxCell id="flower" value="&lt;b&gt;Flower 2.0&lt;/b&gt;&lt;br&gt;(5555)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="930" y="285" width="100" height="40" as="geometry"/>
                 </mxCell>
 
-                <!-- Arrows Nginx → services -->
-                <mxCell id="e2" value="/" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="nginx" target="dash" parent="1"/>
-                <mxCell id="e3" value="/api/*" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="nginx" target="api" parent="1"/>
-                <mxCell id="e4" value="/grafana/*" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="nginx" target="grafana" parent="1"/>
-                <mxCell id="e5" value="/flower/*" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="nginx" target="flower" parent="1"/>
+                <!-- Arrow Nginx → API (exits left side of Nginx bottom) -->
+                <mxCell id="e_nginx_api" value="/, /api/v1/*, /ws/*" style="edgeStyle=orthogonalEdgeStyle;fontSize=8;exitX=0.2;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="nginx" target="api" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- Arrow Nginx → Grafana (exits center-right) -->
+                <mxCell id="e_nginx_grafana" value="/grafana/*" style="edgeStyle=orthogonalEdgeStyle;fontSize=8;exitX=0.65;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="nginx" target="grafana" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- Arrow Nginx → Flower (exits right side) -->
+                <mxCell id="e_nginx_flower" value="/flower/*" style="edgeStyle=orthogonalEdgeStyle;fontSize=8;exitX=0.9;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="nginx" target="flower" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
 
-                <!-- DOMAIN CORE (hexagonal) -->
+                <!-- ==================== DOMAIN CORE ==================== -->
                 <mxCell id="domain_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;arcSize=8;dashed=1;dashPattern=5 5;opacity=30;" vertex="1" parent="1">
-                    <mxGeometry x="470" y="400" width="380" height="200" as="geometry"/>
+                    <mxGeometry x="355" y="400" width="480" height="260" as="geometry"/>
                 </mxCell>
-                <mxCell id="domain_title" value="&lt;b&gt;DOMAIN CORE&lt;/b&gt; (no I/O dependencies)" style="text;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#b85450;" vertex="1" parent="1">
-                    <mxGeometry x="530" y="405" width="250" height="20" as="geometry"/>
-                </mxCell>
-
-                <mxCell id="eto_calc" value="&lt;b&gt;ETo Calculator&lt;/b&gt;&lt;br&gt;FAO-56 PM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="490" y="435" width="140" height="50" as="geometry"/>
-                </mxCell>
-                <mxCell id="fusion" value="&lt;b&gt;Climate Fusion&lt;/b&gt;&lt;br&gt;Weighted Avg + Kalman" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="490" y="500" width="140" height="50" as="geometry"/>
-                </mxCell>
-                <mxCell id="water_def" value="&lt;b&gt;Water Deficit&lt;/b&gt;&lt;br&gt;Analysis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="490" y="560" width="140" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="kalman" value="&lt;b&gt;Adaptive&lt;br&gt;Kalman Filter&lt;/b&gt;&lt;br&gt;P01/P99 bounds" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="680" y="435" width="140" height="70" as="geometry"/>
-                </mxCell>
-                <mxCell id="wind_corr" value="&lt;b&gt;Wind Height&lt;br&gt;Correction&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="680" y="520" width="140" height="40" as="geometry"/>
+                <mxCell id="domain_title" value="&lt;b&gt;DOMAIN CORE&lt;/b&gt; (pure business logic — no I/O)" style="text;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#b85450;" vertex="1" parent="1">
+                    <mxGeometry x="430" y="405" width="330" height="20" as="geometry"/>
                 </mxCell>
 
-                <!-- CLIMATE ADAPTERS (left) -->
-                <mxCell id="adapters_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;arcSize=8;dashed=1;dashPattern=5 5;opacity=30;" vertex="1" parent="1">
-                    <mxGeometry x="40" y="390" width="380" height="230" as="geometry"/>
+                <!-- Row 1: Pipeline stages (numbered) -->
+                <mxCell id="data_qc" value="&lt;b&gt;① Data QC&lt;/b&gt;&lt;br&gt;Range + IQR&lt;br&gt;+ Circuit-breaker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="375" y="430" width="130" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="adapters_title" value="&lt;b&gt;CLIMATE ADAPTERS&lt;/b&gt; (6 sources)" style="text;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#9673a6;" vertex="1" parent="1">
-                    <mxGeometry x="110" y="395" width="200" height="20" as="geometry"/>
+                <mxCell id="fusion" value="&lt;b&gt;② Climate Fusion&lt;/b&gt;&lt;br&gt;Region-adaptive&lt;br&gt;weighted average" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="525" y="430" width="140" height="50" as="geometry"/>
                 </mxCell>
-
-                <mxCell id="nasa" value="NASA POWER" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="60" y="425" width="100" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="omarchive" value="Open-Meteo Archive" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="60" y="465" width="100" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="omforecast" value="Open-Meteo Forecast" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="60" y="505" width="100" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="met" value="MET Norway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="180" y="425" width="100" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="nwsf" value="NWS Forecast" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="180" y="465" width="100" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="nwss" value="NWS Stations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="180" y="505" width="100" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="elev" value="Open-Elevation API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="120" y="550" width="120" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="factory" value="&lt;b&gt;ClimateClientFactory&lt;/b&gt;&lt;br&gt;Dependency Injection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="100" y="590" width="160" height="25" as="geometry"/>
+                <mxCell id="kalman_precip" value="&lt;b&gt;③ Kalman Filter&lt;/b&gt;&lt;br&gt;Precipitation&lt;br&gt;(P01/P99 bounds)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="685" y="430" width="130" height="50" as="geometry"/>
                 </mxCell>
 
-                <!-- Arrow adapters → domain -->
-                <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="factory" target="fusion" parent="1">
+                <!-- Row 2: Pipeline continues -->
+                <mxCell id="eto_calc" value="&lt;b&gt;④ FAO-56 PM&lt;/b&gt;&lt;br&gt;ETo Calculator&lt;br&gt;+ Water Deficit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="375" y="500" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="kalman_eto" value="&lt;b&gt;⑤ Kalman Filter&lt;/b&gt;&lt;br&gt;ET&lt;sub&gt;0&lt;/sub&gt; (after FAO-56)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="525" y="500" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ensemble" value="&lt;b&gt;Climate Ensemble&lt;/b&gt;&lt;br&gt;Pipeline orchestrator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="685" y="500" width="130" height="50" as="geometry"/>
+                </mxCell>
+
+                <!-- Row 3: Support modules -->
+                <mxCell id="hist_loader" value="&lt;b&gt;Historical Loader&lt;/b&gt;&lt;br&gt;Climatological priors (27 cities, 1991–2020)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="375" y="565" width="175" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="climate_limits" value="&lt;b&gt;Climate Limits&lt;/b&gt;&lt;br&gt;Physical bounds (WMO/BR-DWGD)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="565" y="565" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="analytics" value="&lt;b&gt;Analytics&lt;/b&gt;&lt;br&gt;KGE / NSE / RMSE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="720" y="565" width="100" height="40" as="geometry"/>
+                </mxCell>
+
+                <!-- Pipeline flow arrows (horizontal within rows) -->
+                <mxCell id="e_qc_fusion" style="fontSize=7;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="data_qc" target="fusion" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_fusion_kp" style="fontSize=7;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="fusion" target="kalman_precip" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- Kalman Precip → FAO-56 (down-left) -->
+                <mxCell id="e_kp_eto" style="edgeStyle=orthogonalEdgeStyle;fontSize=7;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;" edge="1" source="kalman_precip" target="eto_calc" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_eto_ke" style="fontSize=7;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="eto_calc" target="kalman_eto" parent="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
 
-                <!-- INFRASTRUCTURE (right) -->
+                <!-- Arrow API → Domain (bottom of API to top of Ensemble) -->
+                <mxCell id="e_api_domain" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="api" target="ensemble" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- ==================== CLIMATE ADAPTERS (left) ==================== -->
+                <mxCell id="adapters_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;arcSize=8;dashed=1;dashPattern=5 5;opacity=30;" vertex="1" parent="1">
+                    <mxGeometry x="20" y="400" width="310" height="260" as="geometry"/>
+                </mxCell>
+                <mxCell id="adapters_title" value="&lt;b&gt;ADAPTERS&lt;/b&gt; (6 climate sources + elevation)" style="text;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="405" width="270" height="20" as="geometry"/>
+                </mxCell>
+
+                <mxCell id="nasa" value="&lt;b&gt;NASA POWER&lt;/b&gt;&lt;br&gt;MERRA-2 + CERES&lt;br&gt;WS2M (native 2 m)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="35" y="430" width="130" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="omarchive" value="&lt;b&gt;Open-Meteo Archive&lt;/b&gt;&lt;br&gt;Best Match (ERA5 / IFS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="35" y="480" width="130" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="omforecast" value="&lt;b&gt;Open-Meteo Forecast&lt;/b&gt;&lt;br&gt;Best Match (multi-NWP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="35" y="525" width="130" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="met" value="&lt;b&gt;MET Norway&lt;/b&gt;&lt;br&gt;Locationforecast 2.0&lt;br&gt;MEPS 2.5 km / ECMWF 9 km" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="185" y="430" width="130" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="nwsf" value="&lt;b&gt;NWS Forecast&lt;/b&gt;&lt;br&gt;NDFD (GFS/NAM/HRRR)&lt;br&gt;CONUS 2.5 km" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="185" y="485" width="130" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="nwss" value="&lt;b&gt;NWS Stations&lt;/b&gt;&lt;br&gt;~900 ASOS in-situ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="185" y="535" width="130" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="elev" value="&lt;b&gt;Open-Elevation&lt;/b&gt;&lt;br&gt;SRTM 30 m" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="110" y="575" width="110" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="factory" value="&lt;b&gt;ClimateClientFactory&lt;/b&gt; — selects sources by region + mode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="620" width="270" height="25" as="geometry"/>
+                </mxCell>
+
+                <!-- Wind note below adapters -->
+                <mxCell id="wind_note" value="&lt;i&gt;Wind 10 m → 2 m (FAO-56 Eq. 47) in adapters for OM &amp;amp; MET.&lt;br&gt;NASA POWER: native WS2M — no conversion needed.&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=7;fontColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="30" y="650" width="300" height="25" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow Adapters → Domain (right side of factory → left side of data_qc) -->
+                <mxCell id="e_factory_domain" value="Standardised DataFrames" style="exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=7;" edge="1" source="factory" target="data_qc" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- ==================== INFRASTRUCTURE (right) ==================== -->
                 <mxCell id="infra_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;arcSize=8;dashed=1;dashPattern=5 5;opacity=30;" vertex="1" parent="1">
-                    <mxGeometry x="900" y="390" width="240" height="250" as="geometry"/>
+                    <mxGeometry x="870" y="400" width="300" height="275" as="geometry"/>
                 </mxCell>
                 <mxCell id="infra_title" value="&lt;b&gt;INFRASTRUCTURE&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#82b366;" vertex="1" parent="1">
-                    <mxGeometry x="950" y="395" width="140" height="20" as="geometry"/>
+                    <mxGeometry x="930" y="405" width="170" height="20" as="geometry"/>
                 </mxCell>
 
-                <mxCell id="postgres" value="&lt;b&gt;PostgreSQL 16&lt;/b&gt;&lt;br&gt;+ PostGIS&lt;br&gt;(5432)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=8;size=10;" vertex="1" parent="1">
-                    <mxGeometry x="920" y="425" width="90" height="60" as="geometry"/>
+                <!-- Data stores (side by side, row 1) -->
+                <mxCell id="postgres" value="&lt;b&gt;PostgreSQL 16&lt;/b&gt;&lt;br&gt;+ PostGIS 3.4&lt;br&gt;(5432)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=8;size=10;" vertex="1" parent="1">
+                    <mxGeometry x="890" y="430" width="120" height="55" as="geometry"/>
                 </mxCell>
                 <mxCell id="redis" value="&lt;b&gt;Redis 7&lt;/b&gt;&lt;br&gt;Cache + Broker&lt;br&gt;(6379)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=8;size=10;" vertex="1" parent="1">
-                    <mxGeometry x="1030" y="425" width="90" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="celery_w" value="&lt;b&gt;Celery Workers&lt;/b&gt;&lt;br&gt;Async Tasks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="920" y="500" width="90" height="40" as="geometry"/>
-                </mxCell>
-                <mxCell id="celery_b" value="&lt;b&gt;Celery Beat&lt;/b&gt;&lt;br&gt;Scheduler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="1030" y="500" width="90" height="40" as="geometry"/>
-                </mxCell>
-                <mxCell id="prometheus" value="&lt;b&gt;Prometheus&lt;/b&gt;&lt;br&gt;(9090)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=8;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="920" y="555" width="90" height="35" as="geometry"/>
-                </mxCell>
-                <mxCell id="db_init" value="&lt;b&gt;DB Init + Migrate&lt;br&gt;+ Seed&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=7;arcSize=12;" vertex="1" parent="1">
-                    <mxGeometry x="1030" y="555" width="90" height="35" as="geometry"/>
+                    <mxGeometry x="1030" y="430" width="120" height="55" as="geometry"/>
                 </mxCell>
 
-                <!-- Arrows API → Infrastructure -->
-                <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="api" target="postgres" parent="1"/>
-                <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="api" target="redis" parent="1"/>
+                <!-- Celery workers (row 2) -->
+                <mxCell id="celery_w" value="&lt;b&gt;Celery Worker&lt;/b&gt;&lt;br&gt;General" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="890" y="500" width="90" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="celery_eto" value="&lt;b&gt;Celery Worker&lt;/b&gt;&lt;br&gt;ETo (CPU)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="990" y="500" width="90" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="celery_b" value="&lt;b&gt;Celery Beat&lt;/b&gt;&lt;br&gt;Scheduler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=8;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="1090" y="500" width="65" height="40" as="geometry"/>
+                </mxCell>
+
+                <!-- Monitoring (row 3) -->
+                <mxCell id="prometheus" value="&lt;b&gt;Prometheus&lt;/b&gt;&lt;br&gt;(9090)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="890" y="555" width="80" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="pg_exporter" value="&lt;b&gt;PG Exp.&lt;/b&gt;&lt;br&gt;(9187)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="980" y="555" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis_exporter" value="&lt;b&gt;Redis Exp.&lt;/b&gt;&lt;br&gt;(9121)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="1050" y="555" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="blackbox" value="&lt;b&gt;Blackbox&lt;/b&gt;&lt;br&gt;(9115)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=7;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="1120" y="555" width="60" height="30" as="geometry"/>
+                </mxCell>
+
+                <!-- Service count annotation -->
+                <mxCell id="svc_count" value="&lt;i&gt;13 production services (excl. dev/test profiles):&lt;br&gt;API, Nginx, PG, Redis, 2× Worker, Beat,&lt;br&gt;Flower, Grafana, Prometheus, 3× Exporter&lt;/i&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=7;fontColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="890" y="595" width="270" height="35" as="geometry"/>
+                </mxCell>
+
+                <!-- ====== INTER-TIER ARROWS (explicit anchor points) ====== -->
+
+                <!-- API → PostgreSQL (right side of API, top-right) -->
+                <mxCell id="e_api_pg" value="SQL" style="exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=7;dashed=0;" edge="1" source="api" target="postgres" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- API → Redis (right side of API, bottom-right) -->
+                <mxCell id="e_api_redis" value="cache" style="exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=7;dashed=0;" edge="1" source="api" target="redis" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Redis ← all Celery (single label instead of 3 overlapping arrows) -->
+                <mxCell id="e_celery_redis" value="broker" style="exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;dashed=1;fontSize=7;" edge="1" source="celery_eto" target="redis" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Grafana → Prometheus (down-left, no crossing) -->
+                <mxCell id="e_grafana_prom" value="metrics" style="exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;fontSize=7;edgeStyle=orthogonalEdgeStyle;" edge="1" source="grafana" target="prometheus" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="810" y="380"/>
+                            <mxPoint x="930" y="380"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Flower → Celery Worker (straight down) -->
+                <mxCell id="e_flower_cw" value="monitor" style="exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;fontSize=7;edgeStyle=orthogonalEdgeStyle;" edge="1" source="flower" target="celery_w" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="980" y="380"/>
+                            <mxPoint x="935" y="380"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
 
             </root>
         </mxGraphModel>
