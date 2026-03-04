@@ -29,7 +29,7 @@ echo ""
 # -----------------------------------------------------------------------------
 # Step 1: System Update & Security
 # -----------------------------------------------------------------------------
-log_info "Step 1/8: Updating system and installing security tools..."
+log_info "Step 1/9: Updating system and installing security tools..."
 
 apt-get update -qq && apt-get upgrade -y -qq
 apt-get install -y -qq fail2ban ufw curl git nano htop
@@ -53,7 +53,7 @@ log_ok "System updated, fail2ban configured"
 # -----------------------------------------------------------------------------
 # Step 2: Firewall Configuration (UFW)
 # -----------------------------------------------------------------------------
-log_info "Step 2/8: Configuring firewall (only SSH, HTTP, HTTPS)..."
+log_info "Step 2/9: Configuring firewall (only SSH, HTTP, HTTPS)..."
 
 ufw default deny incoming
 ufw default allow outgoing
@@ -67,7 +67,7 @@ log_ok "Firewall active: only ports 22, 80, 443 open"
 # -----------------------------------------------------------------------------
 # Step 3: Verify Docker
 # -----------------------------------------------------------------------------
-log_info "Step 3/8: Verifying Docker installation..."
+log_info "Step 3/9: Verifying Docker installation..."
 
 if ! command -v docker &> /dev/null; then
     log_warn "Docker not found. Installing..."
@@ -88,7 +88,7 @@ log_ok "Docker is ready"
 # -----------------------------------------------------------------------------
 # Step 4: Clone Repository
 # -----------------------------------------------------------------------------
-log_info "Step 4/8: Cloning EVAonline repository..."
+log_info "Step 4/9: Cloning EVAonline repository..."
 
 APP_DIR="/opt/evaonline"
 
@@ -106,7 +106,7 @@ log_ok "Repository cloned to $APP_DIR"
 # -----------------------------------------------------------------------------
 # Step 5: Generate Secure Credentials & Create .env
 # -----------------------------------------------------------------------------
-log_info "Step 5/8: Generating secure credentials..."
+log_info "Step 5/9: Generating secure credentials..."
 
 # Generate random passwords
 POSTGRES_PASS=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
@@ -199,7 +199,7 @@ READINESS_ENDPOINT=/api/v1/ready
 
 # SEGURANÇA
 SECRET_KEY=${SECRET}
-BACKEND_CORS_ORIGINS=["http://${DROPLET_IP}","http://${DROPLET_IP}:80","https://${DROPLET_IP}"]
+BACKEND_CORS_ORIGINS=["http://${DROPLET_IP}","http://${DROPLET_IP}:80","https://${DROPLET_IP}","https://evaonline.app.br","https://www.evaonline.app.br"]
 CORS_ALLOW_CREDENTIALS=True
 RATE_LIMIT_ENABLED=True
 RATE_LIMIT_REQUESTS=100
@@ -236,6 +236,7 @@ SMTP_USE_TLS=true
 
 # NGINX
 NGINX_HTTP_PORT=80
+NGINX_HTTPS_PORT=443
 
 # GRAFANA
 GRAFANA_ADMIN_USER=admin
@@ -290,7 +291,7 @@ log_ok "Credentials saved to /root/evaonline_credentials.txt"
 # -----------------------------------------------------------------------------
 # Step 6: Create required directories
 # -----------------------------------------------------------------------------
-log_info "Step 6/8: Creating required directories..."
+log_info "Step 6/9: Creating required directories..."
 
 mkdir -p "$APP_DIR/logs"
 mkdir -p "$APP_DIR/data"
@@ -300,9 +301,9 @@ mkdir -p "$APP_DIR/docker/nginx/ssl"
 log_ok "Directories created"
 
 # -----------------------------------------------------------------------------
-# Step 7: Build and Start Services
+# Step 7/9: Build and Start Services (HTTP only initially)
 # -----------------------------------------------------------------------------
-log_info "Step 7/8: Building and starting Docker services..."
+log_info "Step 7/9: Building and starting Docker services..."
 log_warn "This may take 5-10 minutes on first build..."
 
 cd "$APP_DIR"
@@ -310,15 +311,79 @@ cd "$APP_DIR"
 # Build all images
 docker compose build --no-cache 2>&1 | tail -5
 
+# Generate self-signed certs so Nginx can start with HTTPS block
+# (will be replaced by Let's Encrypt in Step 8)
+if [ ! -f "$APP_DIR/docker/nginx/ssl/fullchain.pem" ]; then
+    log_info "Generating temporary self-signed certificates..."
+    openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+        -keyout "$APP_DIR/docker/nginx/ssl/privkey.pem" \
+        -out "$APP_DIR/docker/nginx/ssl/fullchain.pem" \
+        -subj "/CN=evaonline.app.br/O=EVAonline" 2>/dev/null
+    log_ok "Temporary SSL certificates generated"
+fi
+
 # Start services in detached mode
 docker compose up -d
 
 log_ok "Docker services started"
 
 # -----------------------------------------------------------------------------
-# Step 8: Health Check
+# Step 8/9: SSL Certificate (Let's Encrypt via Certbot)
 # -----------------------------------------------------------------------------
-log_info "Step 8/8: Waiting for services to become healthy..."
+log_info "Step 8/9: Obtaining SSL certificate from Let's Encrypt..."
+
+DOMAIN="evaonline.app.br"
+EMAIL="your-email@example.com"  # Change to your real email
+
+# Install certbot if not present
+if ! command -v certbot &> /dev/null; then
+    apt-get install -y -qq certbot
+fi
+
+# Wait for Nginx to be ready
+sleep 10
+
+# Obtain certificate using webroot (Nginx serves /.well-known/acme-challenge/)
+certbot certonly --webroot \
+    -w /var/lib/docker/volumes/evaonline_certbot_webroot/_data \
+    -d "$DOMAIN" -d "www.$DOMAIN" \
+    --email "$EMAIL" \
+    --agree-tos --non-interactive \
+    --deploy-hook "docker compose -f $APP_DIR/docker-compose.yml exec -T nginx nginx -s reload" \
+    2>&1 || {
+        log_warn "Certbot failed — check DNS A record points to this server"
+        log_warn "You can run certbot manually later:"
+        log_warn "  certbot certonly --webroot -w /var/lib/docker/volumes/evaonline_certbot_webroot/_data -d $DOMAIN"
+        log_warn "Using self-signed certificate for now."
+    }
+
+# Copy Let's Encrypt certs to Nginx ssl directory
+if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+    cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem "$APP_DIR/docker/nginx/ssl/fullchain.pem"
+    cp /etc/letsencrypt/live/$DOMAIN/privkey.pem "$APP_DIR/docker/nginx/ssl/privkey.pem"
+    chmod 644 "$APP_DIR/docker/nginx/ssl/fullchain.pem"
+    chmod 600 "$APP_DIR/docker/nginx/ssl/privkey.pem"
+
+    # Re-enable ssl_stapling in nginx.conf for real certificates
+    sed -i 's|# ssl_stapling on;|ssl_stapling on;|' "$APP_DIR/docker/nginx/nginx.conf"
+    sed -i 's|# ssl_stapling_verify on;|ssl_stapling_verify on;|' "$APP_DIR/docker/nginx/nginx.conf"
+
+    # Reload Nginx with real certificates
+    docker compose restart nginx
+    log_ok "SSL certificate installed for $DOMAIN"
+
+    # Set up auto-renewal cron job
+    (crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --deploy-hook 'cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem $APP_DIR/docker/nginx/ssl/fullchain.pem && cp /etc/letsencrypt/live/$DOMAIN/privkey.pem $APP_DIR/docker/nginx/ssl/privkey.pem && docker compose -f $APP_DIR/docker-compose.yml restart nginx'") | crontab -
+    log_ok "Auto-renewal cron job configured (daily at 3 AM)"
+else
+    log_warn "Let's Encrypt certificate not available — using self-signed"
+    log_warn "HTTPS will work but browsers will show a security warning"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 9/9: Health Check
+# -----------------------------------------------------------------------------
+log_info "Step 9/9: Waiting for services to become healthy..."
 
 sleep 30  # Give services time to start
 
@@ -339,9 +404,10 @@ echo "=============================================="
 echo -e "  ${GREEN}EVAonline Deployed Successfully!${NC}"
 echo "=============================================="
 echo ""
-echo "  App URL:     http://${DROPLET_IP}"
-echo "  Grafana:     http://${DROPLET_IP}/grafana/"
-echo "  Flower:      http://${DROPLET_IP}/flower/"
+echo "  App URL:     https://evaonline.app.br"
+echo "  App IP:      http://${DROPLET_IP}"
+echo "  Grafana:     https://evaonline.app.br/grafana/"
+echo "  Flower:      https://evaonline.app.br/flower/"
 echo ""
 echo "  Credentials: /root/evaonline_credentials.txt"
 echo "  App Dir:     /opt/evaonline"
@@ -354,6 +420,7 @@ echo ""
 echo -e "  ${YELLOW}NEXT STEPS:${NC}"
 echo "  1. Change root password:    passwd"
 echo "  2. Configure email SMTP:    nano /opt/evaonline/.env"
-echo "  3. Set up SSL/domain:       See DEPLOY_CHECKLIST.md"
+echo "  3. Verify SSL certificate:  curl -I https://evaonline.app.br"
 echo "  4. DigitalOcean Firewall:   Create via DO Control Panel"
+echo "  5. Check credentials:       cat /root/evaonline_credentials.txt"
 echo "=============================================="
