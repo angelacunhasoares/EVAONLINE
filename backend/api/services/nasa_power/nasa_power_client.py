@@ -6,7 +6,7 @@ Return a daily data for a region on a 0.5 x 0.5 degree grid.
 
 - Archived Data
 - Start: 1990/01/01
-- End: Today (EVAonline standard)
+- End: Today - 2 days (EVAonline standard, 2-day delay)
 
 Data Source:
 -----------

@@ -104,6 +104,10 @@ class EToCalculationService:
             lat = measurements["latitude"]
             date_str = str(measurements["date"])
 
+            # Minimum physical limits (FAO-56)
+            u2 = max(0.5, u2)   # Minimum wind speed 0.5 m/s
+            Rs = max(0.1, Rs)   # Minimum radiation
+
             # Usar gamma dos fatores pré-calculados ou calcular
             if elevation_factors and "gamma" in elevation_factors:
                 gamma = float(elevation_factors["gamma"])
@@ -121,7 +125,7 @@ class EToCalculationService:
                 + self._saturation_vapor_pressure(T_min)
             ) / 2
             ea = (RH_mean / 100.0) * es
-            Vpd = es - ea
+            Vpd = max(0.01, es - ea)  # Avoid negative or zero VPD
             slope = self._vapor_pressure_slope(T_mean)
             N = (
                 datetime.strptime(date_str[:10], "%Y-%m-%d")
@@ -131,7 +135,7 @@ class EToCalculationService:
             delta = self._solar_declination(N)
             Ra = self._extraterrestrial_radiation(lat, N, delta)
 
-            Rn = (1 - self.ALBEDO) * Rs - 0.23 * Rs  # Aproximação simples
+            Rn = self._net_radiation(Rs, T_max, T_min, RH_mean, Ra)
             G = 0
 
             numerator = (
@@ -140,12 +144,18 @@ class EToCalculationService:
             )
             denominator = slope + gamma * (1 + 0.34 * u2)
 
-            ET0 = max(0, numerator / denominator) if denominator != 0 else 0
+            if denominator == 0:
+                ET0 = 0.0
+            else:
+                ET0 = max(0.0, numerator / denominator)
 
-            quality = "high" if 0.1 <= ET0 <= 15 else "low"
+            quality = "high" if 0.1 <= ET0 <= 12 else "low"
+            if np.isnan(ET0):
+                ET0 = 0.0
+                quality = "low"
 
             return {
-                "et0_mm_day": round(ET0, 2),
+                "et0_mm_day": round(ET0, 3),
                 "quality": quality,
                 "method": "pm_fao56",
                 "components": {
@@ -170,12 +180,20 @@ class EToCalculationService:
         )
 
     def _solar_declination(self, N):
-        return 0.409 * math.sin(2 * math.pi * (N - 81) / 365 - 1.39)
+        """Solar declination (delta) - FAO-56 Eq. 24."""
+        return 0.409 * math.sin(2 * math.pi * N / 365 - 1.39)
 
     def _extraterrestrial_radiation(self, lat, N, delta):
+        """Extraterrestrial radiation (Ra) - FAO-56 Eq. 21 with polar handling."""
         phi = math.radians(lat)
         dr = 1 + 0.033 * math.cos(2 * math.pi * N / 365)
-        omega_s = math.acos(-math.tan(phi) * math.tan(delta))
+        cos_ws = -math.tan(phi) * math.tan(delta)
+        if cos_ws <= -1:
+            omega_s = math.pi  # Polar summer: sun never sets
+        elif cos_ws >= 1:
+            omega_s = 0.0  # Polar winter: sun never rises
+        else:
+            omega_s = math.acos(cos_ws)
         Ra = (
             (24 * 60 / math.pi)
             * 0.0820
@@ -185,7 +203,54 @@ class EToCalculationService:
                 + math.cos(phi) * math.cos(delta) * math.sin(omega_s)
             )
         )
-        return max(0, Ra)
+        return max(0.0, Ra)
+
+    def _net_radiation(self, Rs, T_max, T_min, RH_mean, Ra):
+        """
+        Net radiation (Rn) - FAO-56 Eq. 38-39 (COMPLETE).
+
+        Uses Stefan-Boltzmann for longwave radiation.
+        Much more accurate than simplified Rn ≈ 0.54*Rs.
+
+        Args:
+            Rs: Shortwave solar radiation (MJ/m²/day)
+            T_max: Maximum temperature (°C)
+            T_min: Minimum temperature (°C)
+            RH_mean: Mean relative humidity (%)
+            Ra: Extraterrestrial radiation (MJ/m²/day)
+
+        Returns:
+            Net radiation in MJ/m²/day
+        """
+        # Net shortwave radiation (Eq. 38)
+        Rns = (1 - self.ALBEDO) * Rs
+
+        # Net longwave radiation (Eq. 39)
+        T_max_K = T_max + 273.15
+        T_min_K = T_min + 273.15
+
+        # Actual vapor pressure (ea)
+        es_max = self._saturation_vapor_pressure(T_max)
+        es_min = self._saturation_vapor_pressure(T_min)
+        es = (es_max + es_min) / 2
+        ea = (RH_mean / 100) * es
+
+        # Cloud cover factor (f) - Rs/Rso where Rso ≈ Ra
+        if Ra > 0 and Rs > 0:
+            f = 1.35 * (Rs / Ra) - 0.35
+            f = max(0.3, min(1.0, f))
+        else:
+            f = 1.0
+
+        # Rnl - Stefan-Boltzmann (Eq. 39)
+        Rnl = (
+            self.STEFAN_BOLTZMANN
+            * ((T_max_K**4 + T_min_K**4) / 2)
+            * (0.34 - 0.14 * math.sqrt(max(0.001, ea)))
+            * f
+        )
+
+        return Rns - Rnl
 
 
 class EToProcessingService:
@@ -204,6 +269,7 @@ class EToProcessingService:
         elevation: Optional[float] = None,
         use_precise_elevation: bool = True,
         enable_fusion: bool = False,  # 🔀 Controla fusão Kalman explicitamente
+        mode: Optional[str] = None,  # Operational mode (historical_email, dashboard_current, dashboard_forecast)
     ) -> Dict[str, Any]:
         warnings = []
 
@@ -249,7 +315,8 @@ class EToProcessingService:
                     f"aplicando Kalman em {len(sources)} fonte(s)"
                 )
                 fused_df = self.ensemble.process(
-                    df_multi_source=df_clean, lat=latitude, lon=longitude
+                    df_multi_source=df_clean, lat=latitude, lon=longitude,
+                    mode=mode,
                 )
             else:
                 # 🔵 FONTE ÚNICA OU DESABILITADA: usar dados originais
@@ -317,7 +384,7 @@ class EToProcessingService:
             else:
                 logger.info("✅ Coluna 'date' já existe!")
 
-            # 5. Garantir et0_mm (caso não tenha sido calculado antes)
+            # 5. Calculate raw ETo (FAO-56 PM)
             if "et0_mm" not in fused_df.columns:
                 fused_df = self._calculate_raw_eto(
                     fused_df,
@@ -327,8 +394,20 @@ class EToProcessingService:
                     elevation_factors,
                 )
 
-            # 6. O ensemble já aplica Kalman em precipitação e ETo
-            # eto_final e eto_evaonline já existem
+            # 6. Apply Kalman to ETo AFTER calculation
+            # (3-step validated approach: bias correction + continuous filter)
+            if enable_fusion and "et0_mm" in fused_df.columns:
+                has_ref, ref = self.ensemble.loader.get_reference_for_location(
+                    latitude, longitude
+                )
+                if has_ref:
+                    fused_df = self.ensemble.kalman.apply_eto_filter(
+                        fused_df, ref, lat=latitude
+                    )
+                    logger.info(
+                        "✅ Kalman ETo aplicado (bias + filtro contínuo)"
+                    )
+
             if "eto_final" not in fused_df.columns:
                 fused_df["eto_final"] = fused_df["et0_mm"]
             if "eto_evaonline" not in fused_df.columns:

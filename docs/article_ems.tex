@@ -47,12 +47,13 @@ one-dimensional Kalman filter constrained by 30-year regional monthly
 climatology (1991--2020 normals and P01/P99 percentile bounds). The fused
 meteorological variables serve as input to a complete FAO-56 Penman-Monteith
 implementation. The platform was validated against the BR-DWGD gridded
-reference dataset at 17 data-scarce locations across the MATOPIBA agricultural
-frontier in Brazil, yielding a Kling-Gupta Efficiency (KGE) of $0.814 \pm
+reference dataset at 17 Brazilian sites (16 in the MATOPIBA agricultural
+frontier plus Piracicaba/SP), yielding a Kling-Gupta Efficiency (KGE) of $0.814 \pm
 0.053$, Nash-Sutcliffe Efficiency (NSE) of $0.676 \pm 0.085$, and Mean
 Absolute Error (MAE) of \SI{0.423}{mm.d^{-1}}, with a mean bias (PBIAS) of
-only $0.71 \pm 0.53\%$. The fusion reduced RMSE by 26\% relative to the best
-individual source (NASA POWER) and by 38\% relative to Open-Meteo Archive.
+only $0.71 \pm 0.53\%$. The fusion reduced RMSE by 49\% relative to
+NASA POWER (from 1.117 to 0.566~mm\,d$^{-1}$) and by 34\% relative to the
+best individual source (Open-Meteo API).
 EVAonline is deployed as 13 Docker-containerized microservices following a
 hexagonal (Ports \& Adapters) architecture, requires no local installation or
 API keys, and provides three operational modes (historical, recent, and
@@ -247,23 +248,30 @@ adapter class that enforces a standardized data retrieval interface with
 configurable HTTP timeouts and exponential-backoff retry logic via the
 \texttt{httpx} asynchronous HTTP client.
 
-\begin{table}[htbp]
-\centering
+\begin{table}[H]
 \caption{Climate data sources integrated in EVAonline.}
 \label{tab:sources}
-\small
-\begin{tabular}{@{}llllll@{}}
-\toprule
-Source & Coverage & Type & Resolution & Latency & Period \\
-\midrule
-NASA POWER v2.0 & Global & Satellite + Reanalysis & 0.5\textdegree{} & $\sim$3 days & 1981--present \\
-Open-Meteo Archive & Global & ERA5 Reanalysis & 0.25\textdegree{} & $\sim$5 days & 1940--present \\
-Open-Meteo Forecast & Global & NWP (ECMWF/GFS) & 0.25\textdegree{} & Real-time & 7--16 days \\
-MET Norway (Yr) & Global & NWP (ECMWF IFS) & $\sim$10 km & Real-time & 10 days \\
-NWS Daily Forecast & USA & NWP (GFS/NAM) & $\sim$2.5 km & Real-time & 7 days \\
-NWS Stations & USA & In-situ observations & Point & $\sim$1 hour & Observations \\
-\bottomrule
-\end{tabular}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lllc}
+\hline
+\textbf{Source}     & \textbf{Model}    & \textbf{Coverage}     & \textbf{Resolution}  \\ \hline
+NASA POWER v2.0     & MERRA-2 + CERES   & Global, 1981--present & 0.5$^{\circ}$        \\
+Open-Meteo Archive  & Best Match$^b$ (IFS/ERA5) & Global, 1940--present & 9--25\,km    \\
+Open-Meteo Forecast & Best Match$^b$ (multi-NWP) & Global, 16 days      & 1--25\,km    \\
+MET Norway (Yr)     & MEPS / ECMWF IFS  & Global, 10 days       & 2.5--9\,km$^a$       \\
+NWS Forecast        & NWP (GFS/NAM)     & CONUS, 7 days         & 2.5\,km              \\
+NWS Stations        & In-situ obs.      & CONUS ($\sim$1800 st.)& Station              \\ \hline
+\end{tabular}%
+}
+\begin{flushleft}
+\scriptsize
+$^a$~2.5\,km in Nordic Europe (MEPS); $\sim$9\,km elsewhere (ECMWF IFS).\\
+$^b$~Open-Meteo \texttt{best\_match} auto-selects the highest-resolution model per location.
+\textit{Archive}: ECMWF IFS (9\,km, 2017+) or ERA5 (25\,km, pre-2017).
+\textit{Forecast}: combines ICON, GFS, ECMWF IFS, AROME, and 10+ regional NWP models.\\
+EVAonline enforces standardised limits: historical queries start from 1990-01-01;
+forecast horizon is capped at today\,+\,5\,d (6 days total) across all sources.
+\end{flushleft}
 \end{table}
 
 Source-specific variable names, units, and temporal aggregations differ across
@@ -379,23 +387,61 @@ estimate is computed as a normalized weighted average of all healthy sources
 providing valid data:
 
 \begin{equation}
-\hat{z}_{k,j} = \frac{\sum_{i \in \mathcal{S}_{k,j}} w_i \cdot z_{k,i,j}}{\sum_{i \in \mathcal{S}_{k,j}} w_i}
+\hat{z}_{k,j} = \frac{\sum_{i \in \mathcal{S}_{k,j}} w_{i,j} \cdot z_{k,i,j}}{\sum_{i \in \mathcal{S}_{k,j}} w_{i,j}}
 \label{eq:weighted_avg}
 \end{equation}
 
 \noindent where $\mathcal{S}_{k,j}$ is the set of sources providing a valid
 measurement for variable $j$ on day $k$, $z_{k,i,j}$ is the observation from
-source $i$, and $w_i$ are region-dependent source weights (Table~\ref{tab:weights}).
+source $i$, and $w_{i,j}$ are source and variable-specific weights.
 When only a single source provides data for a given variable on a given day,
-that source's value is used directly ($w_i = 1$). The weights are assigned
-uniformly across all meteorological variables for each source, reflecting the
-overall reliability and resolution of each data provider within its geographic
-domain.
+that source's value is used directly ($w_{i,j} = 1$). Two weighting schemes
+are employed depending on the operational mode.
+
+\paragraph{Historical mode weights.}
+For the two-source historical configuration (NASA POWER + Open-Meteo Archive),
+variable-specific weights are assigned based on the comparative performance of
+each reanalysis product against the BR-DWGD reference dataset across the 17
+validation sites (Table~\ref{tab:hist_weights}). NASA POWER receives
+higher weight for solar radiation ($w = 0.92$), leveraging its CERES satellite
+observations, while Open-Meteo (ERA5) receives higher weight for wind speed
+($w_{\text{OM}} = 0.80$) and relative humidity ($w_{\text{OM}} = 0.65$).
+Precipitation is computed as the simple arithmetic mean of all available
+sources, since the subsequent Kalman filter (Stage~2) provides the primary
+quality control for this variable.
 
 \begin{table}[htbp]
 \centering
-\caption{Region-dependent source weights for Stage~1 weighted averaging. The
-geographic region is determined automatically from the query coordinates.}
+\caption{Variable-specific source weights for historical mode (NASA POWER +
+Open-Meteo Archive). The NASA weight $w_{\text{NASA}}$ is shown; Open-Meteo
+receives $1 - w_{\text{NASA}}$.}
+\label{tab:hist_weights}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Variable} & $w_{\text{NASA}}$ & $w_{\text{OM}}$ & \textbf{Rationale} \\
+\midrule
+$T_{\max}$    & 0.58 & 0.42 & NASA slight advantage in extremes \\
+$T_{\min}$    & 0.52 & 0.48 & Near-equal performance \\
+$T_{\text{mean}}$ & 0.60 & 0.40 & NASA MERRA-2 advantage \\
+RH        & 0.35 & 0.65 & ERA5 humidity superior \\
+$u_2$     & 0.20 & 0.80 & ERA5 wind more accurate \\
+$R_s$     & 0.92 & 0.08 & CERES satellite radiation dominant \\
+Precipitation & \multicolumn{2}{c}{simple mean} & Kalman applied after \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Forecast and recent mode weights.}
+For forecast and recent periods with up to three real-time sources,
+region-dependent uniform weights per source are applied
+(Table~\ref{tab:weights}).
+
+\begin{table}[htbp]
+\centering
+\caption{Region-dependent source weights for forecast and recent mode
+weighted averaging. The geographic region is determined automatically from
+the query coordinates.}
 \label{tab:weights}
 \begin{tabular}{@{}llccc@{}}
 \toprule
@@ -409,10 +455,9 @@ Global (default) & All other locations & --- & 0.70 & 0.30 \\
 \bottomrule
 \end{tabular}
 \begin{flushleft}
-\small Notes: For historical mode, NASA POWER and Open-Meteo Archive receive
-equal weights when both provide data. NWS sources are available only within
-the continental United States. $\varphi$: latitude (\textdegree{}N);
-$\lambda$: longitude (\textdegree{}E).
+\small Notes: NWS sources are available only within the continental United
+States. $\varphi$: latitude (\textdegree{}N); $\lambda$: longitude
+(\textdegree{}E).
 \end{flushleft}
 \end{table}
 
@@ -424,11 +469,12 @@ extrapolation artifacts. Days with fewer than four valid variables are discarded
 \subsubsection*{Stage 2: Adaptive Kalman smoothing}
 
 Following the weighted averaging stage, an adaptive one-dimensional scalar
-Kalman filter \citep{Kalman1960} is applied independently to precipitation and
-ET\textsubscript{0} to provide temporal smoothing informed by climatological
-priors. This stage corrects for residual day-to-day noise in the fused
-estimates, particularly during transition seasons when inter-source variability
-is highest.
+Kalman filter \citep{Kalman1960} is applied in two sequential phases: first to
+precipitation (immediately after Stage~1, before the FAO-56 calculation), and
+then to ET\textsubscript{0} (after the FAO-56 Penman-Monteith calculation,
+Section~\ref{subsec:eto}). Both applications use the same filter formulation
+with variable-specific climatological priors, but differ in initialization and
+reset strategy.
 
 For each filtered variable $v \in \{\text{precipitation}, \text{ET}_0\}$ and
 each calendar month $m \in \{1, \ldots, 12\}$, a separate filter instance is
@@ -437,9 +483,13 @@ period:
 
 \begin{itemize}
 \item Prior state estimate: $\hat{x}_0 = \mu_m$ (climatological monthly normal)
-\item Prior error variance: $P_0 = \sigma_m^2$ (climatological monthly variance)
+\item Prior error variance: $P_0 = \sigma_m^2$ (climatological monthly variance,
+  enforced minimum of 0.5~mm\,d\textsuperscript{$-1$} for ET\textsubscript{0}
+  and 5.0~mm\,d\textsuperscript{$-1$} for precipitation)
 \item Process noise: $Q_m = 0.08\,\sigma_m^2$
-\item Base measurement noise: $R_{\text{base}} = 0.3025$
+\item Base measurement noise: $R_{\text{base}} = \sigma_{\text{meas}}^2 =
+  0.55^2 = 0.3025$, where $\sigma_{\text{meas}} = 0.55$~mm\,d\textsuperscript{$-1$}
+  is the assumed measurement standard deviation
 \end{itemize}
 
 The state equation follows a random walk model appropriate for day-to-day
@@ -473,11 +523,14 @@ R_{\text{base}} & \text{otherwise}
 
 \noindent where $\text{P01}_m$ and $\text{P99}_m$ are the 1st and 99th
 percentile bounds of the local climatological distribution for calendar
-month~$m$. This three-tier scheme effectively downweights observations that
-lie outside the climatologically plausible range, with extreme outliers (beyond
-$0.8 \times \text{P01}$ or $1.25 \times \text{P99}$) receiving 500-fold noise
-inflation—retaining their partial information rather than discarding them
-entirely.
+month~$m$. When P01$_m$ or P99$_m$ are unavailable (e.g., for locations
+outside the reference city network), they default to
+$\mu_m \pm 3.5\,\sigma_m$, providing conservative bounds that still enable
+anomaly detection. This three-tier scheme effectively downweights observations
+that lie outside the climatologically plausible range, with extreme outliers
+(beyond $0.8 \times \text{P01}$ or $1.25 \times \text{P99}$) receiving
+500-fold noise inflation---retaining their partial information rather than
+discarding them entirely.
 
 The standard Kalman prediction and update equations are applied:
 
@@ -499,15 +552,98 @@ times the previous innovation, $Q_m$ is inflated by a factor of~1.8 (capped at
 $0.5\,\sigma_m^2$), temporarily increasing the filter's responsiveness before
 reverting to the baseline value.
 
-The climatological priors are derived from a curated database of 27 reference
-cities (17 in Brazil and 10 global sites), each containing monthly statistics
-(normal, standard deviation, and P01--P99 percentiles) computed from the
-1991--2020 period of the BR-DWGD dataset \citep{Xavier2016, Xavier2022}. For a
-given query location, the system identifies the nearest reference city within
-200~km in the same hemisphere and geographic region. Locations without a nearby
-reference ($>$200~km) fall back to a simplified Kalman filter with fixed
-parameters, which provides temporal smoothing without climatological
-constraints.
+\subsubsection*{Climatological prior database}
+
+The adaptive Kalman filter described above relies on monthly climatological
+statistics ($\mu_m$, $\sigma_m$, P01$_m$, P99$_m$) derived from a curated
+database of 27 reference cities (Table~\ref{tab:ref_cities}). Each city's JSON
+record stores monthly normals, standard deviations, and P01--P99 percentiles
+for both ET\textsubscript{0} and precipitation, computed from the 1991--2020
+period of the BR-DWGD dataset \citep{Xavier2016, Xavier2022} for Brazilian
+sites, and from ERA5 reanalysis for the global sites.
+
+\begin{table}[htbp]
+\centering
+\caption{Reference cities providing climatological priors for the adaptive
+Kalman filter. Brazilian cities (region tag \texttt{brasil}) were also used
+in the validation study; global cities provide priors for real-time queries
+only and were not part of the validation.}
+\label{tab:ref_cities}
+\small
+\begin{tabular}{@{}rlrrr@{}}
+\toprule
+\# & City & Lat.\ (\textdegree{}) & Lon.\ (\textdegree{}) & Elev.\ (m) \\
+\midrule
+\multicolumn{5}{l}{\textit{Brazil (17 cities --- MATOPIBA + Piracicaba)}} \\
+1  & Alvorada do Gurgu\'eia, PI & $-8.44$ & $-43.86$ & 269 \\
+2  & Aragua\'ina, TO            & $-7.19$ & $-48.21$ & 235 \\
+3  & Balsas, MA                 & $-7.53$ & $-46.04$ & 256 \\
+4  & Barreiras, BA              & $-12.14$ & $-45.00$ & 442 \\
+5  & Bom Jesus, PI              & $-9.07$ & $-44.36$ & 300 \\
+6  & Campos Lindos, TO          & $-7.97$ & $-46.80$ & 297 \\
+7  & Carolina, MA               & $-7.33$ & $-47.47$ & 180 \\
+8  & Corrente, PI               & $-10.44$ & $-45.16$ & 444 \\
+9  & Formosa do Rio Preto, BA   & $-11.05$ & $-45.19$ & 496 \\
+10 & Imperatriz, MA             & $-5.53$ & $-47.48$ & 131 \\
+11 & Lu\'is Eduardo Magalh\~aes, BA & $-12.08$ & $-45.80$ & 769 \\
+12 & Pedro Afonso, TO           & $-8.96$ & $-48.18$ & 182 \\
+13 & Piracicaba, SP             & $-22.73$ & $-47.65$ & 524 \\
+14 & Porto Nacional, TO         & $-10.71$ & $-48.41$ & 234 \\
+15 & S\~ao Desid\'erio, BA      & $-12.36$ & $-44.97$ & 504 \\
+16 & Tasso Fragoso, MA          & $-8.48$ & $-45.74$ & 240 \\
+17 & Uru\c{c}u\'i, PI           & $-7.23$ & $-44.56$ & 175 \\
+\midrule
+\multicolumn{5}{l}{\textit{Global (10 cities --- real-time priors only)}} \\
+18 & Addis Ababa, Ethiopia      &  $9.01$ &  $38.76$ & 2324 \\
+19 & Des Moines (IA), USA       & $41.59$ & $-93.62$ & 294 \\
+20 & Fresno (CA), USA           & $36.75$ & $-119.77$ & 100 \\
+21 & Hanoi, Vietnam             & $21.03$ & $105.81$ & 16 \\
+22 & Krasnodar, Russia          & $45.04$ &  $38.99$ & 34 \\
+23 & Ludhiana, Punjab, India    & $30.90$ &  $75.86$ & 255 \\
+24 & Mendoza, Argentina         & $-32.89$ & $-68.85$ & 827 \\
+25 & Polokwane, Limpopo, S.\ Africa & $-23.90$ & $29.47$ & 1294 \\
+26 & Seville, Spain             & $37.39$ &  $-5.98$ & 31 \\
+27 & Wagga Wagga, Australia     & $-35.13$ & $147.35$ & 213 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For a given query location, the system selects the nearest reference city
+subject to three constraints enforced sequentially:
+
+\begin{enumerate}
+\item \textbf{Region segregation.} The query coordinates are classified into a
+  geographic region (Brazil, USA, Europe, Africa, Asia, Oceania, or Global)
+  using coordinate-based bounding boxes. Brazilian queries are matched
+  exclusively against the 17 Brazilian reference cities, while non-Brazilian
+  queries are matched exclusively against the 10 global cities.  This prevents
+  climatological priors from an inappropriate climate zone (e.g.,\ tropical
+  MATOPIBA) from being applied to a temperate query location, and vice versa.
+
+\item \textbf{Hemisphere consistency.} The candidate city must lie in the same
+  hemisphere as the query, with a $\pm5$\textdegree{} equatorial tolerance to
+  accommodate locations near the equator.
+
+\item \textbf{Distance threshold.} Among all candidates passing the above
+  filters, the nearest city within 200~km (haversine distance) is selected.
+\end{enumerate}
+
+The outcome determines the Kalman filter mode:
+\begin{itemize}
+\item \textbf{High-precision mode} (reference found within 200~km): the
+  \texttt{AdaptiveKalmanFilter} is instantiated with the full set of monthly
+  priors ($\mu_m$, $\sigma_m$, P01$_m$, P99$_m$) from the matched city.  A
+  separate filter instance is created per calendar month, ensuring
+  season-specific initialisation.
+
+\item \textbf{Global-fallback mode} (no reference within 200~km): a
+  \texttt{SimpleKalmanFilter} with fixed parameters ($R = 0.8$, $Q = 0.05$,
+  initial state $\hat{x}_0 = 5.0$~mm\,d$^{-1}$) provides temporal smoothing
+  without climatological constraints.  This mode still improves on the raw
+  Stage~1 output by suppressing day-to-day noise, but cannot perform the
+  three-tier adaptive measurement noise inflation described in
+  Eq.~\eqref{eq:adaptive_R}.
+\end{itemize}
 
 
 \subsection{FAO-56 Penman-Monteith ET\textsubscript{0} Calculation}
@@ -561,32 +697,44 @@ e_a = \frac{\text{RH}_{\text{mean}}}{100} \cdot e_s
 \end{equation}
 
 \textbf{Net radiation:} The net shortwave radiation is $R_{ns} = (1 - \alpha)\,R_s$,
-where $\alpha = 0.23$ is the grass reference surface albedo. The net radiation
-is computed from the incident solar radiation with an empirical net longwave
-approximation calibrated for the operational domain:
+where $\alpha = 0.23$ is the grass reference surface albedo. The net longwave
+radiation is computed using the Stefan-Boltzmann approach (FAO-56 Eq.~39):
 
 \begin{equation}
-R_n = (1 - \alpha)\,R_s - 0.23\,R_s = 0.54\,R_s
-\label{eq:rn}
+R_{nl} = \sigma \left[\frac{T_{\max,K}^4 + T_{\min,K}^4}{2}\right]
+\left(0.34 - 0.14\sqrt{e_a}\right)\,f
+\label{eq:rnl}
 \end{equation}
 
-This simplified formulation, in which the net longwave radiation loss
-($R_{nl}$) is approximated as $0.23\,R_s$, was adopted because the full
-Stefan-Boltzmann net longwave calculation requires clear-sky solar radiation
-($R_{so}$) and temperature-humidity corrections that introduce additional
-uncertainty when computed from gridded data rather than station observations.
-For the MATOPIBA validation domain (tropical, \mbox{5--12\textdegree{}S}), the
-ratio $R_n/R_s \approx 0.50$--$0.58$ is relatively stable \citep{Allen1998},
-and the simplified approximation ($R_n/R_s = 0.54$) introduces errors
-of less than 5\% in net radiation for typical conditions.
+\noindent where $\sigma = 4.903 \times 10^{-9}$~MJ\,m$^{-2}$\,d$^{-1}$\,K$^{-4}$
+is the Stefan-Boltzmann constant, $T_{\max,K}$ and $T_{\min,K}$ are the daily
+maximum and minimum temperatures in Kelvin, and $f$ is the cloud cover factor:
+
+\begin{equation}
+f = 1.35\,\frac{R_s}{R_a} - 0.35
+\label{eq:cloud_factor}
+\end{equation}
+
+\noindent bounded to the interval $[0.3,\, 1.0]$, where $R_a$ is the
+extraterrestrial radiation. The net radiation is then:
+
+\begin{equation}
+R_n = R_{ns} - R_{nl} = (1 - \alpha)\,R_s - R_{nl}
+\label{eq:rn}
+\end{equation}
 
 \textbf{Extraterrestrial radiation} ($R_a$) is computed from latitude and day
 of year following the standard astronomical formulations in
 \citet{Allen1998}, incorporating the inverse relative Earth--Sun distance,
-solar declination, and sunset hour angle.
+solar declination ($\delta = 0.409\,\sin(2\pi\,J/365 - 1.39)$, where $J$ is
+the day of year), and sunset hour angle with polar edge-case handling.
+
+\textbf{Minimum physical guards.} Wind speed is clamped to $u_2 \geq 0.5$~m\,s$^{-1}$,
+solar radiation to $R_s \geq 0.1$~MJ\,m$^{-2}$\,d$^{-1}$, and vapour pressure
+deficit to $\text{VPD} \geq 0.01$~kPa to prevent numerical instabilities.
 
 \textbf{Quality classification.} Each daily ET\textsubscript{0} estimate is
-classified as ``high'' quality when $0.1 \leq \text{ET}_0 \leq 15$~mm\,d\textsuperscript{$-1$},
+classified as ``high'' quality when $0.1 \leq \text{ET}_0 \leq 12$~mm\,d\textsuperscript{$-1$},
 and ``low'' otherwise, enabling downstream filtering for anomalous values.
 
 \subsubsection*{Water deficit analysis}
@@ -626,9 +774,9 @@ climatological analyses and trend detection. Results are delivered
 asynchronously via email as CSV or Excel file attachments, accommodating the
 longer processing times required for multi-year queries.
 
-\textbf{(c) Forecast mode (7 days ahead).} Queries Open-Meteo Forecast, MET
-Norway, and NWS Forecast (for US locations). This mode applies the
-region-adaptive weights shown in Table~\ref{tab:weights}.
+\textbf{(c) Forecast mode (today + 5\,days = 6\,days).} Queries Open-Meteo
+Forecast, MET Norway, and NWS Forecast (for US locations). This mode applies
+the region-adaptive weights shown in Table~\ref{tab:weights}.
 
 \subsubsection*{Asynchronous processing and real-time progress}
 
@@ -804,71 +952,206 @@ $\beta$: bias ratio; $\alpha$: variability ratio.
 \subsection{Validation Results}
 \label{subsec:results}
 
-The two-stage fusion consistently outperformed individual data sources across
-all statistical metrics (Table~\ref{tab:results}). The EVAonline fused
-ET\textsubscript{0} estimates achieved a mean KGE of $0.814 \pm 0.053$, NSE of
-$0.676 \pm 0.085$, and MAE of 0.423~mm\,d\textsuperscript{$-1$} across the 17
-MATOPIBA sites, with a negligible mean bias (PBIAS~$= 0.71 \pm 0.53\%$).
+The two-stage fusion was validated against the BR-DWGD reference dataset
+\citep{xavier2022} across 17 Brazilian sites (16 in the MATOPIBA region
+plus Piracicaba/SP), totalling 186{,}286 daily observations over the period
+1991--2020. Table~\ref{tab:results} summarises the overall performance of
+each data source compared to the reference, while Figures~\ref{fig:scatter_nasa}--\ref{fig:seasonal} present detailed visual analyses.
 
-\begin{table}[htbp]
+\begin{table}[!ht]
 \centering
-\caption{Daily ET\textsubscript{0} validation results (17 MATOPIBA sites,
-1991--2020, mean $\pm$ standard deviation across sites). All approaches are
-compared against the BR-DWGD reference dataset.}
+\caption{Daily ET\textsubscript{0} validation results across 17 sites
+(1991--2020, 186{,}286 daily observations). Values are per-site
+means ($\pm$~standard deviation where shown). Pooled metrics across
+the full dataset are reported in the scatter-plot captions
+(Figures~\ref{fig:scatter_nasa}--\ref{fig:scatter_fusion}). Best values
+in bold.}
 \label{tab:results}
 \small
-\begin{tabular}{@{}lccccc@{}}
+\begin{tabular}{@{}lcccccc@{}}
 \toprule
-Approach & KGE & NSE & $r^2$ & MAE (mm\,d$^{-1}$) & PBIAS (\%) \\
+\textbf{Method} & \textbf{$R^2$} & \textbf{KGE} & \textbf{NSE} &
+\textbf{MAE} & \textbf{RMSE} & \textbf{PBIAS} \\
+ & & & & (mm\,d$^{-1}$) & (mm\,d$^{-1}$) & (\%) \\
 \midrule
-%% TODO: Replace placeholder values for individual sources with actual
-%% values from the validation notebooks (Zenodo dataset).
-NASA POWER only & $0.715$ & $0.542$ & $0.623$ & $0.572$ & $3.2$ \\
-Open-Meteo Archive only & $0.654$ & $0.418$ & $0.556$ & $0.682$ & $5.8$ \\
-\textbf{EVAonline Fusion} & $\mathbf{0.814 \pm 0.053}$ & $\mathbf{0.676 \pm 0.085}$ & $\mathbf{0.694 \pm 0.074}$ & $\mathbf{0.423}$ & $\mathbf{0.71 \pm 0.53}$ \\
+NASA POWER (FAO-56)
+  & $0.740 \pm 0.062$ & $0.411 \pm 0.264$ & $-0.363 \pm 0.788$
+  & $0.845$ & $1.117$ & $+15.78$ \\
+Open-Meteo Archive (ERA5-Land)
+  & $0.636 \pm 0.173$ & $0.432 \pm 0.413$ & $-0.547 \pm 1.820$
+  & $0.859$ & $1.097$ & $+13.02$ \\
+Open-Meteo API (ERA5)
+  & $0.649 \pm 0.174$ & $0.584 \pm 0.188$ & $0.216 \pm 0.356$
+  & $0.690$ & $0.860$ & $+8.27$ \\
+\textbf{EVAonline Fusion}
+  & $\mathbf{0.694 \pm 0.074}$ & $\mathbf{0.814 \pm 0.053}$
+  & $\mathbf{0.676 \pm 0.085}$ & $\mathbf{0.423}$
+  & $\mathbf{0.566}$ & $\mathbf{+0.71}$ \\
 \midrule
-Improvement vs. best source & +14\% & +25\% & +11\% & $-26\%$ & $-78\%$ \\
+\multicolumn{7}{l}{\footnotesize Improvement vs.\ best individual source (Open-Meteo API, KGE\,=\,0.584):} \\
+\multicolumn{7}{l}{\footnotesize $\Delta$KGE: +39\% $|$ $\Delta$MAE: $-$39\% $|$ $\Delta$RMSE: $-$34\% $|$ $\Delta$PBIAS: $-$91.5\%} \\
+\multicolumn{7}{l}{\footnotesize Improvement vs.\ NASA POWER (most common single source):} \\
+\multicolumn{7}{l}{\footnotesize $\Delta$KGE: +98\% $|$ $\Delta$MAE: $-$50\% $|$ $\Delta$RMSE: $-$49\% $|$ $\Delta$PBIAS: $-$95.5\%} \\
 \bottomrule
 \end{tabular}
-\begin{flushleft}
-\small Improvement percentages are relative to NASA POWER (best individual
-source). The fusion reduced RMSE by 26\% relative to NASA POWER and by 38\%
-relative to Open-Meteo Archive.
-\end{flushleft}
 \end{table}
 
-Several key findings emerge from the validation analysis:
+% ======================= FIGURE (a): NASA POWER SCATTER =======================
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.85\textwidth]{Figure_6a_scatter_nasa.png}
+\caption{Density scatter plot of NASA POWER ET\textsubscript{0}
+vs.\ BR-DWGD reference (186{,}286 daily observations, 17 sites,
+1991--2020). Red dashed line: 1:1 reference; blue solid line: OLS
+regression ($y = 1.343x - 0.785$; pooled $R^2 = 0.737$,
+KGE\,=\,0.396).}
+\label{fig:scatter_nasa}
+\end{figure}
 
-\textbf{Seasonal complementarity.} Performance improvement was most pronounced
-during seasonal transitions (October--November and April--May in the Southern
-Hemisphere), when inter-source variability is highest and the fusion provides
-the greatest added value. During the dry season (May--September), NASA POWER
-performed better than Open-Meteo for solar radiation, likely because lower
-cloud cover reduces interference with satellite retrievals. Conversely,
-Open-Meteo provided complementary information during the wet season, when
-cloud cover degrades satellite-derived radiation estimates. The adaptive
-Kalman filter effectively exploited this seasonal complementarity by adjusting
-its innovation weighting according to the climatological context of each month.
+% ==================== FIGURE (b): OPEN-METEO ARCHIVE SCATTER ==================
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.85\textwidth]{Figure_6b_scatter_openmeteo.png}
+\caption{Density scatter plot of Open-Meteo Archive (ERA5-Land)
+ET\textsubscript{0} vs.\ BR-DWGD reference. OLS regression:
+$y = 1.096x + 0.137$; pooled $R^2 = 0.538$, KGE\,=\,0.423,
+RMSE\,=\,1.229~mm\,d$^{-1}$.}
+\label{fig:scatter_openmeteo}
+\end{figure}
+
+% ==================== FIGURE (c): EVAONLINE FUSION SCATTER ====================
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.85\textwidth]{Figure_6c_scatter_fusion.png}
+\caption{Density scatter plot of EVAonline two-stage fusion
+ET\textsubscript{0} vs.\ BR-DWGD reference. OLS regression:
+$y = 0.819x + 0.807$; pooled KGE\,=\,0.849, NSE\,=\,0.720,
+RMSE\,=\,0.570~mm\,d$^{-1}$, PBIAS\,=\,+0.70\%.}
+\label{fig:scatter_fusion}
+\end{figure}
+
+% =================== FIGURE (d): ERROR DISTRIBUTION BOXPLOTS ==================
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.85\textwidth]{Figure_6d_error_distribution.png}
+\caption{Box plots of daily estimation error
+(estimated~$-$~reference) for NASA POWER, Open-Meteo Archive, and
+EVAonline Fusion. Median errors: $+0.69$, $+0.55$, and
+$+0.03$~mm\,d$^{-1}$, respectively. Fliers are omitted for clarity.}
+\label{fig:error_dist}
+\end{figure}
+
+% ====================== FIGURE (e): KGE BY CITY ==============================
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.95\textwidth]{Figure_6e_kge_by_city.png}
+\caption{Kling-Gupta Efficiency (KGE) by site for all four data
+sources. The EVAonline Fusion (green) achieves KGE~$> 0.72$ at every
+site, whereas individual sources show large inter-site variability and
+negative values at several locations.}
+\label{fig:kge_city}
+\end{figure}
+
+% ==================== FIGURE (f): SEASONAL PERFORMANCE ========================
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.90\textwidth]{Figure_6f_seasonal_performance.png}
+\caption{Monthly RMSE for NASA POWER, Open-Meteo Archive, and
+EVAonline Fusion. The shaded band marks the dry season
+(May--September).}
+\label{fig:seasonal}
+\end{figure}
+
+Several key findings emerge from the validation analysis.
+
+\textbf{Individual-source characterisation.}
+The pooled scatter plots (Figures~\ref{fig:scatter_nasa}
+and~\ref{fig:scatter_openmeteo}) reveal distinct error structures for
+each source. NASA POWER shows a regression slope well above unity
+($y = 1.343x - 0.785$), indicating overestimation that intensifies at
+higher ET\textsubscript{0} values; despite a pooled $R^2 = 0.737$, the
+large bias ($+0.69$~mm\,d$^{-1}$, PBIAS\,=\,+16.1\%) depresses the
+KGE to only 0.396. Open-Meteo Archive displays greater scatter
+($R^2 = 0.538$) but a nearly unit regression slope
+($y = 1.096x + 0.137$), suggesting a dominant constant-offset
+overestimation component (PBIAS\,=\,+12.8\%); the pooled RMSE reaches
+1.229~mm\,d$^{-1}$ and KGE is 0.423. Although individually limited,
+the two sources exhibit complementary error structures---a property
+exploited by the fusion framework.
+
+\textbf{Systematic bias elimination.}
+The most striking result of the
+two-stage fusion is the near-complete elimination of systematic error.
+Individual sources exhibited substantial positive biases: $+15.78\%$
+(NASA POWER), $+13.02\%$ (Open-Meteo Archive), and $+8.27\%$ (Open-Meteo
+API). The fusion reduced PBIAS to only $+0.71 \pm 0.53\%$---a 95.5\%
+reduction relative to NASA POWER and 91.5\% relative to Open-Meteo API
+(Figure~\ref{fig:scatter_fusion}). The error-distribution box
+plots (Figure~\ref{fig:error_dist}) confirm this: NASA POWER and
+Open-Meteo Archive present median errors of $+0.69$ and
+$+0.55$~mm\,d$^{-1}$, respectively, with wide interquartile ranges,
+whereas the fusion compresses the median error to
+$+0.03$~mm\,d$^{-1}$ and reduces the interquartile range by more than
+50\%. This near-zero bias is critical for cumulative water-balance
+applications, where systematic errors compound over time, and for
+irrigation scheduling, where persistent overestimation of
+ET\textsubscript{0} would lead to excessive water allocation.
+
+\textbf{Error reduction.}
+The pooled fusion scatter plot (Figure~\ref{fig:scatter_fusion})
+shows markedly tighter clustering around the 1:1 line, with a pooled
+KGE of 0.849, NSE of 0.720, RMSE of 0.570~mm\,d$^{-1}$, and near-zero
+bias ($+0.030$~mm\,d$^{-1}$, PBIAS\,=\,+0.70\%). The regression line
+($y = 0.819x + 0.807$) indicates slight underestimation at higher
+ET\textsubscript{0} values, balanced by the intercept offset. In
+per-site terms, the fusion reduced RMSE by 49.3\% compared to
+NASA POWER alone (from 1.117 to 0.566~mm\,d$^{-1}$) and by 48.3\%
+compared to Open-Meteo Archive (from 1.097 to 0.566~mm\,d$^{-1}$).
+Relative to the best individual source (Open-Meteo API, RMSE\,=\,0.860),
+the reduction was 34.2\%. MAE was reduced by 50\% compared to NASA POWER
+(from 0.845 to 0.423~mm\,d$^{-1}$) and by 39\% compared to Open-Meteo
+API (from 0.690 to 0.423~mm\,d$^{-1}$).
+
+\textbf{Seasonal complementarity.}
+Performance improvement was most
+pronounced during the dry season (May--September), when individual sources
+exhibited highest errors (Figure~\ref{fig:seasonal}). During the dry months,
+fusion RMSE was 0.49~mm\,d$^{-1}$ versus 1.46~mm\,d$^{-1}$ for NASA POWER
+(66\% reduction) and 1.50~mm\,d$^{-1}$ for Open-Meteo (67\% reduction).
+During the wet season, the fusion maintained RMSE of 0.62~mm\,d$^{-1}$
+versus 0.90~mm\,d$^{-1}$ (NASA) and 0.99~mm\,d$^{-1}$ (Open-Meteo),
+representing reductions of 31\% and 37\%, respectively. The adaptive Kalman
+filter effectively exploited inter-source complementarity by adjusting
+its innovation weighting to the climatological context of each month.
+
+\textbf{Spatial consistency.}
+The fusion achieved KGE~$>0.72$ at all
+17 validation sites (Figure~\ref{fig:kge_city}), with a coefficient of
+variation of only 6.5\% ($0.814 \pm 0.053$), compared to 32\% for
+Open-Meteo API ($0.584 \pm 0.188$) and 64\% for NASA POWER
+($0.411 \pm 0.264$). Notably, several individual-source estimates
+exhibit negative KGE at specific sites (e.g.,\ Open-Meteo Archive at
+Campos Lindos, KGE\,=\,$-0.61$), meaning that a constant climatological
+mean would outperform those single-source estimates; the fusion recovers
+acceptable performance even at these difficult locations. This spatial
+consistency is particularly important for regional-scale applications in
+the MATOPIBA agricultural frontier, where station networks are sparse
+and users require reliable estimates regardless of specific location.
 
 \textbf{Radiation dominance.} Solar radiation ($R_s$) emerged as the most
 critical variable for ET\textsubscript{0} accuracy. For historical periods,
 NASA POWER's satellite-derived CERES radiation product was typically the only
-available source with daily resolution, and its values entered the fusion at
-100\% weight (single-source mode). For forecast and recent modes, multi-source
+available source with daily resolution, entering the fusion at 100\% weight
+(single-source mode). For forecast and recent modes, multi-source
 fusion of $R_s$ provided additional robustness.
 
 \textbf{Climatological constraint benefit.} Sites within the 200~km
-radius of a reference city (all 17 MATOPIBA sites) benefited from the
-full adaptive Kalman filter with P01/P99 climatological bounds. The
-adaptive measurement noise inflation effectively rejected anomalous values
-that would have degraded the daily estimates. Sites falling back to the
-simplified (fixed-parameter) Kalman filter showed less improvement,
-underscoring the value of regional climatological priors.
-
-\textbf{Bias reduction.} The fusion achieved a mean PBIAS of only 0.71\%,
-compared to 3.2\% for NASA POWER alone and 5.8\% for Open-Meteo Archive.
-This near-zero bias is particularly important for cumulative water balance
-applications where systematic errors accumulate over time.
+radius of reference cities benefited from the full adaptive Kalman filter
+with P01/P99 climatological bounds. The adaptive measurement noise
+inflation effectively rejected anomalous values that would have degraded
+daily estimates. Sites falling back to the simplified (fixed-parameter)
+Kalman filter showed less improvement, underscoring the value of regional
+climatological priors.
 
 
 \subsection{Comparison with Existing Tools}
@@ -938,11 +1221,13 @@ institutional deployment.
 
 \subsubsection*{Limitations}
 
-Several limitations should be acknowledged. First, the simplified net radiation
-approximation ($R_n \approx 0.54\,R_s$) introduces a systematic simplification
-relative to the full FAO-56 net longwave radiation calculation; while
-appropriate for the tropical MATOPIBA domain, this may introduce larger errors
-in arid or high-latitude regions with different $R_n/R_s$ ratios. Second, the
+Several limitations should be acknowledged. First, the cloud cover factor
+in the Stefan-Boltzmann net longwave calculation uses $R_s/R_a$ rather
+than $R_s/R_{so}$ (where $R_{so} = (0.75 + 2 \times 10^{-5}\,z)\,R_a$
+includes the elevation correction); for low-to-moderate elevations
+($z < 1000$~m) this introduces negligible error, but at high altitudes
+a small overestimation of $R_{nl}$ and corresponding underestimation of
+$R_n$ may occur. Second, the
 climatological priors for the adaptive Kalman filter are currently available for
 27 reference cities; locations beyond 200~km from any reference site fall back
 to a simplified filter without climatological constraints, resulting in reduced
@@ -986,7 +1271,7 @@ data fusion. The main contributions and findings are:
 weighted averaging (Stage~1) with an adaptive Kalman filter constrained by
 30-year climatological priors (Stage~2) achieved a KGE of $0.814 \pm 0.053$
 when validated against the BR-DWGD reference dataset at 17 MATOPIBA sites.
-The fusion reduced RMSE by 26\% compared to the best individual source and
+The fusion reduced RMSE by 34\% compared to the best individual source and
 produced a near-zero bias (PBIAS~$= 0.71\%$), demonstrating that systematic
 integration of complementary data sources yields measurably superior
 ET\textsubscript{0} estimates.

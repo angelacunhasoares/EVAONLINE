@@ -6,7 +6,6 @@ from backend.api.routes import api_router
 from backend.api.websocket.websocket_service import router as websocket_router
 from config.logging_config import get_logger, setup_logging
 
-# from config.settings import get_settings
 from config.settings.app_config import get_legacy_settings
 
 # Configurar logging avançado

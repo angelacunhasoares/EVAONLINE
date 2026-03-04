@@ -252,7 +252,7 @@ def _create_hero_section(lang="en"):
                                     "fusion strategy: physically informed weighted averaging followed by an "
                                     "adaptive Kalman filter constrained by 30-year regional climatology. "
                                     "Validated over 30 years (1991\u20132020) against the BR-DWGD benchmark at "
-                                    "17 data-scarce locations in Brazil\u2019s MATOPIBA region, it achieved "
+                                    "17 Brazilian cities (16 in the MATOPIBA region + Piracicaba/SP), it achieved "
                                     "KGE = 0.814 and MAE = 0.423 mm day\u207b\u00b9 \u2014 reducing error by "
                                     "\u224850% and bias by 95.5% compared to any individual source."
                                 ),
@@ -500,8 +500,8 @@ def _create_validation_section(lang="en"):
                         "validation_desc",
                         default=(
                             "Validated against Xavier et al. BR-DWGD reference dataset "
-                            "(3,625+ weather stations, 0.1° resolution). Study: 17 Brazilian cities, "
-                            "30 years (1991–2020), 186,287 daily observations."
+                            "(3,625+ weather stations, 0.1° resolution). Study: 17 Brazilian cities "
+                            "(16 in MATOPIBA + Piracicaba/SP), 30 years (1991–2020), 186,287 daily observations."
                         ),
                     ),
                     className="text-muted mb-3",
@@ -647,7 +647,7 @@ def _create_validation_section(lang="en"):
 # SEÇÃO 4: FONTES DE DADOS
 # =============================================================================
 def _create_data_sources_section(lang="en"):
-    """Tabela das 7 fontes de dados climáticos."""
+    """Tabela das 7 fontes de dados (6 climáticas + 1 elevação)."""
     header = html.Thead(
         html.Tr(
             [
@@ -699,8 +699,8 @@ def _create_data_sources_section(lang="en"):
                         lang,
                         "data_sources_desc",
                         default=(
-                            "EVAonline integrates 7 climate data sources, automatically selecting "
-                            "the best combination based on geographic location and data availability."
+                            "EVAonline integrates 7 data sources (6 climate + 1 elevation), automatically "
+                            "selecting the best combination based on geographic location and data availability."
                         ),
                     ),
                     className="text-muted mb-3",

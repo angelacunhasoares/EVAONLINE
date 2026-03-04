@@ -1,0 +1,217 @@
+<mxfile host="65bd71144e">
+    <diagram name="DDD Layers" id="ddd">
+        <mxGraphModel dx="563" dy="493" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1250" pageHeight="950" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="&lt;b&gt;EVAonline — Clean Hexagonal DDD Architecture&lt;/b&gt;&lt;br&gt;Dependency Rule: outer layers depend on inner layers (arrows point inward)" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="5" width="700" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_ext_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F9A825;strokeWidth=2;arcSize=4;" vertex="1" parent="1">
+                    <mxGeometry x="30" y="55" width="1100" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_ext_label" value="&lt;b&gt;External&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Third-party services (no control)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#F57F17;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="58" width="220" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_nasa" value="&lt;b&gt;NASA POWER&lt;/b&gt;&lt;br&gt;v2.0 (reanalysis)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="92" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_om_archive" value="&lt;b&gt;Open-Meteo&lt;/b&gt;&lt;br&gt;Archive (ERA5)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="193" y="92" width="128" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_om_forecast" value="&lt;b&gt;Open-Meteo&lt;/b&gt;&lt;br&gt;Forecast (GFS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="92" width="128" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_met" value="&lt;b&gt;MET Norway&lt;/b&gt;&lt;br&gt;Locationforecast" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="487" y="92" width="118" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_nws_f" value="&lt;b&gt;NWS&lt;/b&gt;&lt;br&gt;Daily Forecast" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="625" y="92" width="118" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_nws_s" value="&lt;b&gt;NWS&lt;/b&gt;&lt;br&gt;Stations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="763" y="92" width="108" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_elev" value="&lt;b&gt;OpenTopo&lt;/b&gt;&lt;br&gt;Elevation API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDE7;strokeColor=#F9A825;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="888" y="92" width="118" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_infra_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;strokeWidth=2;arcSize=4;" vertex="1" parent="1">
+                    <mxGeometry x="30" y="185" width="1100" height="225" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_infra_label" value="&lt;b&gt;Infrastructure Layer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Adapters for external I/O (implements domain ports)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#2E7D32;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="188" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_climate_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#66BB6A;strokeWidth=1;arcSize=6;dashed=1;dashPattern=5 3;" vertex="1" parent="1">
+                    <mxGeometry x="42" y="220" width="978" height="62" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_climate_label" value="&lt;b&gt;Climate Adapters&lt;/b&gt; (6 + 1 elevation)" style="text;html=1;align=left;verticalAlign=top;fontSize=9;fontColor=#2E7D32;" vertex="1" parent="1">
+                    <mxGeometry x="50" y="221" width="200" height="16" as="geometry"/>
+                </mxCell>
+                <mxCell id="adp_nasa" value="NASAPowerClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="65" y="244" width="100" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="adp_om_arc" value="OpenMeteoArchiveClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="190" y="244" width="135" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="adp_om_fc" value="OpenMeteoForecastClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="335" y="244" width="140" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="adp_met" value="METNorwayClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="492" y="244" width="108" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="adp_nws_f" value="NWSForecastClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="630" y="244" width="108" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="adp_nws_s" value="NWSStationsClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="765" y="244" width="105" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="adp_elev" value="OpenTopoClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="895" y="244" width="105" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="adp_factory" value="&lt;b&gt;ClimateClientFactory&lt;/b&gt;&lt;br&gt;(Source selection + DI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A5D6A7;strokeColor=#2E7D32;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="300" width="165" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_persist_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#66BB6A;strokeWidth=1;arcSize=6;dashed=1;dashPattern=5 3;" vertex="1" parent="1">
+                    <mxGeometry x="330" y="290" width="510" height="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_persist_label" value="&lt;b&gt;Persistence &amp;amp; Messaging Adapters&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=9;fontColor=#2E7D32;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="292" width="250" height="16" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_pg" value="&lt;b&gt;PostgreSQL 16&lt;/b&gt;&lt;br&gt;+ PostGIS 3.4&lt;br&gt;SQLAlchemy 2.0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="345" y="315" width="135" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_redis" value="&lt;b&gt;Redis 7&lt;/b&gt;&lt;br&gt;① Cache (adaptive TTL)&lt;br&gt;② Celery broker&lt;br&gt;③ Pub/Sub (WS progress)&lt;br&gt;④ Rate limiting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#E53935;fontSize=8;arcSize=10;align=left;spacingLeft=6;" vertex="1" parent="1">
+                    <mxGeometry x="495" y="315" width="155" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_celery" value="&lt;b&gt;Celery 5.x&lt;/b&gt;&lt;br&gt;Worker general (gevent×4)&lt;br&gt;Worker ETo (prefork×2)&lt;br&gt;Beat scheduler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;align=left;spacingLeft=6;" vertex="1" parent="1">
+                    <mxGeometry x="670" y="315" width="155" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_nginx" value="&lt;b&gt;Nginx 1.25&lt;/b&gt; Reverse Proxy + SSL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="860" y="305" width="155" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra_prometheus" value="&lt;b&gt;Prometheus&lt;/b&gt; + Grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=8;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="860" y="345" width="155" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_domain_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#E53935;strokeWidth=3;arcSize=4;" vertex="1" parent="1">
+                    <mxGeometry x="30" y="430" width="1100" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_domain_label" value="&lt;b&gt;Domain Layer&lt;/b&gt; (pure logic — zero I/O dependencies)&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Operates exclusively on Pandas DataFrames &amp;amp; NumPy arrays&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#C62828;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="433" width="420" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="port_climate" value="«port»&lt;br&gt;&lt;b&gt;ClimateDataPort&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#E53935;fontSize=9;arcSize=10;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+                    <mxGeometry x="65" y="468" width="130" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="port_persist" value="«port»&lt;br&gt;&lt;b&gt;PersistencePort&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#E53935;fontSize=9;arcSize=10;dashed=1;dashPattern=3 3;" vertex="1" parent="1">
+                    <mxGeometry x="345" y="468" width="130" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="dom_eto" value="&lt;b&gt;EToCalculationService&lt;/b&gt;&lt;br&gt;FAO-56 Penman-Monteith&lt;br&gt;(7 meteorological variables)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=10;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="505" width="200" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="dom_fusion" value="&lt;b&gt;ClimateFusion&lt;/b&gt;&lt;br&gt;Region-adaptive weighted avg&lt;br&gt;(dynamic source weights)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=10;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="275" y="505" width="195" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="dom_kalman" value="&lt;b&gt;AdaptiveKalmanFilter&lt;/b&gt;&lt;br&gt;1991–2020 climatological priors&lt;br&gt;P01/P99 physical bounds" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=10;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="490" y="505" width="205" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="dom_qc" value="&lt;b&gt;QualityControl&lt;/b&gt;&lt;br&gt;WMO limits + IQR outliers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="570" width="165" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="dom_wind" value="&lt;b&gt;WindHeightCorrection&lt;/b&gt;&lt;br&gt;z → 2m (log profile)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="235" y="570" width="155" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="dom_deficit" value="&lt;b&gt;WaterDeficit&lt;/b&gt;&lt;br&gt;Kc × ETo − Peff" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="405" y="570" width="130" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="dom_historical" value="&lt;b&gt;HistoricalDataLoader&lt;/b&gt;&lt;br&gt;27 cities JSON + LRU cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="550" y="570" width="170" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="dom_geo" value="&lt;b&gt;GeographicUtils&lt;/b&gt;&lt;br&gt;Region detection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="735" y="570" width="130" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_app_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;strokeWidth=2;arcSize=4;" vertex="1" parent="1">
+                    <mxGeometry x="30" y="630" width="1100" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_app_label" value="&lt;b&gt;Application Layer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Use cases / orchestrators (coordinate domain services)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#1565C0;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="633" width="350" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="app_eto" value="&lt;b&gt;calculate_eto_task()&lt;/b&gt;&lt;br&gt;Celery task: download → ETo calc&lt;br&gt;→ Kalman → persist → email" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1E88E5;fontSize=9;arcSize=10;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="668" width="215" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="app_download" value="&lt;b&gt;download_weather_data()&lt;/b&gt;&lt;br&gt;Orchestrator: validate → select sources&lt;br&gt;→ parallel fetch → preprocess → fuse" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1E88E5;fontSize=9;arcSize=10;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="290" y="668" width="230" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="app_cache" value="&lt;b&gt;ClimateCacheService&lt;/b&gt;&lt;br&gt;Adaptive TTL policy&lt;br&gt;Write-through (Redis+PG)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1E88E5;fontSize=9;arcSize=10;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="540" y="668" width="175" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="app_rate" value="&lt;b&gt;RateLimiter&lt;/b&gt;&lt;br&gt;30 dash / 10 hist per day" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1E88E5;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="735" y="672" width="145" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_pres_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#8E24AA;strokeWidth=2;arcSize=4;" vertex="1" parent="1">
+                    <mxGeometry x="30" y="745" width="1100" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="layer_pres_label" value="&lt;b&gt;Presentation Layer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;User-facing interfaces (no business logic)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#6A1B9A;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="748" width="300" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="pres_dash" value="&lt;b&gt;Plotly Dash 2.x&lt;/b&gt;&lt;br&gt;Interactive map (Leaflet)&lt;br&gt;10+ charts · Bilingual EN/PT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#8E24AA;fontSize=9;arcSize=10;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="783" width="175" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="pres_api" value="&lt;b&gt;FastAPI 0.115&lt;/b&gt;&lt;br&gt;REST API (OpenAPI 3.0)&lt;br&gt;WebSocket real-time progress" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#8E24AA;fontSize=9;arcSize=10;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="250" y="783" width="175" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="pres_ws" value="&lt;b&gt;WebSocket&lt;/b&gt;&lt;br&gt;/ws/eto/{task_id}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#8E24AA;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="445" y="785" width="135" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="pres_grafana" value="&lt;b&gt;Grafana 11.4&lt;/b&gt;&lt;br&gt;Ops dashboards" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#8E24AA;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="600" y="785" width="115" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="pres_flower" value="&lt;b&gt;Flower&lt;/b&gt;&lt;br&gt;Celery monitor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#8E24AA;fontSize=9;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="735" y="785" width="105" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ext1" value="" style="endArrow=open;endFill=0;dashed=1;strokeColor=#F9A825;strokeWidth=1;opacity=60;" edge="1" parent="1" source="ext_nasa" target="adp_nasa">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ext2" value="" style="endArrow=open;endFill=0;dashed=1;strokeColor=#F9A825;strokeWidth=1;opacity=60;" edge="1" parent="1" source="ext_om_archive" target="adp_om_arc">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ext3" value="" style="endArrow=open;endFill=0;dashed=1;strokeColor=#F9A825;strokeWidth=1;opacity=60;" edge="1" parent="1" source="ext_om_forecast" target="adp_om_fc">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ext4" value="" style="endArrow=open;endFill=0;dashed=1;strokeColor=#F9A825;strokeWidth=1;opacity=60;" edge="1" parent="1" source="ext_met" target="adp_met">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ext5" value="" style="endArrow=open;endFill=0;dashed=1;strokeColor=#F9A825;strokeWidth=1;opacity=60;" edge="1" parent="1" source="ext_nws_f" target="adp_nws_f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ext6" value="" style="endArrow=open;endFill=0;dashed=1;strokeColor=#F9A825;strokeWidth=1;opacity=60;" edge="1" parent="1" source="ext_nws_s" target="adp_nws_s">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ext7" value="" style="endArrow=open;endFill=0;dashed=1;strokeColor=#F9A825;strokeWidth=1;opacity=60;" edge="1" parent="1" source="ext_elev" target="adp_elev">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_impl1" value="implements" style="endArrow=block;endFill=0;dashed=1;strokeColor=#2E7D32;strokeWidth=1.5;fontSize=8;fontColor=#2E7D32;" edge="1" parent="1" source="adp_factory" target="port_climate">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_impl2" value="implements" style="endArrow=block;endFill=0;dashed=1;strokeColor=#2E7D32;strokeWidth=1.5;fontSize=8;fontColor=#2E7D32;" edge="1" parent="1" source="infra_pg" target="port_persist">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dep1" value="depends on" style="endArrow=block;endFill=1;strokeColor=#1E88E5;strokeWidth=1.5;fontSize=8;fontColor=#1E88E5;" edge="1" parent="1" source="app_eto" target="dom_eto">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dep2" value="depends on" style="endArrow=block;endFill=1;strokeColor=#1E88E5;strokeWidth=1.5;fontSize=8;fontColor=#1E88E5;" edge="1" parent="1" source="app_download" target="dom_fusion">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_calls" value="calls" style="endArrow=block;endFill=1;strokeColor=#8E24AA;strokeWidth=1.5;fontSize=8;fontColor=#8E24AA;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="pres_api" target="app_eto">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="dep_rule_arrow" value="" style="endArrow=block;endFill=1;strokeColor=#333333;strokeWidth=3;" edge="1" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1150" y="830" as="sourcePoint"/>
+                        <mxPoint x="1150" y="65" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="dep_rule_label" value="&lt;b&gt;Dependency&lt;br&gt;Direction&lt;/b&gt;&lt;br&gt;(outer → inner)" style="text;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#333333;" vertex="1" parent="1">
+                    <mxGeometry x="1130" y="430" width="80" height="55" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

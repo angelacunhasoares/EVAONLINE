@@ -205,6 +205,7 @@ def calculate_eto_task(
                 sources=selected_sources,
                 elevation=elevation,
                 enable_fusion=enable_fusion,  # 🔀 Passar flag de fusão
+                mode=mode,  # 🔀 Operational mode for fusion strategy
             )
         )
 

@@ -4,7 +4,7 @@ NWS Stations Client Optimized for Interactive Map + Daily ETo Calculation
 - Station Search: Nearest active station with recent valid observation
 - Start: Today - 2 days
 - End: Today (EVAonline standard)
-- Total: 3 days forecast
+- Total: 3 days (real-time observations, display only)
 
 """
 

@@ -12,7 +12,7 @@ SINGLE SOURCE OF TRUTH para:
 
 Bounding Boxes:
 - USA Continental: -125°W a -66°W, 24°N a 49°N (NWS coverage)
-- Nordic Region: 4°E a 31°E, 54°N a 71.5°N (MET Norway 1km)
+- Nordic Region: 4°E a 32°E, 54°N a 71.5°N (MET Norway 1km)
 - Brazil: -74°W a -34°W, -34°S a 5°N (Xavier et al. 2016)
 - Global: Qualquer coordenada dentro (-180, -90) a (180, 90)
 
@@ -60,12 +60,12 @@ class GeographicUtils:
         Alasca, Havaí, Porto Rico, territórios
     """
 
-    NORDIC_BBOX = (4.0, 54.0, 31.0, 71.5)
+    NORDIC_BBOX = (4.0, 54.0, 32.0, 71.5)  # NO,SE,FI,DK + EE (MEPS 2.5km)
     """
     Bounding box Região Nórdica (MET Norway 1km alta qualidade).
 
     Cobertura:
-        Longitude: 4°E (Dinamarca Oeste) a 31°E (Finlândia/Bálticos)
+        Longitude: 4°E (Dinamarca Oeste) a 32°E (Finlândia/Bálticos)
         Latitude: 54°N (Dinamarca Sul) a 71.5°N (Noruega Norte)
 
     Países incluídos:

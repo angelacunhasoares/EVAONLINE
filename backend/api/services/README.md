@@ -13,11 +13,11 @@ This document describes the technical specifications of the six public weather A
 | API | Coverage | Resolution | Data Type | Period Available |
 |-----|----------|------------|-----------|------------------|
 | **MET Norway** | Global (quality tiers) | Hourly → Daily | Forecast | Today + 5 days |
-| **NASA POWER** | Global | Daily | Historical + Recent | 1990-01-01 to today (no delay) |
+| **NASA POWER** | Global | Daily | Historical + Recent | 1990-01-01 to today − 2d (2-day delay) |
 | **NWS Forecast** | USA only | Hourly → Daily | Forecast | Today + 5 days |
-| **NWS Stations** | USA only (~1800 stations) | Hourly → Daily | Historical + Real-time | 1990-01-01 to today |
+| **NWS Stations** | USA only (~1800 stations) | Hourly → Daily | Real-time observations | today − 2d to today |
 | **Open-Meteo Archive** | Global | Daily | Historical | 1990-01-01 to (today - 2 days) |
-| **Open-Meteo Forecast** | Global | Daily | Recent + Forecast | (today - 30 days) to (today + 5 days) |
+| **Open-Meteo Forecast** | Global | Daily | Recent + Forecast | (today − 29 days) to (today + 5 days) |
 
 ---
 

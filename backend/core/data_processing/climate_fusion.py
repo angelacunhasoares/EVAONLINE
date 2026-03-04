@@ -16,14 +16,32 @@ class ClimateFusion:
     Não aplica Kalman. Não busca referência local.
     """
 
+    # Source classification
+    HIST_SOURCES = {"nasa_power", "openmeteo_archive"}
+    PRIMARY_SOURCES = {"nasa_power", "openmeteo_archive"}  # High-quality reanalysis
+    FALLBACK_SOURCES = {"openmeteo_forecast"}  # Gap-filler for recent mode
+
+    # Per-variable NASA POWER weights for historical AND recent mode (2-source fusion).
+    # OpenMeteo receives 1 - w. Calibrated against BR-DWGD (17 sites).
+    HIST_WEIGHTS = {
+        "T2M_MAX": 0.58,           # NASA slight advantage in extremes
+        "T2M_MIN": 0.52,           # Near-equal performance
+        "T2M": 0.60,               # NASA MERRA-2 advantage
+        "RH2M": 0.35,              # ERA5 humidity superior
+        "WS2M": 0.20,              # ERA5 wind more accurate
+        "ALLSKY_SFC_SW_DWN": 0.92, # CERES satellite radiation dominant
+        "PRECTOTCORR": 0.50,       # Equal reliability; Kalman handles QC
+    }
+
+    # Variables to fuse (also determines iteration order)
     WEIGHTS = {
-        "T2M_MAX": 0.42,
-        "T2M_MIN": 0.38,
-        "T2M": 0.40,
-        "RH2M": 0.28,
-        "WS2M": 0.15,
-        "ALLSKY_SFC_SW_DWN": 0.78,
-        "PRECTOTCORR": 0.30,
+        "T2M_MAX": 0.58,
+        "T2M_MIN": 0.52,
+        "T2M": 0.60,
+        "RH2M": 0.35,
+        "WS2M": 0.20,
+        "ALLSKY_SFC_SW_DWN": 0.92,
+        "PRECTOTCORR": 0.50,
     }
 
     GLOBAL_LIMITS = get_fusion_limits()
@@ -88,7 +106,9 @@ class ClimateFusion:
                 },
                 "order": ["nws_forecast", "openmeteo_forecast", "met_norway"],
             }
-        elif region == "europe" and 55 <= lat <= 72 and -10 <= lon <= 40:
+        # Nordic sub-region: must match source selection bbox
+        # in geographic_utils.py NORDIC_BBOX = (4, 54, 32, 71.5)
+        elif region == "europe" and 54 <= lat <= 71.5 and 4 <= lon <= 32:
             return {
                 "name": "NORDIC",
                 "weights": {"met_norway": 0.80, "openmeteo_forecast": 0.20},
@@ -151,7 +171,8 @@ class ClimateFusion:
         return interpolated
 
     def fuse_multi_source(
-        self, df: pd.DataFrame, lat: float, lon: float
+        self, df: pd.DataFrame, lat: float, lon: float,
+        mode: str = None,
     ) -> pd.DataFrame:
         if df.empty:
             logger.warning("DataFrame vazio na fusão")
@@ -195,6 +216,19 @@ class ClimateFusion:
             {}
         )  # Track which variables use single vs multi-source
 
+        # Detect operational mode from parameter or source names
+        all_sources = set()
+        if "source" in df.columns:
+            all_sources = set(df["source"].unique())
+
+        # Explicit mode detection
+        mode_normalized = (mode or "").lower().replace(" ", "_")
+        is_historical = (
+            "historical" in mode_normalized
+            or (all_sources.issubset(self.HIST_SOURCES) and len(all_sources) >= 2)
+        )
+        is_recent = "current" in mode_normalized or "dashboard_current" in mode_normalized
+
         for date, group in df.groupby(df.index):
             row = {"date": date}
             if "source" in group.columns:
@@ -220,7 +254,82 @@ class ClimateFusion:
                     row[var] = list(values.values())[0]
                     continue
 
-                # Fusão ponderada pelas fontes saudáveis (multi-source)
+                # Historical mode: per-variable weighting
+                if is_historical:
+                    if var not in fusion_strategy:
+                        fusion_strategy[var] = {"hist_weighted": list(values.keys())}
+                    # Precipitation: simple mean (Kalman handles QC)
+                    if var == "PRECTOTCORR":
+                        row[var] = np.mean(list(values.values()))
+                        continue
+                    # Per-variable NASA weight from HIST_WEIGHTS
+                    w_nasa = self.HIST_WEIGHTS.get(var, 0.50)
+                    weighted = 0.0
+                    total_w = 0.0
+                    for src, val in values.items():
+                        w = w_nasa if src == "nasa_power" else (1.0 - w_nasa)
+                        weighted += w * val
+                        total_w += w
+                    row[var] = (
+                        weighted / total_w
+                        if total_w > 0
+                        else np.mean(list(values.values()))
+                    )
+                    continue
+
+                # Recent mode: primary sources preferred, forecast as gap-filler
+                if is_recent:
+                    primary_vals = {
+                        s: v for s, v in values.items()
+                        if s in self.PRIMARY_SOURCES
+                    }
+                    if primary_vals:
+                        # At least one primary source has this variable
+                        if len(primary_vals) == 1:
+                            # Single primary source → 100%
+                            row[var] = list(primary_vals.values())[0]
+                            if var not in fusion_strategy:
+                                fusion_strategy[var] = {
+                                    "recent_single": list(primary_vals.keys())[0]
+                                }
+                        else:
+                            # Both primary sources → HIST_WEIGHTS
+                            if var not in fusion_strategy:
+                                fusion_strategy[var] = {
+                                    "recent_hist": list(primary_vals.keys())
+                                }
+                            if var == "PRECTOTCORR":
+                                row[var] = np.mean(list(primary_vals.values()))
+                            else:
+                                w_nasa = self.HIST_WEIGHTS.get(var, 0.50)
+                                weighted = 0.0
+                                total_w = 0.0
+                                for src, val in primary_vals.items():
+                                    w = w_nasa if src == "nasa_power" else (1.0 - w_nasa)
+                                    weighted += w * val
+                                    total_w += w
+                                row[var] = (
+                                    weighted / total_w
+                                    if total_w > 0
+                                    else np.mean(list(primary_vals.values()))
+                                )
+                    else:
+                        # No primary source for this var → use forecast 100%
+                        fallback_vals = {
+                            s: v for s, v in values.items()
+                            if s in self.FALLBACK_SOURCES
+                        }
+                        if fallback_vals:
+                            row[var] = list(fallback_vals.values())[0]
+                            if var not in fusion_strategy:
+                                fusion_strategy[var] = {
+                                    "recent_fallback": list(fallback_vals.keys())[0]
+                                }
+                        else:
+                            row[var] = list(values.values())[0]
+                    continue
+
+                # Forecast mode: per-source region weights
                 if var not in fusion_strategy:
                     fusion_strategy[var] = {"multi": list(values.keys())}
                 weighted = 0.0
@@ -249,14 +358,38 @@ class ClimateFusion:
         result_df = result_df.dropna(thresh=4)  # pelo menos 3 vars + date
         result_df = result_df.reset_index()
 
+        # Determine effective mode label for logging
+        if is_historical:
+            mode_label = "HISTORICAL"
+        elif is_recent:
+            mode_label = "RECENT"
+        else:
+            mode_label = f"FORECAST ({region['name']})"
+
         # Log da estratégia de fusão por variável
-        logger.info(f"🔀 Fusion strategy for {region['name']} region:")
+        logger.info(f"🔀 Fusion strategy [{mode_label}]:")
         for var, strategy in fusion_strategy.items():
             if "single" in strategy:
                 logger.info(
                     f"   {var}: 100% {strategy['single']} (single-source)"
                 )
-            else:
+            elif "hist_weighted" in strategy:
+                logger.info(
+                    f"   {var}: HIST_WEIGHTS {strategy['hist_weighted']}"
+                )
+            elif "recent_single" in strategy:
+                logger.info(
+                    f"   {var}: 100% {strategy['recent_single']} (primary-only)"
+                )
+            elif "recent_hist" in strategy:
+                logger.info(
+                    f"   {var}: HIST_WEIGHTS {strategy['recent_hist']} (primary pair)"
+                )
+            elif "recent_fallback" in strategy:
+                logger.info(
+                    f"   {var}: 100% {strategy['recent_fallback']} (gap-filler)"
+                )
+            elif "multi" in strategy:
                 sources_str = ", ".join(
                     f"{s} ({weights.get(s, 0.1)*100:.0f}%)"
                     for s in strategy["multi"]

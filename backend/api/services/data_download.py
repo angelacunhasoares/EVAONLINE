@@ -470,6 +470,18 @@ async def download_weather_data(
                 weather_df["date"] = pd.to_datetime(weather_df["date"])
                 weather_df.set_index("date", inplace=True)
 
+                # Harmonize MET Norway -> NASA schema for fusion
+                met_harmonization = {
+                    "temp_max": "T2M_MAX",
+                    "temp_min": "T2M_MIN",
+                    "temp_mean": "T2M",
+                    "humidity_mean": "RH2M",
+                    "precipitation_sum": "PRECTOTCORR",
+                }
+                for met_var, nasa_var in met_harmonization.items():
+                    if met_var in weather_df.columns:
+                        weather_df[nasa_var] = weather_df[met_var]
+
                 # Add CC-BY 4.0 attribution to warnings
                 warnings_list.append(
                     "MET Norway data: CC-BY 4.0 - Attribution required"
@@ -524,12 +536,29 @@ async def download_weather_data(
                             "humidity_mean": record.humidity_mean,
                             "wind_speed_2m_mean": record.wind_speed_mean,
                             "precipitation_sum": record.precipitation_sum,
+                            "solar_radiation": record.solar_radiation,
+                            "pressure_mean": record.pressure_mean,
+                            "dewpoint_mean": record.dewpoint_mean,
                         }
                     )
 
                 weather_df = pd.DataFrame(data_records)
                 weather_df["date"] = pd.to_datetime(weather_df["date"])
                 weather_df.set_index("date", inplace=True)
+
+                # Harmonize NWS -> NASA schema for fusion
+                nws_harmonization = {
+                    "temp_max": "T2M_MAX",
+                    "temp_min": "T2M_MIN",
+                    "temp_mean": "T2M",
+                    "humidity_mean": "RH2M",
+                    "wind_speed_2m_mean": "WS2M",
+                    "solar_radiation": "ALLSKY_SFC_SW_DWN",
+                    "precipitation_sum": "PRECTOTCORR",
+                }
+                for nws_var, nasa_var in nws_harmonization.items():
+                    if nws_var in weather_df.columns:
+                        weather_df[nasa_var] = weather_df[nws_var]
 
                 logger.info(
                     "NWS Forecast: %d records (%s, %s)",

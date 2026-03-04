@@ -270,7 +270,7 @@ class METNorwayClient:
         Check if coordinates are in Nordic region (MET Nordic 1km dataset).
 
         The MET Nordic dataset provides high-quality weather data with:
-        - 1km resolution (vs 9km global)
+        - 2.5km resolution (MEPS, vs 9km global ECMWF)
         - Hourly updates (vs 4x/day global)
         - Extensive post-processing with radar and crowdsourced data
         - Bias correction for precipitation using radar + Netatmo stations
@@ -787,8 +787,8 @@ class METNorwayClient:
                 "nordic": {
                     "region": "Norway, Denmark, Sweden, Finland, Baltics",
                     "bbox": GeographicUtils.NORDIC_BBOX,
-                    "resolution": "1 km",
-                    "model": "MEPS 2.5km + downscaling",
+                    "resolution": "2.5 km (MEPS, post-processed)",
+                    "model": "MEPS 2.5km (MetCoOp Ensemble)",
                     "updates": "Hourly",
                     "post_processing": "Extensive (radar + crowdsourced)",
                     "variables": (

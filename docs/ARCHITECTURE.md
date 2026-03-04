@@ -33,7 +33,7 @@ EVAonline is a comprehensive web application for calculating reference evapotran
 
 ### Key Features
 - **5 Climate Data Sources**: NASA POWER, Open-Meteo, MET Norway, NWS Forecast, NWS Stations
-- **3 Calculation Modes**: Recent (7 days), Historical (custom range), Forecast (7 days)
+- **3 Calculation Modes**: Recent (7–30 days), Historical (custom range), Forecast (today + 5 days)
 - **Kalman Filter Fusion**: Optimal merging of multi-source data with quality weighting
 - **Real-time Progress**: WebSocket-based progress tracking for long calculations
 - **Per-table/chart Downloads**: CSV, Excel, PNG for each result component
@@ -322,13 +322,13 @@ Downloads are generated server-side via `download_service.py` and served through
 │  │  NASA POWER   │ │  Open-Meteo  │ │ MET Norway   │              │
 │  │  (Global)     │ │  (Global)    │ │ (Nordic opt.) │              │
 │  │  Daily/hourly │ │  Archive +   │ │ Forecast      │              │
-│  │  1981-present │ │  Forecast    │ │ 10 days       │              │
+│  │  1990-present │ │  Forecast    │ │ today + 5d    │              │
 │  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘              │
 │         │                │                │                       │
 │  ┌──────┴───────┐ ┌──────┴───────┐                               │
 │  │ NWS Forecast │ │ NWS Stations │                                │
 │  │  (US only)   │ │  (US only)   │                                │
-│  │ 7-day fcst   │ │ Observations │                                │
+│  │ today + 5d   │ │ Observations │                                │
 │  └──────┬───────┘ └──────┬───────┘                               │
 │         │                │                                        │
 │         ▼                ▼                                        │

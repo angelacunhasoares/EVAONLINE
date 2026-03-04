@@ -229,7 +229,7 @@ def _create_api_clients_section(lang="en"):
                             html.P(
                                 [
                                     _t(lang, "api_clients", "description_prefix", default="EVAonline integrates "),
-                                    html.Strong(_t(lang, "api_clients", "description_sources", default="7 climate data sources")),
+                                    html.Strong(_t(lang, "api_clients", "description_sources", default="7 data sources (6 climate + 1 elevation)")),
                                     _t(lang, "api_clients", "description_location", default=" located in "),
                                     html.Code("backend/api/services/"),
                                     _t(lang, "api_clients", "description_suffix_each", default=". Each client has a "),

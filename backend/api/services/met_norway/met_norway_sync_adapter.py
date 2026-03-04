@@ -289,8 +289,8 @@ class METNorwaySyncAdapter:
                     "region": "Norway, Denmark, Sweden, Finland, Baltics",
                     "bbox": GeographicUtils.NORDIC_BBOX,
                     # Uses constant from geographic_utils
-                    "resolution": "1 km",
-                    "model": "MEPS 2.5km + MET Nordic downscaling",
+                    "resolution": "2.5 km (MEPS, post-processed)",
+                    "model": "MEPS 2.5km (MetCoOp Ensemble)",
                     "updates": "Hourly",
                     "post_processing": (
                         "Extensive (radar + Netatmo crowdsourced)"

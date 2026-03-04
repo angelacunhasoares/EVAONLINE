@@ -241,14 +241,14 @@ class GeolocationService:
         """
         # Bounding boxes para detecção geográfica
         # USA Continental: (-125, 24, -66, 49) = (W, S, E, N)
-        # Nordic: (4, 54, 31, 71.5) = (W, S, E, N)
+        # Nordic: (4, 54, 32, 71.5) = (W, S, E, N) — MEPS domain
 
         # Verificar se está nos EUA
         if -125.0 <= longitude <= -66.0 and 24.0 <= latitude <= 49.0:
             return "usa"
 
         # Verificar se está na região Nórdica
-        if 4.0 <= longitude <= 31.0 and 54.0 <= latitude <= 71.5:
+        if 4.0 <= longitude <= 32.0 and 54.0 <= latitude <= 71.5:
             return "nordic"
 
         # Global para todas as outras regiões
