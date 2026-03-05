@@ -207,7 +207,7 @@ _VALIDATION_RESULTS = [
 # SEÇÃO 1: HERO — O que é o EVAonline
 # =============================================================================
 def _create_hero_section(lang="en"):
-    """Seção hero com logo e descrição do projeto."""
+    """Seção hero com descrição do projeto."""
     return dbc.Row(
         dbc.Col(
             dbc.Card(
@@ -215,12 +215,6 @@ def _create_hero_section(lang="en"):
                     [
                         html.Div(
                             [
-                                html.Img(
-                                    src="/assets/images/logo_evaonline.svg",
-                                    alt="EVAonline Logo",
-                                    style={"height": "80px"},
-                                    className="me-4",
-                                ),
                                 html.Div(
                                     [
                                         html.H2(

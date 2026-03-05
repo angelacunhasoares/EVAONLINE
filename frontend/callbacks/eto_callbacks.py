@@ -1138,8 +1138,8 @@ def calculate_eto(
         error_alert = dbc.Alert(
             [
                 html.I(className="bi bi-exclamation-triangle me-2"),
-                html.Strong("Erro: "),
-                "Coordenadas não encontradas.",
+                html.Strong(t(lang, "validation", "error_label", default="Error: ")),
+                t(lang, "validation", "coords_not_found", default="Coordinates not found."),
             ],
             color="danger",
         )
@@ -1154,8 +1154,8 @@ def calculate_eto(
             error_alert = dbc.Alert(
                 [
                     html.I(className="bi bi-exclamation-triangle me-2"),
-                    html.Strong("Erro: "),
-                    "Coordenadas inválidas.",
+                    html.Strong(t(lang, "validation", "error_label", default="Error: ")),
+                    t(lang, "validation", "invalid_coords", default="Invalid coordinates."),
                 ],
                 color="danger",
             )
@@ -1166,8 +1166,8 @@ def calculate_eto(
         error_alert = dbc.Alert(
             [
                 html.I(className="bi bi-exclamation-triangle me-2"),
-                html.Strong("Erro: "),
-                "Falha ao processar coordenadas.",
+                html.Strong(t(lang, "validation", "error_label", default="Error: ")),
+                t(lang, "validation", "coords_parse_error", default="Failed to process coordinates."),
             ],
             color="danger",
         )
@@ -1182,7 +1182,7 @@ def calculate_eto(
                     className="bi bi-water me-2",
                     style={"fontSize": "1.3rem"},
                 ),
-                html.Strong("Ponto sobre o oceano"),
+                html.Strong(t(lang, "validation", "ocean_point_title", default="Point over the ocean")),
                 html.Br(),
                 html.Span(
                     [
@@ -1218,8 +1218,8 @@ def calculate_eto(
             error_alert = dbc.Alert(
                 [
                     html.I(className="bi bi-hand-index me-2"),
-                    html.Strong("Tipo de dados não selecionado: "),
-                    "Selecione Historical, Recent ou Forecast antes de calcular.",
+                    html.Strong(t(lang, "validation", "data_type_not_selected", default="Data type not selected: ")),
+                    t(lang, "validation", "data_type_not_selected_desc", default="Select Historical, Recent or Forecast before calculating."),
                 ],
                 color="warning",
             )
@@ -1236,8 +1236,8 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-exclamation-triangle me-2"),
-                        html.Strong("Erro: "),
-                        "E-mail válido obrigatório para dados históricos.",
+                        html.Strong(t(lang, "validation", "error_label", default="Error: ")),
+                        t(lang, "validation", "email_required", default="Valid e-mail required for historical data."),
                     ],
                     color="warning",
                 )
@@ -1253,16 +1253,18 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-calendar-x me-2"),
-                        html.Strong("Selecione as datas: "),
+                        html.Strong(t(lang, "validation", "select_dates_title", default="Select dates: ")),
                         html.Br(),
-                        "Por favor, selecione a ",
-                        html.Strong("Data Inicial"),
-                        " e a ",
-                        html.Strong("Data Final"),
-                        " para o modo histórico. ",
+                        t(lang, "validation", "select_dates_desc", default="Please select the "),
+                        html.Strong(t(lang, "validation", "select_dates_start", default="Start Date")),
+                        " ",
+                        t(lang, "validation", "select_dates_end", default="End Date") if lang == "en" else "",
+                        " " if lang == "en" else " e a ",
+                        html.Strong(t(lang, "validation", "select_dates_end", default="End Date")) if lang == "en" else html.Strong(t(lang, "validation", "select_dates_end", default="Data Final")),
+                        t(lang, "validation", "select_dates_for_hist", default=" for historical mode. "),
                         html.Br(),
                         html.Small(
-                            "Datas válidas: entre 01/01/1990 e ontem.",
+                            t(lang, "validation", "select_dates_range", default="Valid dates: between 01/01/1990 and yesterday."),
                             className="mt-1 d-block",
                         ),
                     ],
@@ -1275,8 +1277,8 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-file-earmark-x me-2"),
-                        html.Strong("Formato obrigatório: "),
-                        "Por favor, selecione o formato do arquivo (Excel ou CSV).",
+                        html.Strong(t(lang, "validation", "format_required_title", default="Format required: ")),
+                        t(lang, "validation", "format_required_desc", default="Please select the file format (Excel or CSV)."),
                     ],
                     color="warning",
                 )
@@ -1287,9 +1289,9 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-calendar-x me-2"),
-                        html.Strong("Erro de período: "),
-                        "A data inicial não pode ser posterior à data final. ",
-                        f"Você selecionou: {start_date} até {end_date}.",
+                        html.Strong(t(lang, "validation", "period_error_title", default="Period error: ")),
+                        t(lang, "validation", "period_error_desc", default="The start date cannot be after the end date. "),
+                        t(lang, "validation", "period_error_selected", default=f"You selected: {start_date} to {end_date}.").format(start=start_date, end=end_date) if "{start}" in t(lang, "validation", "period_error_selected", default="") else f"{start_date} → {end_date}.",
                     ],
                     color="danger",
                 )
@@ -1308,14 +1310,14 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-database-x me-2"),
-                        html.Strong("Período não disponível: "),
+                        html.Strong(t(lang, "validation", "period_unavailable_title", default="Period not available: ")),
                         html.Br(),
-                        f"Os dados históricos do EVAonline estão disponíveis a partir de ",
+                        t(lang, "validation", "period_unavailable_desc", default="EVAonline historical data is available from "),
                         html.Strong("01/01/1990"),
-                        f". A data selecionada ({invalid_date.strftime('%d/%m/%Y')}) é anterior a este limite.",
+                        t(lang, "validation", "period_unavailable_before", default=f". The selected date ({invalid_date.strftime('%d/%m/%Y')}) is before this limit.").format(date=invalid_date.strftime('%d/%m/%Y')),
                         html.Br(),
                         html.Small(
-                            "Ajuste as datas para o intervalo: 01/01/1990 até ontem.",
+                            t(lang, "validation", "period_unavailable_tip", default="Adjust the dates to the range: 01/01/1990 to yesterday."),
                             className="text-muted mt-1 d-block",
                         ),
                     ],
@@ -1328,10 +1330,10 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-calendar-x me-2"),
-                        html.Strong("Data futura não permitida: "),
+                        html.Strong(t(lang, "validation", "future_date_title", default="Future date not allowed: ")),
                         html.Br(),
-                        "O modo histórico trabalha com dados passados. ",
-                        f"A data máxima permitida é ontem ({(today - dt_date.resolution).strftime('%d/%m/%Y')}).",
+                        t(lang, "validation", "future_date_desc", default="Historical mode works with past data. "),
+                        t(lang, "validation", "future_date_max", default=f"The maximum allowed date is yesterday ({(today - dt_date.resolution).strftime('%d/%m/%Y')}).").format(date=(today - dt_date.resolution).strftime('%d/%m/%Y')),
                     ],
                     color="warning",
                 )
@@ -1343,14 +1345,13 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-exclamation-triangle me-2"),
-                        html.Strong("Período excede o limite: "),
+                        html.Strong(t(lang, "validation", "period_exceeds_title", default="Period exceeds the limit: ")),
                         html.Br(),
-                        f"Você selecionou {period_days_hist} dias ",
-                        f"({start_date.strftime('%d/%m/%Y')} até {end_date.strftime('%d/%m/%Y')}). ",
+                        t(lang, "validation", "period_exceeds_desc", default=f"You selected {period_days_hist} days ({start_date.strftime('%d/%m/%Y')} to {end_date.strftime('%d/%m/%Y')}). ").format(days=period_days_hist, start=start_date.strftime('%d/%m/%Y'), end=end_date.strftime('%d/%m/%Y')),
                         html.Br(),
-                        "O limite máximo por requisição é de ",
-                        html.Strong("90 dias"),
-                        ". Reduza o intervalo entre as datas.",
+                        t(lang, "validation", "period_exceeds_max", default="The maximum limit per request is "),
+                        html.Strong("90 " + t(lang, "email", "days_label", default="days")),
+                        t(lang, "validation", "period_exceeds_reduce", default=". Reduce the date range."),
                     ],
                     color="warning",
                 )
@@ -1362,8 +1363,8 @@ def calculate_eto(
                 error_alert = dbc.Alert(
                     [
                         html.I(className="bi bi-calendar-event me-2"),
-                        html.Strong("Período não selecionado: "),
-                        "Selecione o período",
+                        html.Strong(t(lang, "validation", "period_not_selected", default="Period not selected: ")),
+                        t(lang, "validation", "period_select", default="Select the period"),
                     ],
                     color="warning",
                 )
@@ -1934,11 +1935,11 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                         html.Div(
                                             [
                                                 html.H5(
-                                                    "Dados Enviados por Email",
+                                                    t(lang, "email", "sent_success", default="Data Sent by Email"),
                                                     className="mb-0 fw-bold",
                                                 ),
                                                 html.Small(
-                                                    "Processamento histórico concluído",
+                                                    t(lang, "email", "sent_description", default="Historical processing completed"),
                                                     style={"opacity": "0.85"},
                                                 ),
                                             ]
@@ -1967,7 +1968,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                                     },
                                                 ),
                                                 html.Span(
-                                                    "Concluído com sucesso",
+                                                    t(lang, "email", "completed", default="Completed successfully"),
                                                     className="fw-semibold",
                                                 ),
                                             ],
@@ -2010,14 +2011,14 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                                     html.Div(
                                                         [
                                                             html.Div(
-                                                                "Período processado",
+                                                                t(lang, "email", "processed_period", default="Processed period"),
                                                                 className="text-muted",
                                                                 style={
                                                                     "fontSize": "1rem"
                                                                 },
                                                             ),
                                                             html.Div(
-                                                                f"{days_calculated} dias",
+                                                                f"{days_calculated} {t(lang, 'email', 'days_label', default='days')}",
                                                                 className="fw-semibold",
                                                                 style={
                                                                     "fontSize": "0.95rem"
@@ -2053,14 +2054,14 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                                     html.Div(
                                                         [
                                                             html.Div(
-                                                                "Envio por email",
+                                                                t(lang, "email", "email_delivery", default="Email delivery"),
                                                                 className="text-muted",
                                                                 style={
                                                                     "fontSize": "1rem"
                                                                 },
                                                             ),
                                                             html.Div(
-                                                                "Dados enviados com sucesso",
+                                                                t(lang, "email", "data_sent_success", default="Data sent successfully"),
                                                                 className="fw-semibold",
                                                                 style={
                                                                     "fontSize": "0.95rem"
@@ -2096,7 +2097,7 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                                                     html.Div(
                                                         [
                                                             html.Div(
-                                                                "Tempo de processamento",
+                                                                t(lang, "email", "processing_time", default="Processing time"),
                                                                 className="text-muted",
                                                                 style={
                                                                     "fontSize": "1rem"
@@ -2169,9 +2170,8 @@ def update_progress(n_intervals, task_id, operation_mode, lang=None):
                             html.I(
                                 className="bi bi-exclamation-triangle me-2"
                             ),
-                            html.Strong("Processamento concluído, "),
-                            "mas houve um problema ao enviar o email. ",
-                            "Verifique as configurações SMTP.",
+                            html.Strong(t(lang, "validation", "processing_done_email_fail", default="Processing completed, ")),
+                            t(lang, "validation", "processing_done_email_fail_desc", default="but there was a problem sending the email. Check SMTP settings."),
                         ],
                         color="warning",
                         className="mt-3",
