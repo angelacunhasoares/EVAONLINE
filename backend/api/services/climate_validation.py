@@ -70,7 +70,7 @@ class ClimateValidationService:
         "openmeteo_archive",  # Historical (1990-01-01 -> today-2d)
         "nasa_power",  # Historical (1990-01-01 -> today-2d, 2d delay)
         # Global/Nordic region - Forecast/Recent
-        "openmeteo_forecast",  # Recent+Forecast (today-29d -> today+5d)
+        "openmeteo_forecast",  # Recent+Forecast+GapFill (today-90d -> today+5d)
         "met_norway",  # Forecast (today -> today+5d)
         # USA Stations/Forecast
         "nws_forecast",  # Forecast (today -> today+5d)
@@ -150,15 +150,16 @@ class ClimateValidationService:
             # Period: 1-90 days (EVAonline rule for email delivery)
             if not (1 <= period_days <= 90):
                 errors.append(
-                    f"Historical period must be 1-90 days, "
+                    f"PERIOD_EXCEEDS|Historical period must be 1-90 days, "
                     f"got {period_days}"
                 )
-            # Constraint: end_date <= today-2d (both NASA POWER and Archive have 2d delay)
-            max_end = today - timedelta(days=2)
+            # Constraint: end_date <= yesterday (today-1d)
+            # OM Forecast (today-90d) fills gaps where NASA/Archive lag
+            max_end = today - timedelta(days=1)
             if end > max_end:
                 errors.append(
-                    f"Historical end_date must be <= {max_end} "
-                    f"(today-2d), got {end_date}"
+                    f"END_DATE_FUTURE|Historical end_date must be <= {max_end} "
+                    f"(yesterday), got {end_date}"
                 )
             # Constraint: start_date >= 1990-01-01
             if start < ClimateValidationService.MIN_HISTORICAL_DATE:
@@ -447,7 +448,7 @@ class ClimateValidationService:
         Logic:
         1. If start ≈ today AND end ≈ today+5d -> DASHBOARD_FORECAST
         2. If end = today AND period in [7,14,21,30] -> DASHBOARD_CURRENT
-        3. If end <= today-2d AND period 1-90 days -> HISTORICAL_EMAIL
+        3. If end <= yesterday AND period 1-90 days -> HISTORICAL_EMAIL
         4. Otherwise -> None (mode not identifiable)
 
         Args:
@@ -486,8 +487,8 @@ class ClimateValidationService:
             return OperationMode.DASHBOARD_CURRENT.value, None
 
         # Rule 3: HISTORICAL_EMAIL
-        # end <= today-2d (both NASA and Archive have 2 day delay) AND 1-90 days
-        if end <= today - timedelta(days=2) and 1 <= period_days <= 90:
+        # end <= yesterday (OM Forecast fills gaps for recent days)
+        if end <= today - timedelta(days=1) and 1 <= period_days <= 90:
             return OperationMode.HISTORICAL_EMAIL.value, None
 
         # Otherwise: ambiguous

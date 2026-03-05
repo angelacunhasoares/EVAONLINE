@@ -220,10 +220,10 @@ class OperationModeDetector:
         "HISTORICAL_EMAIL": {
             "description": "1-90 days historical data with email report",
             "min_date": date(1990, 1, 1),
-            "max_date_offset": -2,  # today - 2 days
+            "max_date_offset": -1,  # today - 1 day (yesterday)
             "min_period": 1,
             "max_period": 90,
-            "sources": ["nasa_power", "openmeteo_archive"],
+            "sources": ["nasa_power", "openmeteo_archive", "openmeteo_forecast"],
             "requires_email": True,
         },
         "DASHBOARD_CURRENT": {
@@ -335,7 +335,7 @@ class OperationModeDetector:
             if end_date > max_date:
                 return (
                     False,
-                    f"End date must be <= {max_date.isoformat()} (today-2d)",
+                    f"End date must be <= {max_date.isoformat()} (yesterday)",
                 )
 
             # Validar período

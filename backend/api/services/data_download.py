@@ -251,6 +251,7 @@ async def download_weather_data(
                 weather_df = pd.DataFrame(data_records)
                 weather_df["date"] = pd.to_datetime(weather_df["date"])
                 weather_df.set_index("date", inplace=True)
+                weather_df["source"] = "nasa_power"
 
                 logger.info(
                     f"NASA POWER: {len(nasa_data)} daily records "
@@ -259,7 +260,7 @@ async def download_weather_data(
 
             elif source == "openmeteo_archive":
                 # Open-Meteo Archive (historical since 1950)
-                # IMPORTANT: end_date must be <= today - 2 days
+                # IMPORTANT: end_date must be <= ~today - 3 days (variable delay)
                 from backend.api.services.openmeteo_archive import (
                     openmeteo_archive_sync_adapter,
                 )
@@ -269,7 +270,7 @@ async def download_weather_data(
                 )
 
                 # Adjust end_date for Archive API limit
-                archive_max_date = (today - timedelta(days=2)).strftime(
+                archive_max_date = (today - timedelta(days=3)).strftime(
                     "%Y-%m-%d"
                 )
                 archive_max_date_dt = pd.to_datetime(archive_max_date)
@@ -327,13 +328,15 @@ async def download_weather_data(
                     if openmeteo_var in weather_df.columns:
                         weather_df[nasa_var] = weather_df[openmeteo_var]
 
+                weather_df["source"] = "openmeteo_archive"
+
                 logger.info(
                     f"Open-Meteo Archive: {len(openmeteo_data)} "
                     f"daily records for ({latitude}, {longitude})"
                 )
 
             elif source == "openmeteo_forecast":
-                # Open-Meteo Forecast (forecast + recent: -29d to +5d)
+                # Open-Meteo Forecast (forecast + recent: -90d to +5d)
                 from backend.api.services.openmeteo_forecast import (
                     openmeteo_forecast_sync_adapter,
                 )
@@ -342,12 +345,36 @@ async def download_weather_data(
                     openmeteo_forecast_sync_adapter.OpenMeteoForecastSyncAdapter
                 )
 
+                # Clamp dates to OM Forecast window: today-90d to today+5d
+                forecast_min_date = pd.to_datetime(
+                    (today - timedelta(days=90)).strftime("%Y-%m-%d")
+                )
+                forecast_max_date = pd.to_datetime(
+                    (today + timedelta(days=5)).strftime("%Y-%m-%d")
+                )
+                fc_start = max(
+                    pd.to_datetime(data_inicial_formatted), forecast_min_date
+                )
+                fc_end = min(
+                    pd.to_datetime(data_final_formatted), forecast_max_date
+                )
+
+                # Skip if clamped range is invalid
+                if fc_start > fc_end:
+                    logger.info(
+                        f"Open-Meteo Forecast skipped: requested period "
+                        f"({data_inicial_formatted} to {data_final_formatted}) "
+                        f"is outside forecast window "
+                        f"({forecast_min_date.date()} to {forecast_max_date.date()})"
+                    )
+                    continue
+
                 client = OpenMeteoForecastSyncAdapter()
                 forecast_data = client.get_daily_data_sync(
                     lat=latitude,
                     lon=longitude,
-                    start_date=data_inicial_formatted,
-                    end_date=data_final_formatted,
+                    start_date=fc_start,
+                    end_date=fc_end,
                 )
 
                 if not forecast_data:
@@ -382,6 +409,8 @@ async def download_weather_data(
                 for openmeteo_var, nasa_var in harmonization.items():
                     if openmeteo_var in weather_df.columns:
                         weather_df[nasa_var] = weather_df[openmeteo_var]
+
+                weather_df["source"] = "openmeteo_forecast"
 
                 logger.info(
                     f"Open-Meteo Forecast: {len(forecast_data)} "
@@ -482,6 +511,8 @@ async def download_weather_data(
                     if met_var in weather_df.columns:
                         weather_df[nasa_var] = weather_df[met_var]
 
+                weather_df["source"] = "met_norway"
+
                 # Add CC-BY 4.0 attribution to warnings
                 warnings_list.append(
                     "MET Norway data: CC-BY 4.0 - Attribution required"
@@ -559,6 +590,8 @@ async def download_weather_data(
                 for nws_var, nasa_var in nws_harmonization.items():
                     if nws_var in weather_df.columns:
                         weather_df[nasa_var] = weather_df[nws_var]
+
+                weather_df["source"] = "nws_forecast"
 
                 logger.info(
                     "NWS Forecast: %d records (%s, %s)",

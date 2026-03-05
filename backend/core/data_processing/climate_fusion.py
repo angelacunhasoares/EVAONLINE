@@ -19,7 +19,9 @@ class ClimateFusion:
     # Source classification
     HIST_SOURCES = {"nasa_power", "openmeteo_archive"}
     PRIMARY_SOURCES = {"nasa_power", "openmeteo_archive"}  # High-quality reanalysis
-    FALLBACK_SOURCES = {"openmeteo_forecast"}  # Gap-filler for recent mode
+    FALLBACK_SOURCES = {"openmeteo_forecast"}  # Gap-filler for historical+recent mode
+    # All sources valid in historical mode (primary + gap-filler)
+    HISTORICAL_ALL_SOURCES = {"nasa_power", "openmeteo_archive", "openmeteo_forecast"}
 
     # Per-variable NASA POWER weights for historical AND recent mode (2-source fusion).
     # OpenMeteo receives 1 - w. Calibrated against BR-DWGD (17 sites).
@@ -225,7 +227,7 @@ class ClimateFusion:
         mode_normalized = (mode or "").lower().replace(" ", "_")
         is_historical = (
             "historical" in mode_normalized
-            or (all_sources.issubset(self.HIST_SOURCES) and len(all_sources) >= 2)
+            or (all_sources.issubset(self.HISTORICAL_ALL_SOURCES) and len(all_sources & self.PRIMARY_SOURCES) >= 1)
         )
         is_recent = "current" in mode_normalized or "dashboard_current" in mode_normalized
 
@@ -254,27 +256,52 @@ class ClimateFusion:
                     row[var] = list(values.values())[0]
                     continue
 
-                # Historical mode: per-variable weighting
+                # Historical mode: adaptive per-variable per-day fusion
+                # Primary sources (NASA + Archive) use HIST_WEIGHTS
+                # OM Forecast is gap-filler only when primaries unavailable
                 if is_historical:
-                    if var not in fusion_strategy:
-                        fusion_strategy[var] = {"hist_weighted": list(values.keys())}
-                    # Precipitation: simple mean (Kalman handles QC)
-                    if var == "PRECTOTCORR":
-                        row[var] = np.mean(list(values.values()))
-                        continue
-                    # Per-variable NASA weight from HIST_WEIGHTS
-                    w_nasa = self.HIST_WEIGHTS.get(var, 0.50)
-                    weighted = 0.0
-                    total_w = 0.0
-                    for src, val in values.items():
-                        w = w_nasa if src == "nasa_power" else (1.0 - w_nasa)
-                        weighted += w * val
-                        total_w += w
-                    row[var] = (
-                        weighted / total_w
-                        if total_w > 0
-                        else np.mean(list(values.values()))
-                    )
+                    primary_vals = {
+                        s: v for s, v in values.items()
+                        if s in self.PRIMARY_SOURCES
+                    }
+                    fallback_vals = {
+                        s: v for s, v in values.items()
+                        if s in self.FALLBACK_SOURCES
+                    }
+
+                    if len(primary_vals) >= 2:
+                        # Both primary sources → HIST_WEIGHTS
+                        if var not in fusion_strategy:
+                            fusion_strategy[var] = {"hist_weighted": list(primary_vals.keys())}
+                        if var == "PRECTOTCORR":
+                            row[var] = np.mean(list(primary_vals.values()))
+                        else:
+                            w_nasa = self.HIST_WEIGHTS.get(var, 0.50)
+                            weighted = 0.0
+                            total_w = 0.0
+                            for src, val in primary_vals.items():
+                                w = w_nasa if src == "nasa_power" else (1.0 - w_nasa)
+                                weighted += w * val
+                                total_w += w
+                            row[var] = (
+                                weighted / total_w
+                                if total_w > 0
+                                else np.mean(list(primary_vals.values()))
+                            )
+                    elif len(primary_vals) == 1:
+                        # One primary source → 100%
+                        src_name = list(primary_vals.keys())[0]
+                        if var not in fusion_strategy:
+                            fusion_strategy[var] = {"hist_single_primary": src_name}
+                        row[var] = list(primary_vals.values())[0]
+                    elif fallback_vals:
+                        # No primary → gap-fill from OM Forecast 100%
+                        src_name = list(fallback_vals.keys())[0]
+                        if var not in fusion_strategy:
+                            fusion_strategy[var] = {"hist_gapfill": src_name}
+                        row[var] = list(fallback_vals.values())[0]
+                    else:
+                        row[var] = list(values.values())[0]
                     continue
 
                 # Recent mode: primary sources preferred, forecast as gap-filler
@@ -376,6 +403,14 @@ class ClimateFusion:
             elif "hist_weighted" in strategy:
                 logger.info(
                     f"   {var}: HIST_WEIGHTS {strategy['hist_weighted']}"
+                )
+            elif "hist_single_primary" in strategy:
+                logger.info(
+                    f"   {var}: 100% {strategy['hist_single_primary']} (primary-only, partner unavailable)"
+                )
+            elif "hist_gapfill" in strategy:
+                logger.info(
+                    f"   {var}: 100% {strategy['hist_gapfill']} (gap-fill, no primary data)"
                 )
             elif "recent_single" in strategy:
                 logger.info(

@@ -70,13 +70,14 @@ class ClimateSourceManager:
     -------------------------------
     EVAonline rules (3 operation modes):
     1. HISTORICAL_EMAIL: 1-90 days (email, free choice)
-    - NASA POWER: start 1990/01/01, end today-2d (2d delay)
-    - Open-Meteo Archive: start 1990/01/01, end today-2d (2d delay)
+    - NASA POWER: start 1990/01/01, end yesterday (variable delay: radiation ~7d, other ~3d)
+    - Open-Meteo Archive: start 1990/01/01, end ~today-3d (variable delay)
+    - Open-Meteo Forecast: start today-90d, end today+5d (gap-filler for recent days)
 
     2. DASHBOARD_CURRENT: [7,14,21,30] days, end=today fixed (web, dropdown)
     - NASA POWER: start today-29d, end today-2d (28 days max, 2d delay)
     - Open-Meteo Archive: start today-29d, end today-2d (28 days max, 2d delay)
-    - Open-Meteo Forecast: start today-29d, end today (30 days max, no delay)
+    - Open-Meteo Forecast: start today-90d, end today (fills gap for recent days)
 
     3. DASHBOARD_FORECAST: 6 days fixed (today -> today+5d), web forecasts
     IF USA: radio button "Data Fusion" OR "Real station data"
@@ -427,7 +428,7 @@ class ClimateSourceManager:
         3. API availability
 
         🔀 FUSÃO AUTOMÁTICA - Fontes por modo:
-        - HISTORICAL_EMAIL:    NASA POWER + Open-Meteo Archive
+        - HISTORICAL_EMAIL:    NASA POWER + Open-Meteo Archive + Open-Meteo Forecast (gap-filler)
         - DASHBOARD_CURRENT:   NASA POWER + Open-Meteo Archive + Open-Meteo Forecast
         - DASHBOARD_FORECAST:  Open-Meteo Forecast + MET Norway (+ NWS se USA)
 
@@ -543,7 +544,7 @@ class ClimateSourceManager:
             today = date.today()
             period_days = (end_date - start_date).days + 1
 
-            if end_date <= today - timedelta(days=2):
+            if end_date <= today - timedelta(days=1):
                 mode = OperationMode.HISTORICAL_EMAIL
 
             elif end_date == today:
@@ -569,12 +570,12 @@ class ClimateSourceManager:
         period_days = (end_date - start_date).days + 1
 
         if mode == OperationMode.HISTORICAL_EMAIL:
-            # Historical: end <= today - 2d
-            max_end = today - timedelta(days=2)
+            # Historical: end <= yesterday
+            max_end = today - timedelta(days=1)
             if end_date > max_end:
                 warnings.append(
                     f"Historical mode: end_date {end_date} > "
-                    f"maximum {max_end} (today-2d). "
+                    f"maximum {max_end} (yesterday). "
                     f"Some sources may not have data."
                 )
             # VALIDATION MODE: Allow flexible period (not just 1-90)

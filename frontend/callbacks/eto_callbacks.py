@@ -1530,14 +1530,41 @@ def calculate_eto(
 
     except ValueError as e:
         logger.error(f"❌ Validation error: {e}")
-        error_alert = dbc.Alert(
-            [
-                html.I(className="bi bi-exclamation-triangle me-2"),
-                html.Strong("Erro de validação: "),
-                str(e),
-            ],
-            color="danger",
-        )
+        # Parse structured error codes from backend
+        error_str = str(e)
+        # Check for structured error codes (e.g. "END_DATE_FUTURE|...")
+        if "End date must be <=" in error_str and "yesterday" in error_str:
+            error_alert = dbc.Alert(
+                [
+                    html.I(className="bi bi-calendar-x me-2"),
+                    html.Strong(t(lang, "validation", "future_date_title", default="Future date not allowed: ")),
+                    html.Br(),
+                    t(lang, "validation", "future_date_desc", default="Historical mode works with past data. "),
+                    t(lang, "validation", "future_date_max", default="The maximum allowed date is yesterday."),
+                ],
+                color="warning",
+            )
+        elif "Period must be" in error_str:
+            error_alert = dbc.Alert(
+                [
+                    html.I(className="bi bi-exclamation-triangle me-2"),
+                    html.Strong(t(lang, "validation", "period_exceeds_title", default="Period exceeds the limit: ")),
+                    html.Br(),
+                    t(lang, "validation", "period_exceeds_max", default="The maximum limit per request is "),
+                    html.Strong("90 " + t(lang, "email", "days_label", default="days")),
+                    t(lang, "validation", "period_exceeds_reduce", default=". Reduce the date range."),
+                ],
+                color="warning",
+            )
+        else:
+            error_alert = dbc.Alert(
+                [
+                    html.I(className="bi bi-exclamation-triangle me-2"),
+                    html.Strong(t(lang, "validation", "error_label", default="Error: ")),
+                    error_str,
+                ],
+                color="danger",
+            )
         return None, None, error_alert, None, True, None, None
 
     except Exception as e:
@@ -1545,7 +1572,7 @@ def calculate_eto(
         error_alert = dbc.Alert(
             [
                 html.I(className="bi bi-exclamation-octagon-fill me-2"),
-                html.Strong("Erro inesperado: "),
+                html.Strong(t(lang, "validation", "error_label", default="Error: ")),
                 str(e),
             ],
             color="danger",

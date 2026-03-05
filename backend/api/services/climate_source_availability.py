@@ -3,13 +3,14 @@ Climate data source availability service.
 
 EVAonline rules (3 operation modes):
 1. HISTORICAL_EMAIL: 1-90 days (email, free choice)
-   - NASA POWER: start 1990/01/01, end today-2d (2d delay)
-   - Open-Meteo Archive: start 1990/01/01, end today-2d (2d delay)
+   - NASA POWER: start 1990/01/01, end today-1d (variable delay: radiation ~7d, other ~3d)
+   - Open-Meteo Archive: start 1990/01/01, end ~today-3d (variable delay)
+   - Open-Meteo Forecast: start today-90d, end today+5d (gap-filler for recent days)
 
 2. DASHBOARD_CURRENT: [7,14,21,30] days, end=today fixed (web, dropdown)
    - NASA POWER: start today-29d, end today-2d (28 days max, 2d delay)
    - Open-Meteo Archive: start today-29d, end today-2d (28 days max, 2d delay)
-   - Open-Meteo Forecast: start today-29d, end today (30 days max, no delay)
+   - Open-Meteo Forecast: start today-90d, end today (fills gap for recent days)
 
 3. DASHBOARD_FORECAST: 6 days fixed (today -> today+5d), web forecasts
    IF USA: radio button "Data Fusion" OR "Real station data"
@@ -69,10 +70,10 @@ class ClimateSourceAvailability:
             "end_date_offset": -2,  # today-2d (2 day delay)
             "coverage": "global",
         },
-        # Forecast/Recent
+        # Forecast/Recent/GapFill
         "openmeteo_forecast": {
-            "type": "dashboard_current+dashboard_forecast",
-            "start_date_offset": -29,  # today (DASHBOARD_FORECAST)
+            "type": "historical_email+dashboard_current+dashboard_forecast",
+            "start_date_offset": -90,  # today-90d (extended window)
             "end_date_offset": +5,  # today+5d
             "coverage": "global",
         },
@@ -191,8 +192,11 @@ class ClimateSourceAvailability:
             # 2. Check temporal limits
             if available:
                 api_type = limits["type"]
-                if api_type == "historical_email+dashboard_current":
-                    # Historical APIs: check absolute limits
+                has_absolute_start = "start_date" in limits
+                has_offset_start = "start_date_offset" in limits
+
+                if has_absolute_start:
+                    # Historical APIs with absolute start date (NASA, Archive)
                     api_start = limits["start_date"]
                     api_end = today + timedelta(days=limits["end_date_offset"])
 
@@ -203,8 +207,8 @@ class ClimateSourceAvailability:
                         available = False
                         reasons.append(f"End date after {api_end}")
 
-                elif api_type in ["dashboard_forecast", "dashboard_current"]:
-                    # Forecast/realtime APIs: check offsets
+                elif has_offset_start:
+                    # Offset-based APIs (Forecast, MET, NWS, etc.)
                     api_start = today + timedelta(
                         days=limits.get("start_date_offset", 0)
                     )
@@ -359,11 +363,11 @@ class ClimateSourceAvailability:
         limits: dict[str, dict[str, Any]] = {}
 
         if context_str == OperationMode.HISTORICAL_EMAIL.value:
-            # Historical_email: APIs provide from 1990 to today-2 days
+            # Historical_email: APIs provide from 1990 to yesterday
             # User chooses FREELY within this range
             # Restrictions: 1-90 days period
-            # Limit today-2d avoids overlap with dashboard_current
-            historical_end = today - timedelta(days=2)
+            # NASA POWER + Archive are primary; OM Forecast fills gaps
+            historical_end = today - timedelta(days=1)
             common_reason = (
                 f"Historical email: 1990 to {historical_end} "
                 "(user free choice, 1-90 days period)"
@@ -383,6 +387,19 @@ class ClimateSourceAvailability:
                 "min_period_days": 1,
                 "max_period_days": 90,
                 "reason": common_reason,
+            }
+
+            # OM Forecast as gap-filler for recent days (today-90d to today+5d)
+            limits["openmeteo_forecast"] = {
+                "start_date": today - timedelta(days=90),
+                "end_date": today + timedelta(days=5),
+                "min_period_days": 1,
+                "max_period_days": 90,
+                "reason": (
+                    f"Historical gap-filler: {today - timedelta(days=90)} to "
+                    f"{today + timedelta(days=5)} "
+                    "(fills days where NASA/Archive lag)"
+                ),
             }
 
         elif context_str == OperationMode.DASHBOARD_CURRENT.value:
@@ -414,10 +431,10 @@ class ClimateSourceAvailability:
             }
 
             limits["openmeteo_forecast"] = {
-                "start_date": today - timedelta(days=29),
+                "start_date": today - timedelta(days=90),
                 "end_date": today,
                 "reason": (
-                    f"Dashboard current: {today - timedelta(days=29)} to "
+                    f"Dashboard current: {today - timedelta(days=90)} to "
                     f"{today} (fills archive gap, recent data)"
                 ),
             }
