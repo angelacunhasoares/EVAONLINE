@@ -381,6 +381,8 @@ core
 core.*
 !backend/core/
 !backend/core/**
+!backend/tests/unit/core/
+!backend/tests/unit/core/**
 !frontend/core/
 !frontend/core/**
 

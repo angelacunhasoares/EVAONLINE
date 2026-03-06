@@ -94,6 +94,12 @@ def test_db_session(test_db_engine) -> Generator[Session, None, None]:
 
 
 @pytest.fixture(scope="function")
+def db_session(test_db_session) -> Generator[Session, None, None]:
+    """Alias for test_db_session (used by integration/performance tests)."""
+    yield test_db_session
+
+
+@pytest.fixture(scope="function")
 def override_get_db(test_db_session):
     """Override da dependência get_db do FastAPI"""
 
@@ -379,4 +385,8 @@ def cleanup_after_test():
     """Limpa recursos após cada teste"""
     yield
     # Cleanup code aqui se necessário
-    asyncio.get_event_loop().run_until_complete(asyncio.sleep(0))
+    try:
+        loop = asyncio.get_running_loop()
+        loop.run_until_complete(asyncio.sleep(0))
+    except RuntimeError:
+        pass  # No event loop running — nothing to clean up

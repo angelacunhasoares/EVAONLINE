@@ -212,3 +212,270 @@ class TestEToVariableValidator:
     def test_required_variables_count(self):
         """FAO-56 requires 6 meteorological variables."""
         assert len(EToVariableValidator.REQUIRED_VARIABLES) == 6
+
+
+# ============================================================================
+# WeatherValidationUtils — Physical Range Checks
+# ============================================================================
+
+from backend.api.services.weather_utils import (
+    WeatherValidationUtils,
+    WeatherAggregationUtils,
+    CacheUtils,
+    METNorwayAggregationUtils,
+)
+from datetime import datetime, timedelta, timezone
+
+
+@pytest.mark.unit
+class TestGetValidationLimits:
+    """Region-aware physical limits lookup."""
+
+    def test_global_has_temperature_key(self):
+        limits = WeatherValidationUtils.get_validation_limits()
+        assert "temperature" in limits
+
+    def test_global_has_humidity_key(self):
+        limits = WeatherValidationUtils.get_validation_limits()
+        assert "humidity" in limits
+
+    def test_brazil_stricter_temperature(self):
+        b = WeatherValidationUtils.get_validation_limits(region="brazil")
+        g = WeatherValidationUtils.get_validation_limits(region="global")
+        # Global should be at least as wide
+        assert g["temperature"][0] <= b["temperature"][0]
+
+
+@pytest.mark.unit
+class TestIsValidTemperature:
+    """Temperature range validation."""
+
+    def test_normal(self):
+        assert WeatherValidationUtils.is_valid_temperature(25.0) is True
+
+    def test_extreme_cold_invalid(self):
+        assert WeatherValidationUtils.is_valid_temperature(-100.0) is False
+
+    def test_extreme_hot_invalid(self):
+        assert WeatherValidationUtils.is_valid_temperature(65.0) is False
+
+    def test_none_is_valid(self):
+        assert WeatherValidationUtils.is_valid_temperature(None) is True
+
+
+@pytest.mark.unit
+class TestIsValidHumidity:
+    """Humidity 0–100% validation."""
+
+    def test_normal(self):
+        assert WeatherValidationUtils.is_valid_humidity(65.0) is True
+
+    def test_negative(self):
+        assert WeatherValidationUtils.is_valid_humidity(-5.0) is False
+
+    def test_over_100(self):
+        assert WeatherValidationUtils.is_valid_humidity(105.0) is False
+
+    def test_none_is_valid(self):
+        assert WeatherValidationUtils.is_valid_humidity(None) is True
+
+
+@pytest.mark.unit
+class TestIsValidWindSpeed:
+    """Wind speed non-negative + below regional max."""
+
+    def test_normal(self):
+        assert WeatherValidationUtils.is_valid_wind_speed(5.0) is True
+
+    def test_negative(self):
+        assert WeatherValidationUtils.is_valid_wind_speed(-1.0) is False
+
+    def test_none_is_valid(self):
+        assert WeatherValidationUtils.is_valid_wind_speed(None) is True
+
+
+@pytest.mark.unit
+class TestIsValidPrecipitation:
+    """Precipitation non-negative."""
+
+    def test_zero(self):
+        assert WeatherValidationUtils.is_valid_precipitation(0.0) is True
+
+    def test_negative(self):
+        assert WeatherValidationUtils.is_valid_precipitation(-1.0) is False
+
+    def test_none_is_valid(self):
+        assert WeatherValidationUtils.is_valid_precipitation(None) is True
+
+
+@pytest.mark.unit
+class TestIsValidSolarRadiation:
+    """Solar radiation range."""
+
+    def test_normal(self):
+        assert WeatherValidationUtils.is_valid_solar_radiation(20.0) is True
+
+    def test_none_is_valid(self):
+        assert WeatherValidationUtils.is_valid_solar_radiation(None) is True
+
+
+@pytest.mark.unit
+class TestValidateDailyData:
+    """Full daily record validation."""
+
+    def test_valid_complete(self):
+        data = {
+            "temp_max": 30.0, "temp_min": 18.0, "temp_mean": 24.0,
+            "humidity_mean": 65.0, "wind_speed_2m_mean": 3.0,
+            "precipitation_sum": 5.0, "solar_radiation": 20.0,
+        }
+        assert WeatherValidationUtils.validate_daily_data(data) is True
+
+    def test_invalid_temperature(self):
+        data = {"temp_max": 200.0}
+        assert WeatherValidationUtils.validate_daily_data(data) is False
+
+    def test_empty_is_valid(self):
+        assert WeatherValidationUtils.validate_daily_data({}) is True
+
+
+# ============================================================================
+# WeatherAggregationUtils
+# ============================================================================
+
+
+@pytest.mark.unit
+class TestAggregateTemperature:
+    """Temperature aggregation."""
+
+    def test_mean(self):
+        assert WeatherAggregationUtils.aggregate_temperature([20.0, 30.0]) == pytest.approx(25.0)
+
+    def test_max(self):
+        assert WeatherAggregationUtils.aggregate_temperature([20.0, 30.0], method="max") == pytest.approx(30.0)
+
+    def test_min(self):
+        assert WeatherAggregationUtils.aggregate_temperature([20.0, 30.0], method="min") == pytest.approx(20.0)
+
+    def test_empty_returns_none(self):
+        assert WeatherAggregationUtils.aggregate_temperature([]) is None
+
+
+@pytest.mark.unit
+class TestAggregatePrecipitation:
+    """Precipitation sum."""
+
+    def test_sum(self):
+        assert WeatherAggregationUtils.aggregate_precipitation([5.0, 10.0, 2.5]) == pytest.approx(17.5)
+
+    def test_empty_returns_none(self):
+        assert WeatherAggregationUtils.aggregate_precipitation([]) is None
+
+
+@pytest.mark.unit
+class TestSafeDivision:
+    """Division with None/zero protection."""
+
+    def test_normal(self):
+        assert WeatherAggregationUtils.safe_division(10.0, 2.0) == pytest.approx(5.0)
+
+    def test_zero_denominator(self):
+        assert WeatherAggregationUtils.safe_division(10.0, 0.0) is None
+
+    def test_none_numerator(self):
+        assert WeatherAggregationUtils.safe_division(None, 2.0) is None
+
+    def test_none_denominator(self):
+        assert WeatherAggregationUtils.safe_division(10.0, None) is None
+
+
+# ============================================================================
+# CacheUtils
+# ============================================================================
+
+
+@pytest.mark.unit
+class TestCacheUtilsParseDate:
+    """RFC-1123 date parsing."""
+
+    def test_valid(self):
+        result = CacheUtils.parse_rfc1123_date("Thu, 01 Jan 2026 12:00:00 GMT")
+        assert result is not None
+        assert result.year == 2026
+
+    def test_none(self):
+        assert CacheUtils.parse_rfc1123_date(None) is None
+
+
+@pytest.mark.unit
+class TestCacheUtilsTTL:
+    """Cache TTL calculation."""
+
+    def test_default_when_none(self):
+        assert CacheUtils.calculate_cache_ttl(None) == 3600
+
+    def test_custom_default(self):
+        assert CacheUtils.calculate_cache_ttl(None, default_ttl=7200) == 7200
+
+    def test_minimum_60(self):
+        expired = datetime.now(timezone.utc) - timedelta(hours=1)
+        ttl = CacheUtils.calculate_cache_ttl(expired)
+        assert ttl >= 60
+
+    def test_maximum_86400(self):
+        far = datetime.now(timezone.utc) + timedelta(days=30)
+        ttl = CacheUtils.calculate_cache_ttl(far)
+        assert ttl <= 86400
+
+
+# ============================================================================
+# METNorwayAggregationUtils
+# ============================================================================
+
+
+@pytest.mark.unit
+class TestMETValidateDailyData:
+    """MET Norway daily data validation."""
+
+    def test_valid(self):
+        data = [{"temp_max": 5.0, "temp_min": -2.0, "humidity_mean": 85.0, "precipitation_sum": 3.0}]
+        assert METNorwayAggregationUtils.validate_daily_data(data) is True
+
+    def test_empty_false(self):
+        assert METNorwayAggregationUtils.validate_daily_data([]) is False
+
+    def test_invalid_humidity(self):
+        data = [{"temp_max": 5.0, "temp_min": -2.0, "humidity_mean": 150.0, "precipitation_sum": 0}]
+        assert METNorwayAggregationUtils.validate_daily_data(data) is False
+
+    def test_negative_precip(self):
+        data = [{"temp_max": 5.0, "temp_min": -2.0, "humidity_mean": 50.0, "precipitation_sum": -1.0}]
+        assert METNorwayAggregationUtils.validate_daily_data(data) is False
+
+
+# ============================================================================
+# Conversion roundtrips
+# ============================================================================
+
+
+@pytest.mark.unit
+class TestConversionRoundtrips:
+    """Verify conversions are invertible."""
+
+    def test_fahrenheit_celsius_roundtrip(self):
+        c = 25.0
+        assert WeatherConversionUtils.fahrenheit_to_celsius(
+            WeatherConversionUtils.celsius_to_fahrenheit(c)
+        ) == pytest.approx(c)
+
+    def test_radiation_roundtrip(self):
+        mj = 20.5
+        assert WeatherConversionUtils.wh_per_m2_to_mj_per_m2(
+            WeatherConversionUtils.mj_per_m2_to_wh_per_m2(mj)
+        ) == pytest.approx(mj, rel=1e-3)
+
+    def test_mph_ms_roundtrip(self):
+        mph = 10.0
+        assert WeatherConversionUtils.ms_to_mph(
+            WeatherConversionUtils.mph_to_ms(mph)
+        ) == pytest.approx(mph, rel=1e-3)
