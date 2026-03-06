@@ -26,7 +26,7 @@ from backend.database.connection import get_db_context
 # CONFIGURAÇÃO
 # ============================================================================
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Logging
@@ -276,7 +276,5 @@ def main():
         return 1
 
 
-if __name__ == "__main__":
-    exit(main())
 if __name__ == "__main__":
     exit(main())

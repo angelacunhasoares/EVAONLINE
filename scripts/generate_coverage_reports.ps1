@@ -1,18 +1,25 @@
-﻿# Generate Coverage Reports for Each Module
-# Usage: .\scripts\generate_coverage_reports.ps1
+﻿<#
+.SYNOPSIS
+    Generates per-module coverage reports for the EVAonline test suite.
+.DESCRIPTION
+    Runs pytest with coverage for each test module individually and generates
+    an HTML index page aggregating all coverage reports.
+.NOTES
+    Usage: .\scripts\generate_coverage_reports.ps1
+#>
 
 $ErrorActionPreference = "Continue"
 
-Write-Host "[INFO] Gerando relatrios de cobertura por mdulo..." -ForegroundColor Cyan
+Write-Host "[INFO] Generating per-module coverage reports..." -ForegroundColor Cyan
 Write-Host ""
 
-# Criar diretrio base
+# Create base directory
 $coverageDir = "htmlcov"
 if (-not (Test-Path $coverageDir)) {
     New-Item -ItemType Directory -Path $coverageDir | Out-Null
 }
 
-# Array de mdulos para testar
+# Array of modules to test
 $modules = @(
     # ============ UNIT TESTS ============
     @{

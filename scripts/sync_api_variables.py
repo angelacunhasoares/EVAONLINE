@@ -21,12 +21,13 @@ Usage:
 
 import sys
 from pathlib import Path
-from backend.database.connection import get_db_context
-from sqlalchemy import text
 
-# Adicionar raiz do projeto ao path
+# Adicionar raiz do projeto ao path (ANTES de imports do backend)
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+
+from backend.database.connection import get_db_context  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
 
 def sync_api_variables():

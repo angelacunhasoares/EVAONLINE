@@ -77,7 +77,7 @@ else {
             $varName = $Matches[1]
             $varVal = $Matches[2].Trim('"').Trim("'")
             if ($varVal.Length -lt 16) {
-                Write-Fail "$varName is too short (${$varVal.Length} chars, min 16)"
+                Write-Fail "$varName is too short ($($varVal.Length) chars, min 16)"
             }
         }
     }

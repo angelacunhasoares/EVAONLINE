@@ -4,7 +4,7 @@ Teste FINAL das 6 APIs com dados REAIS
 Teste end-to-end: API → Processamento → PostgreSQL
 
 Usage:
-    uv run python scripts/validation/test_6_apis_final.py
+    uv run python scripts/validation/load_climate_data.py
 """
 
 import asyncio

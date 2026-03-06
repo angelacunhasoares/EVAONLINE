@@ -34,6 +34,15 @@ def setup_test_environment():
     os.environ["REDIS_URL"] = "redis://localhost:6379/15"
     os.environ["CELERY_BROKER_URL"] = "redis://localhost:6379/14"
     os.environ["LOG_LEVEL"] = "ERROR"
+
+    # Enable Celery eager mode so tasks run inline (no worker needed)
+    from backend.infrastructure.celery.celery_config import celery_app
+
+    celery_app.conf.update(
+        task_always_eager=True,
+        task_eager_propagates=True,
+    )
+
     yield
     # Cleanup após todos os testes
 
@@ -188,7 +197,7 @@ def sample_climate_data():
 
 @pytest.fixture
 def sample_eto_request():
-    """Requisição ETO de exemplo"""
+    """Requisição ETO de exemplo (historical)"""
     return {
         "lat": -23.5505,
         "lng": -46.6333,
@@ -198,6 +207,79 @@ def sample_eto_request():
         "elevation": 760,
         "email": "test@example.com",
     }
+
+
+@pytest.fixture
+def sample_eto_request_recent():
+    """Requisição ETO modo recente (7 dias)"""
+    from datetime import date, timedelta
+
+    today = date.today()
+    return {
+        "lat": -23.5505,
+        "lng": -46.6333,
+        "start_date": (today - timedelta(days=6)).isoformat(),
+        "end_date": today.isoformat(),
+        "period_type": "dashboard_current",
+    }
+
+
+@pytest.fixture
+def sample_eto_request_forecast():
+    """Requisição ETO modo previsão (6 dias)"""
+    from datetime import date, timedelta
+
+    today = date.today()
+    return {
+        "lat": -23.5505,
+        "lng": -46.6333,
+        "start_date": today.isoformat(),
+        "end_date": (today + timedelta(days=5)).isoformat(),
+        "period_type": "dashboard_forecast",
+    }
+
+
+@pytest.fixture
+def sample_measurements():
+    """Medições climáticas completas para cálculo FAO-56"""
+    return {
+        "T2M_MAX": 32.5,
+        "T2M_MIN": 18.2,
+        "T2M": 25.4,
+        "RH2M": 65.0,
+        "WS2M": 2.5,
+        "PRECTOTCORR": 0.0,
+        "ALLSKY_SFC_SW_DWN": 20.5,
+        "latitude": -22.2926,
+        "longitude": -48.5841,
+        "date": "2024-01-15",
+        "elevation_m": 580,
+    }
+
+
+@pytest.fixture
+def sample_multi_source_df():
+    """DataFrame multi-source para testes de fusão"""
+    import pandas as pd
+
+    dates = pd.date_range("2024-01-01", periods=5, freq="D")
+    rows = []
+    for d in dates:
+        for src in ["nasa_power", "openmeteo_archive"]:
+            rows.append(
+                {
+                    "date": d,
+                    "source": src,
+                    "T2M_MAX": 30.0 + (1.0 if src == "nasa_power" else 0.5),
+                    "T2M_MIN": 18.0 + (0.5 if src == "nasa_power" else 0.2),
+                    "T2M": 24.0 + (0.8 if src == "nasa_power" else 0.3),
+                    "RH2M": 65.0,
+                    "WS2M": 2.5,
+                    "ALLSKY_SFC_SW_DWN": 20.0,
+                    "PRECTOTCORR": 0.0,
+                }
+            )
+    return pd.DataFrame(rows)
 
 
 # ============================================================================
@@ -265,6 +347,26 @@ def benchmark_timer():
             self.elapsed = self.end - self.start
 
     return Timer
+
+
+# ============================================================================
+# RATE LIMITER CLEANUP
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def flush_rate_limit_keys():
+    """Flush Redis rate-limit keys before each test so tests don't interfere."""
+    try:
+        from redis import Redis
+
+        redis_pwd = os.environ.get("REDIS_PASSWORD") or None
+        r = Redis(host="localhost", port=6379, password=redis_pwd, decode_responses=True)
+        for key in r.scan_iter("calc_limit:*"):
+            r.delete(key)
+    except Exception:
+        pass  # If Redis unavailable, skip cleanup
+    yield
 
 
 # ============================================================================

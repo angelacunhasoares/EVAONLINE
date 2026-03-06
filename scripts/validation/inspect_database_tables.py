@@ -1,10 +1,22 @@
+#!/usr/bin/env python3
 """
-Inspeciona as tabelas do banco de dados PostgreSQL
-Mostra a estrutura das tabelas.
+Inspeciona as tabelas do banco de dados PostgreSQL.
+
+Mostra a estrutura de cada tabela (colunas, tipos, contagem de registros).
+
+Usage:
+    uv run python scripts/validation/inspect_database_tables.py
 """
 
-from backend.database.connection import get_db_context
-from sqlalchemy import text
+import sys
+from pathlib import Path
+
+# Adicionar raiz do projeto ao path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from backend.database.connection import get_db_context  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
 
 def show_tables():
@@ -38,24 +50,27 @@ def show_tables():
             print("=" * 80)
 
             # Contagem de registros
-            count_result = db.execute(text(f"SELECT COUNT(*) FROM {table}"))
+            count_result = db.execute(
+                text("SELECT COUNT(*) FROM " + table)
+            )  # table names from information_schema, safe
             count = count_result.scalar()
             print(f"\n📊 Total de registros: {count}")
 
             # Estrutura das colunas
             columns_result = db.execute(
                 text(
-                    f"""
+                    """
                     SELECT 
                         column_name, 
                         data_type, 
                         is_nullable,
                         column_default
                     FROM information_schema.columns 
-                    WHERE table_name = '{table}'
+                    WHERE table_name = :tbl
                     ORDER BY ordinal_position
                     """
-                )
+                ),
+                {"tbl": table},
             )
 
             print(f"\n📋 Estrutura das colunas:\n")

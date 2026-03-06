@@ -382,7 +382,7 @@ def seed_api_variables(session):
 
     # Estatísticas
     print("\n📊 Estatísticas por API:")
-    from sqlalchemy import func
+    from sqlalchemy import func, Integer
 
     stats = (
         session.query(

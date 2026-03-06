@@ -9,9 +9,10 @@ Testes end-to-end validando a integração completa:
 
 SOURCES BY MODE:
 ================
-1. HISTORICAL_EMAIL (1-90 days, start: 1990-01-01, end: today-2d)
+1. HISTORICAL_EMAIL (1-90 days, start: 1990-01-01, end: today-1d)
    - nasa_power
    - openmeteo_archive
+   - openmeteo_forecast (fallback)
 
 2. DASHBOARD_CURRENT ([7,14,21,30] days, end: today)
    - nasa_power (max 28d: today-29d → today-2d, 2d delay)
@@ -111,10 +112,10 @@ class TestFrontendBackendIntegration:
         assert data["operation_mode"] == "historical_email"
 
         # Verify selected sources are valid for HISTORICAL_EMAIL mode
-        # Valid sources: nasa_power, openmeteo_archive
+        # Valid sources: nasa_power, openmeteo_archive, openmeteo_forecast
         sources_used = data["fusion"]["sources_used"]
         for src in sources_used:
-            assert src in ["nasa_power", "openmeteo_archive"]
+            assert src in ["nasa_power", "openmeteo_archive", "openmeteo_forecast"]
 
         # Verify Celery task was called with correct params
         mock_celery_task.delay.assert_called_once()
@@ -514,9 +515,10 @@ class TestFrontendBackendIntegration:
         self, client, mock_celery_task
     ):
         """
-        Test that HISTORICAL_EMAIL mode ignores forecast-only sources
+        Test that HISTORICAL_EMAIL mode ignores truly-invalid sources
         and auto-selects valid historical sources instead.
         The API does NOT reject invalid sources; it falls back to auto-selection.
+        Note: openmeteo_forecast IS now a valid historical source (90-day window).
         """
         frontend_payload = OperationModeDetector.prepare_api_request(
             ui_selection="historical",
@@ -527,13 +529,13 @@ class TestFrontendBackendIntegration:
             email="user@example.com",
         )
 
-        # Try to use openmeteo_forecast (forecast-only, not valid for historical)
+        # Try to use nws_forecast (USA-only, not valid for this lat/lng)
         backend_payload = {
             "lat": frontend_payload["lat"],
             "lng": frontend_payload["lng"],
             "start_date": frontend_payload["start_date"],
             "end_date": frontend_payload["end_date"],
-            "sources": "openmeteo_forecast",  # Invalid for historical mode
+            "sources": "nws_forecast",  # USA-only, invalid for Brazil
             "period_type": "historical_email",
         }
 
@@ -545,10 +547,11 @@ class TestFrontendBackendIntegration:
         assert response.status_code == 200
         data = response.json()
         sources_used = data["fusion"]["sources_used"]
-        # Verify that forecast-only source was NOT used and valid historical sources were selected
-        assert "openmeteo_forecast" not in sources_used
+        # Verify that USA-only source was NOT used and valid historical sources were selected
+        assert "nws_forecast" not in sources_used
         assert any(
-            s in sources_used for s in ["nasa_power", "openmeteo_archive"]
+            s in sources_used
+            for s in ["nasa_power", "openmeteo_archive", "openmeteo_forecast"]
         ), f"Expected historical sources, got {sources_used}"
 
     def test_forecast_mode_valid_sources(self, client, mock_celery_task):

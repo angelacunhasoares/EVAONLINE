@@ -16,9 +16,13 @@ try:
     import redis as _redis_mod
 
     _redis_port = int(os.getenv("REDIS_PORT", "6379"))
+    _redis_pwd = os.getenv("REDIS_PASSWORD") or None
     for _host in (os.getenv("REDIS_HOST", "localhost"), "localhost", "127.0.0.1"):
         try:
-            _r = _redis_mod.Redis(host=_host, port=_redis_port, socket_connect_timeout=1)
+            _r = _redis_mod.Redis(
+                host=_host, port=_redis_port,
+                password=_redis_pwd, socket_connect_timeout=1,
+            )
             _r.ping()
             _REDIS_AVAILABLE = True
             break

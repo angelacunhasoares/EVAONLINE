@@ -1,5 +1,7 @@
 #!/bin/bash
-# Script para configurar pg_hba.conf
+set -e
+# Script para configurar pg_hba.conf durante inicialização do PostgreSQL.
+# Executado automaticamente pelo Docker entrypoint (init-db/ convention).
 
 echo "Configurando pg_hba.conf..."
 
