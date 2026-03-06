@@ -175,5 +175,5 @@ print("      python validate_eto_pipeline.py")
 print("\n   3. Parar containers:")
 print("      docker compose down")
 
-print("\n✅ Setup completo!")
+print("\nSetup completo!")
 print("=" * 80 + "\n")
